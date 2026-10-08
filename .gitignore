@@ -193,3 +193,6 @@ UI/Dependencies.zip
 
 # Reference checkout used for git sync / content comparison — do not track
 MesenCE-clone/
+
+# Emulator home folders (recent games, settings, saves) created by smoke tests
+*-home/
