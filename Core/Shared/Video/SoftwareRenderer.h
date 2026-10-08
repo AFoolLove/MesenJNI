@@ -30,4 +30,13 @@ public:
 	void Render(RenderSurfaceInfo& emuHud, RenderSurfaceInfo& scriptHud) override;
 	void Reset() override;
 	void SetFullscreenMode(FullscreenSettings settings) override;
+
+	// Returns the last completed 32-bit ARGB frame (owned by this renderer).
+	// Used by the headless/JNI bindings to read frames without a window.
+	const uint32_t* GetFrameBuffer(uint32_t& width, uint32_t& height) const
+	{
+		width = _frameWidth;
+		height = _frameHeight;
+		return _textureBuffer[1];
+	}
 };

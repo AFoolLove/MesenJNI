@@ -40,6 +40,7 @@ unique_ptr<IKeyManager> _keyManager;
 unique_ptr<IMouseManager> _mouseManager;
 unique_ptr<Emulator> _emu(new Emulator());
 bool _softwareRenderer = false;
+SoftwareRenderer* _softwareRendererInstance = nullptr;
 
 static void* _windowHandle = nullptr;
 static void* _viewerHandle = nullptr;
@@ -62,7 +63,8 @@ struct InteropRomInfo
 IRenderingDevice* InitRenderer()
 {
 	if(_softwareRenderer) {
-		return new SoftwareRenderer(_emu.get());
+		_softwareRendererInstance = new SoftwareRenderer(_emu.get());
+		return _softwareRendererInstance;
 	} else {
 #ifdef _WIN32
 		return new Renderer(_emu.get(), (HWND)_viewerHandle);
@@ -109,28 +111,30 @@ extern "C"
 	DllExport void __stdcall InitializeEmu(const char* homeFolder, void* windowHandle, void* viewerHandle, bool softwareRenderer, bool noAudio, bool noVideo, bool noInput)
 	{
 		FolderUtilities::SetHomeFolder(homeFolder);
+		_windowHandle = windowHandle;
+		_viewerHandle = viewerHandle;
+		_softwareRenderer = softwareRenderer;
 
-		if(windowHandle != nullptr && viewerHandle != nullptr) {
-			_windowHandle = windowHandle;
-			_viewerHandle = viewerHandle;
-			_softwareRenderer = softwareRenderer;
+		// Set up audio/video when a window/viewer is provided, or when the
+		// software renderer is requested (headless mode produces frames without
+		// a window). The flags map to their matching callback directly.
+		if((windowHandle != nullptr && viewerHandle != nullptr) || softwareRenderer) {
+			_emu->SetAudioVideoInitCallback(noAudio ? nullptr : InitSoundManager, noVideo ? nullptr : InitRenderer);
+		}
 
-			_emu->SetAudioVideoInitCallback(noVideo ? nullptr : InitSoundManager, noAudio ? nullptr : InitRenderer);
-
-			if(!noInput) {
+		if(!noInput && windowHandle != nullptr) {
 #ifdef _WIN32
-				_keyManager.reset(new WindowsKeyManager(_emu.get(), (HWND)_windowHandle));
-				_mouseManager.reset(new WindowsMouseManager());
+			_keyManager.reset(new WindowsKeyManager(_emu.get(), (HWND)_windowHandle));
+			_mouseManager.reset(new WindowsMouseManager());
 #elif __APPLE__
-				_keyManager.reset(new MacOSKeyManager(_emu.get()));
-				_mouseManager.reset(new MacOSMouseManager());
+			_keyManager.reset(new MacOSKeyManager(_emu.get()));
+			_mouseManager.reset(new MacOSMouseManager());
 #else
-				_keyManager.reset(new LinuxKeyManager(_emu.get()));
-				_mouseManager.reset(new LinuxMouseManager(_windowHandle));
+			_keyManager.reset(new LinuxKeyManager(_emu.get()));
+			_mouseManager.reset(new LinuxMouseManager(_windowHandle));
 #endif
 
-				KeyManager::RegisterKeyManager(_keyManager.get());
-			}
+			KeyManager::RegisterKeyManager(_keyManager.get());
 		}
 	}
 
@@ -288,6 +292,17 @@ extern "C"
 			return _emu->GetVideoDecoder()->GetBaseFrameInfo(true);
 		}
 		return { 256, 240 };
+	}
+
+	DllExport void __stdcall GetFrameBuffer(uint32_t& width, uint32_t& height, uint32_t*& buffer)
+	{
+		if(_softwareRendererInstance) {
+			buffer = (uint32_t*)_softwareRendererInstance->GetFrameBuffer(width, height);
+		} else {
+			width = 0;
+			height = 0;
+			buffer = nullptr;
+		}
 	}
 
 	DllExport uint32_t __stdcall GetGameMemorySize(MemoryType type)

@@ -181,3 +181,39 @@ else()
         target_link_libraries(MesenCore PRIVATE stdc++fs)
     endif()
 endif()
+
+# ---------------------------------------------------------------------------
+# JNI bindings (MesenJNI)
+# ---------------------------------------------------------------------------
+option(MESEN_BUILD_JNI "Build the JNI bindings (requires a JDK)" ON)
+
+if(MESEN_BUILD_JNI)
+    find_package(JNI)
+
+    if(JNI_FOUND)
+        add_library(MesenJNI SHARED
+            "${PROJECT_SOURCE_DIR}/jni/MesenJni.cpp")
+
+        target_include_directories(MesenJNI PRIVATE
+            "${PROJECT_SOURCE_DIR}"
+            "${PROJECT_SOURCE_DIR}/Core"
+            "${PROJECT_SOURCE_DIR}/Utilities"
+            "${PROJECT_SOURCE_DIR}/jni"
+            ${JNI_INCLUDE_DIRS})
+
+        # MesenJNI links the core and calls its exported C API.
+        target_link_libraries(MesenJNI PRIVATE MesenCore ${JNI_LIBRARIES})
+
+        if(MSVC)
+            target_compile_definitions(MesenJNI PRIVATE
+                WIN32
+                NOMINMAX
+                _CRT_SECURE_NO_WARNINGS)
+            target_compile_options(MesenJNI PRIVATE /MP)
+            set_property(TARGET MesenJNI PROPERTY
+                MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+        endif()
+    else()
+        message(STATUS "JNI not found - skipping MesenJNI target")
+    endif()
+endif()
