@@ -60,6 +60,8 @@ public class SwingPreview
     private boolean audioEnabled = true;
     private String audioStatus = "音频: 未初始化";
     private long totalSamplesRead = 0;
+    private int audioPeak = 0;
+    private boolean audioDebugPrinted = false;
 
     public static void main(String[] args)
     {
@@ -181,8 +183,8 @@ public class SwingPreview
             ? (MesenCore.isPaused() ? "已暂停" : "运行中")
             : "已停止";
         statusLabel.setText(String.format(
-            "%s | %dx%d | 停止码: %d | %s | 已读样本: %d",
-            state, frameWidth, frameHeight, MesenCore.getStopCode(), audioStatus, totalSamplesRead));
+            "%s | %dx%d | 停止码: %d | %s | 样本: %d | 峰值: %d",
+            state, frameWidth, frameHeight, MesenCore.getStopCode(), audioStatus, totalSamplesRead, audioPeak));
     }
 
     private void togglePause()
@@ -252,6 +254,27 @@ public class SwingPreview
             return;
         }
         totalSamplesRead += n;
+
+        // 计算峰值，用于判断读到的样本是真实声音还是静音
+        int peak = 0;
+        for(int i = 0; i < n; i++) {
+            int s = samples[i] < 0 ? -samples[i] : samples[i];
+            if(s > peak) {
+                peak = s;
+            }
+        }
+        if(peak > audioPeak) {
+            audioPeak = peak;
+        }
+
+        if(!audioDebugPrinted && n >= 20) {
+            StringBuilder sb = new StringBuilder("[音频] 前10样本: ");
+            for(int i = 0; i < 10; i++) {
+                sb.append(samples[i]).append(' ');
+            }
+            System.out.println(sb);
+            audioDebugPrinted = true;
+        }
 
         // 转成小端字节序写入 SourceDataLine
         byte[] bytes = new byte[n * 2];
