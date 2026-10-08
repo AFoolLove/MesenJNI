@@ -58,6 +58,8 @@ public class SwingPreview
     private SourceDataLine audioLine;
     private AudioFormat audioFormat;
     private boolean audioEnabled = true;
+    private String audioStatus = "音频: 未初始化";
+    private long totalSamplesRead = 0;
 
     public static void main(String[] args)
     {
@@ -179,8 +181,8 @@ public class SwingPreview
             ? (MesenCore.isPaused() ? "已暂停" : "运行中")
             : "已停止";
         statusLabel.setText(String.format(
-            "%s | %dx%d | 停止码: %d",
-            state, frameWidth, frameHeight, MesenCore.getStopCode()));
+            "%s | %dx%d | 停止码: %d | %s | 已读样本: %d",
+            state, frameWidth, frameHeight, MesenCore.getStopCode(), audioStatus, totalSamplesRead));
     }
 
     private void togglePause()
@@ -230,10 +232,12 @@ public class SwingPreview
             audioLine = (SourceDataLine)AudioSystem.getLine(info);
             audioLine.open(audioFormat, rate * 4); // 约 1 秒缓冲（字节）
             audioLine.start();
+            audioStatus = "音频 " + rate + "Hz 已开启";
         } catch(Exception e) {
-            System.err.println("无法打开音频设备: " + e.getMessage());
             audioLine = null;
+            audioStatus = "音频不可用: " + e.getMessage();
         }
+        System.out.println("[音频] " + audioStatus);
     }
 
     private void pumpAudio()
@@ -247,6 +251,7 @@ public class SwingPreview
         if(n <= 0) {
             return;
         }
+        totalSamplesRead += n;
 
         // 转成小端字节序写入 SourceDataLine
         byte[] bytes = new byte[n * 2];
