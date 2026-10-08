@@ -316,9 +316,8 @@ extern "C"
 
 	DllExport uint32_t __stdcall GetAudioSampleRate()
 	{
-		if(_headlessAudioDevice) {
-			return _headlessAudioDevice->GetSampleRate();
-		}
+		// The configured sample rate is the source of truth (the capture device
+		// only mirrors it once audio starts flowing).
 		return _emu->GetSettings()->GetAudioConfig().SampleRate;
 	}
 

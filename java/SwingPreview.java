@@ -1,5 +1,6 @@
 import com.mesen.MesenCore;
 import com.mesen.Mesen;
+import com.mesen.MesenConfig;
 import com.mesen.RomInfo;
 
 import javax.swing.JButton;
@@ -28,6 +29,8 @@ import javax.sound.sampled.DataLine;
 import javax.sound.sampled.SourceDataLine;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 
 /**
  * 实时预览 MesenCore.copyFrameBuffer() 生成帧画面的 Swing 示例。
@@ -63,6 +66,9 @@ public class SwingPreview
     private int audioPeak = 0;
     private boolean audioDebugPrinted = false;
 
+    private MesenConfig config;
+    private Path configFile;
+
     public static void main(String[] args)
     {
         String romPath = args.length > 0 ? args[0] : null;
@@ -75,6 +81,12 @@ public class SwingPreview
         MesenCore.initDll();
         String homeFolder = new File("./preview-home").getAbsolutePath();
         MesenCore.initializeEmu(homeFolder, /*softwareRenderer*/true, /*noAudio*/false, /*noVideo*/false, /*noInput*/true);
+
+        // 加载并应用配置（不存在则用默认值，含默认音量 100）
+        configFile = Path.of(homeFolder, "mesen.properties");
+        config = MesenConfig.load(configFile);
+        config.apply();
+
         startAudio();
 
         // 2) 构建 UI
@@ -120,12 +132,24 @@ public class SwingPreview
         JCheckBox audioToggle = new JCheckBox("音频", true);
         audioToggle.addActionListener(e -> audioEnabled = audioToggle.isSelected());
 
+        JButton saveConfigButton = new JButton("保存配置");
+        saveConfigButton.addActionListener(e -> saveConfig());
+
+        JButton defaultsButton = new JButton("恢复默认");
+        defaultsButton.addActionListener(e -> {
+            config.initializeDefaults();
+            config.apply();
+            statusLabel.setText("已恢复默认配置（含默认音量 100）");
+        });
+
         JPanel controls = new JPanel(new FlowLayout());
         controls.add(loadButton);
         controls.add(pauseResumeButton);
         controls.add(screenshotButton);
         controls.add(fastForward);
         controls.add(audioToggle);
+        controls.add(saveConfigButton);
+        controls.add(defaultsButton);
 
         JFrame frame = new JFrame("Mesen 实时预览 (Swing)");
         frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
@@ -285,8 +309,19 @@ public class SwingPreview
         audioLine.write(bytes, 0, bytes.length);
     }
 
+    private void saveConfig()
+    {
+        try {
+            config.save(configFile);
+            statusLabel.setText("配置已保存: " + configFile);
+        } catch(IOException e) {
+            statusLabel.setText("配置保存失败: " + e.getMessage());
+        }
+    }
+
     private void shutdown()
     {
+        saveConfig(); // 退出时自动保存配置
         if(audioLine != null) {
             audioLine.stop();
             audioLine.close();
