@@ -22,6 +22,11 @@ import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.DataLine;
+import javax.sound.sampled.SourceDataLine;
+
 import java.io.File;
 
 /**
@@ -36,7 +41,8 @@ import java.io.File;
  * 要点:
  *   1. 帧是 32-bit ARGB，对应 BufferedImage.TYPE_INT_ARGB。
  *   2. 直接取 BufferedImage 底层 int[] 传给 copyFrameBuffer，实现零拷贝。
- *   3. 用 60fps 的 Swing Timer 驱动拷贝 + repaint（repaint 必须在 EDT）。
+ *   3. 音频是双声道交错 int16 PCM，用 readAudioSamples 读回后写入 SourceDataLine 播放。
+ *   4. 用 60fps 的 Swing Timer 驱动拷贝 + repaint + 音频推送（repaint 必须在 EDT）。
  */
 public class SwingPreview
 {
@@ -49,6 +55,10 @@ public class SwingPreview
     private int frameWidth;
     private int frameHeight;
 
+    private SourceDataLine audioLine;
+    private AudioFormat audioFormat;
+    private boolean audioEnabled = true;
+
     public static void main(String[] args)
     {
         String romPath = args.length > 0 ? args[0] : null;
@@ -57,10 +67,11 @@ public class SwingPreview
 
     public SwingPreview(String romPath)
     {
-        // 1) 初始化无头模拟器：软件渲染、无音频、无 OS 输入
+        // 1) 初始化无头模拟器：软件渲染 + 音频捕获、无 OS 输入
         MesenCore.initDll();
         String homeFolder = new File("./preview-home").getAbsolutePath();
-        MesenCore.initializeEmu(homeFolder, /*softwareRenderer*/true, /*noAudio*/true, /*noVideo*/false, /*noInput*/true);
+        MesenCore.initializeEmu(homeFolder, /*softwareRenderer*/true, /*noAudio*/false, /*noVideo*/false, /*noInput*/true);
+        startAudio();
 
         // 2) 构建 UI
         videoPanel = new JPanel()
@@ -102,11 +113,15 @@ public class SwingPreview
         fastForward.addActionListener(e ->
             MesenCore.setEmulationFlag(Mesen.FLAG_MAXIMUM_SPEED, fastForward.isSelected()));
 
+        JCheckBox audioToggle = new JCheckBox("音频", true);
+        audioToggle.addActionListener(e -> audioEnabled = audioToggle.isSelected());
+
         JPanel controls = new JPanel(new FlowLayout());
         controls.add(loadButton);
         controls.add(pauseResumeButton);
         controls.add(screenshotButton);
         controls.add(fastForward);
+        controls.add(audioToggle);
 
         JFrame frame = new JFrame("Mesen 实时预览 (Swing)");
         frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
@@ -158,6 +173,7 @@ public class SwingPreview
         // 零拷贝：直接写入 BufferedImage 底层数组
         MesenCore.copyFrameBuffer(pixels);
         videoPanel.repaint();
+        pumpAudio();
 
         String state = MesenCore.isRunning()
             ? (MesenCore.isPaused() ? "已暂停" : "运行中")
@@ -204,8 +220,49 @@ public class SwingPreview
         MesenCore.resume();
     }
 
+    private void startAudio()
+    {
+        try {
+            int rate = MesenCore.getAudioSampleRate();
+            // 无头音频为双声道交错 int16 PCM
+            audioFormat = new AudioFormat(rate, 16, 2, true, false);
+            DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
+            audioLine = (SourceDataLine)AudioSystem.getLine(info);
+            audioLine.open(audioFormat, rate * 4); // 约 1 秒缓冲（字节）
+            audioLine.start();
+        } catch(Exception e) {
+            System.err.println("无法打开音频设备: " + e.getMessage());
+            audioLine = null;
+        }
+    }
+
+    private void pumpAudio()
+    {
+        if(audioLine == null || !audioEnabled) {
+            return;
+        }
+
+        short[] samples = new short[4096];
+        int n = MesenCore.readAudioSamples(samples);
+        if(n <= 0) {
+            return;
+        }
+
+        // 转成小端字节序写入 SourceDataLine
+        byte[] bytes = new byte[n * 2];
+        for(int i = 0; i < n; i++) {
+            bytes[i * 2] = (byte)(samples[i] & 0xFF);
+            bytes[i * 2 + 1] = (byte)((samples[i] >> 8) & 0xFF);
+        }
+        audioLine.write(bytes, 0, bytes.length);
+    }
+
     private void shutdown()
     {
+        if(audioLine != null) {
+            audioLine.stop();
+            audioLine.close();
+        }
         MesenCore.stop();
         MesenCore.release();
         System.exit(0);
