@@ -1,6 +1,7 @@
 #include "Common.h"
 #include "Core/Shared/Emulator.h"
 #include "Core/Shared/EmuSettings.h"
+#include "Core/Shared/Audio/SoundMixer.h"
 #include "Core/Shared/Video/VideoDecoder.h"
 #include "Core/Shared/Video/VideoRenderer.h"
 #include "Core/Shared/SystemActionManager.h"
@@ -35,12 +36,14 @@
 #endif
 
 #include "Shared/Video/SoftwareRenderer.h"
+#include "HeadlessAudioDevice.h"
 
 unique_ptr<IKeyManager> _keyManager;
 unique_ptr<IMouseManager> _mouseManager;
 unique_ptr<Emulator> _emu(new Emulator());
 bool _softwareRenderer = false;
 SoftwareRenderer* _softwareRendererInstance = nullptr;
+HeadlessAudioDevice* _headlessAudioDevice = nullptr;
 
 static void* _windowHandle = nullptr;
 static void* _viewerHandle = nullptr;
@@ -78,6 +81,12 @@ IRenderingDevice* InitRenderer()
 
 IAudioDevice* InitSoundManager()
 {
+	if(_windowHandle == nullptr) {
+		// Headless mode: capture audio into a buffer instead of playing it.
+		_headlessAudioDevice = new HeadlessAudioDevice();
+		_emu->GetSoundMixer()->RegisterAudioDevice(_headlessAudioDevice);
+		return _headlessAudioDevice;
+	}
 #ifdef _WIN32
 	return SoundManager::Create(_emu.get(), (HWND)_windowHandle);
 #else
@@ -303,6 +312,22 @@ extern "C"
 			height = 0;
 			buffer = nullptr;
 		}
+	}
+
+	DllExport uint32_t __stdcall GetAudioSampleRate()
+	{
+		if(_headlessAudioDevice) {
+			return _headlessAudioDevice->GetSampleRate();
+		}
+		return _emu->GetSettings()->GetAudioConfig().SampleRate;
+	}
+
+	DllExport uint32_t __stdcall ReadAudioSamples(int16_t* outBuffer, uint32_t maxSamples)
+	{
+		if(_headlessAudioDevice) {
+			return _headlessAudioDevice->ReadSamples(outBuffer, maxSamples);
+		}
+		return 0;
 	}
 
 	DllExport uint32_t __stdcall GetGameMemorySize(MemoryType type)

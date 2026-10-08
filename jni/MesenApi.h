@@ -61,6 +61,8 @@ MESEN_EXTERN
 	double MESEN_CALL GetAspectRatio();
 	FrameInfo MESEN_CALL GetBaseScreenSize();
 	void MESEN_CALL GetFrameBuffer(uint32_t& width, uint32_t& height, uint32_t*& buffer);
+	uint32_t MESEN_CALL GetAudioSampleRate();
+	uint32_t MESEN_CALL ReadAudioSamples(int16_t* outBuffer, uint32_t maxSamples);
 	uint32_t MESEN_CALL GetGameMemorySize(MemoryType type);
 	void MESEN_CALL GetRomHash(HashType hashType, char* outBuffer, uint32_t maxLength);
 	void MESEN_CALL WriteLogEntry(char* message);

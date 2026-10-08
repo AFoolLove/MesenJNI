@@ -617,4 +617,28 @@ JNIEXPORT void JNICALL Java_com_mesen_MesenCore_copyFrameBuffer(JNIEnv* env, jcl
 	}
 }
 
+// --- Captured audio -------------------------------------------------------
+
+JNIEXPORT jint JNICALL Java_com_mesen_MesenCore_getAudioSampleRate(JNIEnv*, jclass)
+{
+	return (jint)GetAudioSampleRate();
+}
+
+JNIEXPORT jint JNICALL Java_com_mesen_MesenCore_readAudioSamples(JNIEnv* env, jclass, jshortArray out)
+{
+	jsize capacity = env->GetArrayLength(out);
+	if(capacity <= 0) {
+		return 0;
+	}
+
+	jshort* dest = env->GetShortArrayElements(out, nullptr);
+	if(!dest) {
+		return 0;
+	}
+
+	uint32_t count = ReadAudioSamples((int16_t*)dest, (uint32_t)capacity);
+	env->ReleaseShortArrayElements(out, dest, 0);
+	return (jint)count;
+}
+
 } // extern "C"
