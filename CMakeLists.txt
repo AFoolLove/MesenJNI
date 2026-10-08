@@ -74,6 +74,11 @@ file(GLOB_RECURSE MESEN_SEVENZIP_SOURCES CONFIGURE_DEPENDS
 file(GLOB_RECURSE MESEN_LUA_SOURCES CONFIGURE_DEPENDS
     "${PROJECT_SOURCE_DIR}/Lua/*.c")
 
+if(WIN32)
+    # Unix-domain socket sources are not available on Windows.
+    list(FILTER MESEN_LUA_SOURCES EXCLUDE REGEX "/(serial|unix|unixdgram|unixstream)\\.c$")
+endif()
+
 file(GLOB_RECURSE MESEN_INTEROP_SOURCES CONFIGURE_DEPENDS
     "${PROJECT_SOURCE_DIR}/InteropDLL/*.cpp")
 
@@ -119,6 +124,8 @@ target_include_directories(MesenCore PRIVATE
 if(MSVC)
     target_compile_definitions(MesenCore PRIVATE
         WIN32
+        UNICODE
+        _UNICODE
         NOMINMAX
         _CRT_SECURE_NO_WARNINGS
         _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
