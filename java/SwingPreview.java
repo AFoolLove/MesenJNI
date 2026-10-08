@@ -1,0 +1,213 @@
+import com.mesen.MesenCore;
+import com.mesen.Mesen;
+import com.mesen.RomInfo;
+
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Graphics;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
+
+import java.io.File;
+
+/**
+ * 实时预览 MesenCore.copyFrameBuffer() 生成帧画面的 Swing 示例。
+ *
+ * 用法:
+ *   javac -encoding UTF-8 -cp build/classes -d build/classes java/SwingPreview.java
+ *   java -Djava.library.path=bin/win-x64/Release -cp build/classes SwingPreview [rom 路径]
+ *
+ * 不带 ROM 路径时会弹出文件选择框。
+ *
+ * 要点:
+ *   1. 帧是 32-bit ARGB，对应 BufferedImage.TYPE_INT_ARGB。
+ *   2. 直接取 BufferedImage 底层 int[] 传给 copyFrameBuffer，实现零拷贝。
+ *   3. 用 60fps 的 Swing Timer 驱动拷贝 + repaint（repaint 必须在 EDT）。
+ */
+public class SwingPreview
+{
+    private final JPanel videoPanel;
+    private final JLabel statusLabel;
+    private final JButton pauseResumeButton;
+
+    private BufferedImage image;
+    private int[] pixels;
+    private int frameWidth;
+    private int frameHeight;
+
+    public static void main(String[] args)
+    {
+        String romPath = args.length > 0 ? args[0] : null;
+        SwingUtilities.invokeLater(() -> new SwingPreview(romPath));
+    }
+
+    public SwingPreview(String romPath)
+    {
+        // 1) 初始化无头模拟器：软件渲染、无音频、无 OS 输入
+        MesenCore.initDll();
+        String homeFolder = new File("./preview-home").getAbsolutePath();
+        MesenCore.initializeEmu(homeFolder, /*softwareRenderer*/true, /*noAudio*/true, /*noVideo*/false, /*noInput*/true);
+
+        // 2) 构建 UI
+        videoPanel = new JPanel()
+        {
+            @Override
+            protected void paintComponent(Graphics g)
+            {
+                super.paintComponent(g);
+                g.setColor(Color.BLACK);
+                g.fillRect(0, 0, getWidth(), getHeight());
+                if(image == null) {
+                    return;
+                }
+                // 等比缩放居中，避免拉伸变形
+                double scale = Math.min((double)getWidth() / frameWidth, (double)getHeight() / frameHeight);
+                int dw = (int)(frameWidth * scale);
+                int dh = (int)(frameHeight * scale);
+                int x = (getWidth() - dw) / 2;
+                int y = (getHeight() - dh) / 2;
+                g.drawImage(image, x, y, dw, dh, null);
+            }
+        };
+        videoPanel.setPreferredSize(new Dimension(512, 480));
+        videoPanel.setBackground(Color.BLACK);
+
+        statusLabel = new JLabel("未加载 ROM");
+
+        pauseResumeButton = new JButton("暂停");
+        pauseResumeButton.setEnabled(false);
+        pauseResumeButton.addActionListener(e -> togglePause());
+
+        JButton loadButton = new JButton("加载 ROM...");
+        loadButton.addActionListener(e -> chooseRom());
+
+        JButton screenshotButton = new JButton("截图");
+        screenshotButton.addActionListener(e -> MesenCore.takeScreenshot());
+
+        JCheckBox fastForward = new JCheckBox("加速 (MaximumSpeed)");
+        fastForward.addActionListener(e ->
+            MesenCore.setEmulationFlag(Mesen.FLAG_MAXIMUM_SPEED, fastForward.isSelected()));
+
+        JPanel controls = new JPanel(new FlowLayout());
+        controls.add(loadButton);
+        controls.add(pauseResumeButton);
+        controls.add(screenshotButton);
+        controls.add(fastForward);
+
+        JFrame frame = new JFrame("Mesen 实时预览 (Swing)");
+        frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        frame.setLayout(new BorderLayout());
+        frame.add(statusLabel, BorderLayout.NORTH);
+        frame.add(videoPanel, BorderLayout.CENTER);
+        frame.add(controls, BorderLayout.SOUTH);
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+
+        frame.addWindowListener(new WindowAdapter()
+        {
+            @Override
+            public void windowClosing(WindowEvent e)
+            {
+                shutdown();
+            }
+        });
+
+        // 3) 渲染循环：约 60fps 拷贝最新帧并重绘
+        Timer timer = new Timer(1000 / 60, e -> renderFrame());
+        timer.start();
+
+        // 4) 加载 ROM（命令行参数优先，否则弹文件选择框）
+        if(romPath != null) {
+            loadRom(romPath);
+        } else {
+            chooseRom();
+        }
+    }
+
+    private void renderFrame()
+    {
+        int w = MesenCore.getFrameWidth();
+        int h = MesenCore.getFrameHeight();
+        if(w <= 0 || h <= 0) {
+            return;
+        }
+
+        // 分辨率变化时重建缓冲区（换 ROM / 不同机种）
+        if(image == null || w != frameWidth || h != frameHeight) {
+            frameWidth = w;
+            frameHeight = h;
+            image = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+            pixels = ((DataBufferInt)image.getRaster().getDataBuffer()).getData();
+        }
+
+        // 零拷贝：直接写入 BufferedImage 底层数组
+        MesenCore.copyFrameBuffer(pixels);
+        videoPanel.repaint();
+
+        String state = MesenCore.isRunning()
+            ? (MesenCore.isPaused() ? "已暂停" : "运行中")
+            : "已停止";
+        statusLabel.setText(String.format(
+            "%s | %dx%d | 停止码: %d",
+            state, frameWidth, frameHeight, MesenCore.getStopCode()));
+    }
+
+    private void togglePause()
+    {
+        if(MesenCore.isPaused()) {
+            MesenCore.resume();
+            pauseResumeButton.setText("暂停");
+        } else {
+            MesenCore.pause();
+            pauseResumeButton.setText("继续");
+        }
+    }
+
+    private void chooseRom()
+    {
+        JFileChooser chooser = new JFileChooser();
+        if(chooser.showOpenDialog(videoPanel) == JFileChooser.APPROVE_OPTION) {
+            loadRom(chooser.getSelectedFile().getAbsolutePath());
+        }
+    }
+
+    private void loadRom(String path)
+    {
+        if(!MesenCore.loadRom(path, null)) {
+            JOptionPane.showMessageDialog(
+                videoPanel, "加载 ROM 失败: " + path, "错误", JOptionPane.ERROR_MESSAGE);
+            statusLabel.setText("加载失败");
+            return;
+        }
+
+        pauseResumeButton.setEnabled(true);
+        pauseResumeButton.setText("暂停");
+
+        RomInfo info = MesenCore.getRomInfo();
+        statusLabel.setText(String.format("已加载: %s (机种 %d)", info.romPath, info.consoleType));
+
+        MesenCore.resume();
+    }
+
+    private void shutdown()
+    {
+        MesenCore.stop();
+        MesenCore.release();
+        System.exit(0);
+    }
+}
