@@ -172,4 +172,103 @@ public final class Mesen
     public static final int MEM_WS_PORT = 91;
 
     public static final int MEM_NONE = 92;
+
+    // --- Controller buttons (KeyMapping field ids) -------------------------
+    public static final int BUTTON_A = 0;
+    public static final int BUTTON_B = 1;
+    public static final int BUTTON_X = 2;
+    public static final int BUTTON_Y = 3;
+    public static final int BUTTON_L = 4;
+    public static final int BUTTON_R = 5;
+    public static final int BUTTON_UP = 6;
+    public static final int BUTTON_DOWN = 7;
+    public static final int BUTTON_LEFT = 8;
+    public static final int BUTTON_RIGHT = 9;
+    public static final int BUTTON_START = 10;
+    public static final int BUTTON_SELECT = 11;
+    public static final int BUTTON_U = 12;
+    public static final int BUTTON_D = 13;
+    public static final int BUTTON_TURBO_A = 14;
+    public static final int BUTTON_TURBO_B = 15;
+    public static final int BUTTON_TURBO_X = 16;
+    public static final int BUTTON_TURBO_Y = 17;
+    public static final int BUTTON_TURBO_L = 18;
+    public static final int BUTTON_TURBO_R = 19;
+    public static final int BUTTON_TURBO_SELECT = 20;
+    public static final int BUTTON_TURBO_START = 21;
+
+    // --- ControllerType (subset, Core/Shared/SettingTypes.h) ---------------
+    public static final int CONTROLLER_NONE = 0;
+    public static final int CONTROLLER_SNES = 1;
+    public static final int CONTROLLER_SNES_MOUSE = 2;
+    public static final int CONTROLLER_SUPER_SCOPE = 3;
+    public static final int CONTROLLER_MULTITAP = 4;
+    public static final int CONTROLLER_NES = 10;
+    public static final int CONTROLLER_FAMICOM = 11;
+    public static final int CONTROLLER_NES_ZAPPER = 13;
+    public static final int CONTROLLER_FOUR_SCORE = 19;
+    public static final int CONTROLLER_GAMEBOY = 42;
+    public static final int CONTROLLER_PCE = 44;
+    public static final int CONTROLLER_PCE_TURBO_TAP = 45;
+    public static final int CONTROLLER_SMS = 47;
+    public static final int CONTROLLER_GBA = 50;
+    public static final int CONTROLLER_WS = 51;
+    public static final int CONTROLLER_WS_VERTICAL = 52;
+
+    // --- VideoFilterType (Core/Shared/SettingTypes.h) ----------------------
+    public static final int VIDEO_FILTER_NONE = 0;
+    public static final int VIDEO_FILTER_NTSC_BLARGG = 1;
+    public static final int VIDEO_FILTER_NTSC_BISQWIT = 2;
+    public static final int VIDEO_FILTER_LCD_GRID = 3;
+    public static final int VIDEO_FILTER_XBRZ_2X = 4;
+    public static final int VIDEO_FILTER_XBRZ_3X = 5;
+    public static final int VIDEO_FILTER_XBRZ_4X = 6;
+    public static final int VIDEO_FILTER_XBRZ_5X = 7;
+    public static final int VIDEO_FILTER_XBRZ_6X = 8;
+    public static final int VIDEO_FILTER_HQ_2X = 9;
+    public static final int VIDEO_FILTER_HQ_3X = 10;
+    public static final int VIDEO_FILTER_HQ_4X = 11;
+    public static final int VIDEO_FILTER_SCALE_2X = 12;
+    public static final int VIDEO_FILTER_SCALE_3X = 13;
+    public static final int VIDEO_FILTER_SCALE_4X = 14;
+    public static final int VIDEO_FILTER_2XSAI = 15;
+    public static final int VIDEO_FILTER_SUPER_2XSAI = 16;
+    public static final int VIDEO_FILTER_SUPER_EAGLE = 17;
+    public static final int VIDEO_FILTER_PRESCALE_2X = 18;
+    public static final int VIDEO_FILTER_PRESCALE_3X = 19;
+    public static final int VIDEO_FILTER_PRESCALE_4X = 20;
+    public static final int VIDEO_FILTER_PRESCALE_6X = 21;
+    public static final int VIDEO_FILTER_PRESCALE_8X = 22;
+    public static final int VIDEO_FILTER_PRESCALE_10X = 23;
+
+    // --- VideoAspectRatio (Core/Shared/SettingTypes.h) ---------------------
+    public static final int ASPECT_RATIO_NO_STRETCHING = 0;
+    public static final int ASPECT_RATIO_AUTO = 1;
+    public static final int ASPECT_RATIO_NTSC = 2;
+    public static final int ASPECT_RATIO_PAL = 3;
+    public static final int ASPECT_RATIO_STANDARD = 4;
+    public static final int ASPECT_RATIO_WIDESCREEN = 5;
+    public static final int ASPECT_RATIO_CUSTOM = 6;
+
+    // --- ConsoleRegion (Core/Shared/SettingTypes.h) ------------------------
+    public static final int REGION_AUTO = 0;
+    public static final int REGION_NTSC = 1;
+    public static final int REGION_PAL = 2;
+    public static final int REGION_DENDY = 3;
+    public static final int REGION_NTSC_JAPAN = 4;
+
+    // --- DebuggerFlags (Core/Shared/SettingTypes.h, bit flags) -------------
+    public static final int DEBUGGER_FLAG_SNES = 1 << 0;
+    public static final int DEBUGGER_FLAG_SPC = 1 << 1;
+    public static final int DEBUGGER_FLAG_SA1 = 1 << 2;
+    public static final int DEBUGGER_FLAG_GSU = 1 << 3;
+    public static final int DEBUGGER_FLAG_NEC_DSP = 1 << 4;
+    public static final int DEBUGGER_FLAG_CX4 = 1 << 5;
+    public static final int DEBUGGER_FLAG_ST018 = 1 << 6;
+    public static final int DEBUGGER_FLAG_GB = 1 << 7;
+    public static final int DEBUGGER_FLAG_NES = 1 << 8;
+    public static final int DEBUGGER_FLAG_PCE = 1 << 9;
+    public static final int DEBUGGER_FLAG_SMS = 1 << 10;
+    public static final int DEBUGGER_FLAG_GBA = 1 << 11;
+    public static final int DEBUGGER_FLAG_WS = 1 << 12;
 }

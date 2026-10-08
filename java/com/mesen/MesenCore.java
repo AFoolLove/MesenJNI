@@ -90,6 +90,23 @@ public final class MesenCore
     // --- Config ------------------------------------------------------------
 
     public static native void setEmulationFlag(int flag, boolean enabled);
+    public static native void setDebuggerFlag(int flag, boolean enabled);
+
+    /** Sets the emulation config (speed / run-ahead). */
+    public static native void setEmulationConfig(int emulationSpeed, int turboSpeed, int rewindSpeed, int runAheadFrames);
+
+    /** Sets key video options; pass a value you don't want to change as-is. */
+    public static native void setVideoConfig(int videoFilter, int aspectRatio, double customAspectRatio, int screenRotation);
+
+    /** Sets key audio options. */
+    public static native void setAudioConfig(boolean enableAudio, int masterVolume, int sampleRate, int audioLatency);
+
+    /** Sets the controller type for a console port (see Mesen.CONTROLLER_*). */
+    public static native void setControllerType(int consoleType, int port, int controllerType);
+
+    /** Maps a controller button to a key scan code (see Mesen.BUTTON_*). */
+    public static native void setControllerKey(int consoleType, int port, int button, int keyCode);
+
     public static native void setRendererSize(int width, int height);
     public static native double getAspectRatio();
     public static native FrameInfo getBaseScreenSize();

@@ -7,6 +7,7 @@
 
 #include <jni.h>
 #include <cstring>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -32,6 +33,92 @@ namespace
 	jstring Utf8ToJString(JNIEnv* env, const char* str)
 	{
 		return env->NewStringUTF(str ? str : "");
+	}
+
+	// Returns a pointer to the KeyMapping field identified by a button id
+	// (see Mesen.BUTTON_* constants), or nullptr for an invalid id.
+	uint16_t* GetKeyMappingField(KeyMapping& mapping, int button)
+	{
+		switch(button) {
+			case 0: return &mapping.A;
+			case 1: return &mapping.B;
+			case 2: return &mapping.X;
+			case 3: return &mapping.Y;
+			case 4: return &mapping.L;
+			case 5: return &mapping.R;
+			case 6: return &mapping.Up;
+			case 7: return &mapping.Down;
+			case 8: return &mapping.Left;
+			case 9: return &mapping.Right;
+			case 10: return &mapping.Start;
+			case 11: return &mapping.Select;
+			case 12: return &mapping.U;
+			case 13: return &mapping.D;
+			case 14: return &mapping.TurboA;
+			case 15: return &mapping.TurboB;
+			case 16: return &mapping.TurboX;
+			case 17: return &mapping.TurboY;
+			case 18: return &mapping.TurboL;
+			case 19: return &mapping.TurboR;
+			case 20: return &mapping.TurboSelect;
+			case 21: return &mapping.TurboStart;
+			default: return nullptr;
+		}
+	}
+
+	// Gets a per-console config, applies `fn` to the requested controller port,
+	// and writes the config back. `port` is 0-based.
+	void ApplyControllerConfig(int consoleType, int port, const std::function<void(ControllerConfig&)>& fn)
+	{
+		switch((ConsoleType)consoleType) {
+			case ConsoleType::Snes: {
+				SnesConfig cfg = GetSnesConfig();
+				fn(port == 0 ? cfg.Port1 : cfg.Port2);
+				SetSnesConfig(cfg);
+				break;
+			}
+			case ConsoleType::Gameboy: {
+				GameboyConfig cfg = GetGameboyConfig();
+				fn(port == 0 ? cfg.Controller : cfg.LinkedController);
+				SetGameboyConfig(cfg);
+				break;
+			}
+			case ConsoleType::Nes: {
+				NesConfig cfg = GetNesConfig();
+				ControllerConfig* c = port == 0 ? &cfg.Port1 : (port == 1 ? &cfg.Port2 : &cfg.ExpPort);
+				fn(*c);
+				SetNesConfig(cfg);
+				break;
+			}
+			case ConsoleType::PcEngine: {
+				PcEngineConfig cfg = GetPcEngineConfig();
+				fn(cfg.Port1);
+				SetPcEngineConfig(cfg);
+				break;
+			}
+			case ConsoleType::Sms: {
+				SmsConfig cfg = GetSmsConfig();
+				fn(port == 0 ? cfg.Port1 : cfg.Port2);
+				SetSmsConfig(cfg);
+				break;
+			}
+			case ConsoleType::Gba: {
+				GbaConfig cfg = GetGbaConfig();
+				fn(cfg.Controller);
+				SetGbaConfig(cfg);
+				break;
+			}
+			case ConsoleType::Ws: {
+				WsConfig cfg = GetWsConfig();
+				ControllerConfig* c = port == 0 ? &cfg.ControllerHorizontal
+					: (port == 1 ? &cfg.ControllerVertical : &cfg.ControllerPcv2);
+				fn(*c);
+				SetWsConfig(cfg);
+				break;
+			}
+			default:
+				break;
+		}
 	}
 }
 
@@ -240,6 +327,58 @@ JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setMemoryValues(JNIEnv* env, jcl
 JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setEmulationFlag(JNIEnv*, jclass, jint flag, jboolean enabled)
 {
 	SetEmulationFlag((EmulationFlags)flag, enabled);
+}
+
+JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setDebuggerFlag(JNIEnv*, jclass, jint flag, jboolean enabled)
+{
+	SetDebuggerFlag((DebuggerFlags)flag, enabled);
+}
+
+JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setEmulationConfig(JNIEnv*, jclass, jint emulationSpeed, jint turboSpeed, jint rewindSpeed, jint runAheadFrames)
+{
+	EmulationConfig cfg = GetEmulationConfig();
+	cfg.EmulationSpeed = (uint32_t)emulationSpeed;
+	cfg.TurboSpeed = (uint32_t)turboSpeed;
+	cfg.RewindSpeed = (uint32_t)rewindSpeed;
+	cfg.RunAheadFrames = (uint32_t)runAheadFrames;
+	SetEmulationConfig(cfg);
+}
+
+JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setVideoConfig(JNIEnv*, jclass, jint videoFilter, jint aspectRatio, jdouble customAspectRatio, jint screenRotation)
+{
+	VideoConfig cfg = GetVideoConfig();
+	cfg.VideoFilter = (VideoFilterType)videoFilter;
+	cfg.AspectRatio = (VideoAspectRatio)aspectRatio;
+	cfg.CustomAspectRatio = customAspectRatio;
+	cfg.ScreenRotation = (uint32_t)screenRotation;
+	SetVideoConfig(cfg);
+}
+
+JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setAudioConfig(JNIEnv*, jclass, jboolean enableAudio, jint masterVolume, jint sampleRate, jint audioLatency)
+{
+	AudioConfig cfg = GetAudioConfig();
+	cfg.EnableAudio = enableAudio;
+	cfg.MasterVolume = (uint32_t)masterVolume;
+	cfg.SampleRate = (uint32_t)sampleRate;
+	cfg.AudioLatency = (uint32_t)audioLatency;
+	SetAudioConfig(cfg);
+}
+
+JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setControllerType(JNIEnv*, jclass, jint consoleType, jint port, jint controllerType)
+{
+	ApplyControllerConfig(consoleType, port, [&](ControllerConfig& cfg) {
+		cfg.Type = (ControllerType)controllerType;
+	});
+}
+
+JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setControllerKey(JNIEnv*, jclass, jint consoleType, jint port, jint button, jint keyCode)
+{
+	ApplyControllerConfig(consoleType, port, [&](ControllerConfig& cfg) {
+		uint16_t* field = GetKeyMappingField(cfg.Keys.Mapping1, button);
+		if(field) {
+			*field = (uint16_t)keyCode;
+		}
+	});
 }
 
 JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setRendererSize(JNIEnv*, jclass, jint width, jint height)

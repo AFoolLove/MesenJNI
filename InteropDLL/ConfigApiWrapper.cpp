@@ -106,6 +106,61 @@ extern "C"
 		return _emu->GetSettings()->GetNesConfig();
 	}
 
+	DllExport VideoConfig __stdcall GetVideoConfig()
+	{
+		return _emu->GetSettings()->GetVideoConfig();
+	}
+
+	DllExport AudioConfig __stdcall GetAudioConfig()
+	{
+		return _emu->GetSettings()->GetAudioConfig();
+	}
+
+	DllExport InputConfig __stdcall GetInputConfig()
+	{
+		return _emu->GetSettings()->GetInputConfig();
+	}
+
+	DllExport EmulationConfig __stdcall GetEmulationConfig()
+	{
+		return _emu->GetSettings()->GetEmulationConfig();
+	}
+
+	DllExport SnesConfig __stdcall GetSnesConfig()
+	{
+		return _emu->GetSettings()->GetSnesConfig();
+	}
+
+	DllExport GameboyConfig __stdcall GetGameboyConfig()
+	{
+		return _emu->GetSettings()->GetGameboyConfig();
+	}
+
+	DllExport GbaConfig __stdcall GetGbaConfig()
+	{
+		return _emu->GetSettings()->GetGbaConfig();
+	}
+
+	DllExport PcEngineConfig __stdcall GetPcEngineConfig()
+	{
+		return _emu->GetSettings()->GetPcEngineConfig();
+	}
+
+	DllExport SmsConfig __stdcall GetSmsConfig()
+	{
+		return _emu->GetSettings()->GetSmsConfig();
+	}
+
+	DllExport CvConfig __stdcall GetCvConfig()
+	{
+		return _emu->GetSettings()->GetCvConfig();
+	}
+
+	DllExport WsConfig __stdcall GetWsConfig()
+	{
+		return _emu->GetSettings()->GetWsConfig();
+	}
+
 	DllExport void __stdcall GetAudioDevices(char* outDeviceList, uint32_t maxLength)
 	{
 		shared_ptr<IAudioDevice> soundManager = _emu->GetSoundManager();

@@ -71,7 +71,34 @@ MESEN_EXTERN
 	void MESEN_CALL LoadRecentGame(char* filepath, bool resetGame);
 
 	// --- ConfigApiWrapper ---
+	void MESEN_CALL SetVideoConfig(VideoConfig config);
+	void MESEN_CALL SetAudioConfig(AudioConfig config);
+	void MESEN_CALL SetInputConfig(InputConfig config);
+	void MESEN_CALL SetEmulationConfig(EmulationConfig config);
+	void MESEN_CALL SetGameboyConfig(GameboyConfig config);
+	void MESEN_CALL SetGbaConfig(GbaConfig config);
+	void MESEN_CALL SetPcEngineConfig(PcEngineConfig config);
+	void MESEN_CALL SetNesConfig(NesConfig config);
+	void MESEN_CALL SetSnesConfig(SnesConfig config);
+	void MESEN_CALL SetSmsConfig(SmsConfig config);
+	void MESEN_CALL SetCvConfig(CvConfig config);
+	void MESEN_CALL SetWsConfig(WsConfig config);
+
+	NesConfig MESEN_CALL GetNesConfig();
+	VideoConfig MESEN_CALL GetVideoConfig();
+	AudioConfig MESEN_CALL GetAudioConfig();
+	InputConfig MESEN_CALL GetInputConfig();
+	EmulationConfig MESEN_CALL GetEmulationConfig();
+	SnesConfig MESEN_CALL GetSnesConfig();
+	GameboyConfig MESEN_CALL GetGameboyConfig();
+	GbaConfig MESEN_CALL GetGbaConfig();
+	PcEngineConfig MESEN_CALL GetPcEngineConfig();
+	SmsConfig MESEN_CALL GetSmsConfig();
+	CvConfig MESEN_CALL GetCvConfig();
+	WsConfig MESEN_CALL GetWsConfig();
+
 	void MESEN_CALL SetEmulationFlag(EmulationFlags flag, bool enabled);
+	void MESEN_CALL SetDebuggerFlag(DebuggerFlags flag, bool enabled);
 
 	// --- DebugApiWrapper (memory access subset) ---
 	uint32_t MESEN_CALL GetMemorySize(MemoryType type);
