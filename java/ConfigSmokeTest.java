@@ -22,6 +22,16 @@ public class ConfigSmokeTest
         // Debugger flag
         MesenCore.setDebuggerFlag(Mesen.DEBUGGER_FLAG_NES, false);
 
+        // Palette config
+        MesenCore.setNesFullColorPalette(true);
+        MesenCore.setNesUseCustomVsPalette(true);
+        MesenCore.setNesCustomPalette(new int[512]);
+        MesenCore.setPceCustomPalette(new int[512]);
+        MesenCore.setGameboyPalette(new int[4], new int[4], new int[4]);
+        MesenCore.setSmsUseSgPalette(true);
+        MesenCore.setGbaAdjustColors(false);
+        MesenCore.setWsLcdAdjustColors(true);
+
         System.out.println("CONFIG TEST PASSED");
         MesenCore.release();
     }

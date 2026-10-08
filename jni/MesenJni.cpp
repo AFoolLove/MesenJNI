@@ -381,6 +381,92 @@ JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setControllerKey(JNIEnv*, jclass
 	});
 }
 
+// --- Palette config -------------------------------------------------------
+
+JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setNesCustomPalette(JNIEnv* env, jclass, jintArray palette)
+{
+	NesConfig cfg = GetNesConfig();
+	jsize len = env->GetArrayLength(palette);
+	if(len > 512) len = 512;
+	jint* data = env->GetIntArrayElements(palette, nullptr);
+	if(data && len > 0) {
+		memcpy(cfg.UserPalette, data, len * sizeof(uint32_t));
+	}
+	if(data) env->ReleaseIntArrayElements(palette, data, JNI_ABORT);
+	SetNesConfig(cfg);
+}
+
+JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setNesFullColorPalette(JNIEnv*, jclass, jboolean enabled)
+{
+	NesConfig cfg = GetNesConfig();
+	cfg.IsFullColorPalette = enabled;
+	SetNesConfig(cfg);
+}
+
+JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setNesUseCustomVsPalette(JNIEnv*, jclass, jboolean enabled)
+{
+	NesConfig cfg = GetNesConfig();
+	cfg.UseCustomVsPalette = enabled;
+	SetNesConfig(cfg);
+}
+
+JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setPceCustomPalette(JNIEnv* env, jclass, jintArray palette)
+{
+	PcEngineConfig cfg = GetPcEngineConfig();
+	jsize len = env->GetArrayLength(palette);
+	if(len > 512) len = 512;
+	jint* data = env->GetIntArrayElements(palette, nullptr);
+	if(data && len > 0) {
+		memcpy(cfg.Palette, data, len * sizeof(uint32_t));
+	}
+	if(data) env->ReleaseIntArrayElements(palette, data, JNI_ABORT);
+	SetPcEngineConfig(cfg);
+}
+
+JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setGameboyPalette(JNIEnv* env, jclass, jintArray bg, jintArray obj0, jintArray obj1)
+{
+	GameboyConfig cfg = GetGameboyConfig();
+
+	auto copy4 = [&](jintArray arr, uint32_t* dest) {
+		if(!arr) return;
+		jsize len = env->GetArrayLength(arr);
+		if(len > 4) len = 4;
+		jint* data = env->GetIntArrayElements(arr, nullptr);
+		if(data) {
+			for(jsize i = 0; i < len; i++) {
+				dest[i] = (uint32_t)data[i];
+			}
+			env->ReleaseIntArrayElements(arr, data, JNI_ABORT);
+		}
+	};
+
+	copy4(bg, cfg.BgColors);
+	copy4(obj0, cfg.Obj0Colors);
+	copy4(obj1, cfg.Obj1Colors);
+	SetGameboyConfig(cfg);
+}
+
+JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setSmsUseSgPalette(JNIEnv*, jclass, jboolean enabled)
+{
+	SmsConfig cfg = GetSmsConfig();
+	cfg.UseSgPalette = enabled;
+	SetSmsConfig(cfg);
+}
+
+JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setGbaAdjustColors(JNIEnv*, jclass, jboolean enabled)
+{
+	GbaConfig cfg = GetGbaConfig();
+	cfg.GbaAdjustColors = enabled;
+	SetGbaConfig(cfg);
+}
+
+JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setWsLcdAdjustColors(JNIEnv*, jclass, jboolean enabled)
+{
+	WsConfig cfg = GetWsConfig();
+	cfg.LcdAdjustColors = enabled;
+	SetWsConfig(cfg);
+}
+
 JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setRendererSize(JNIEnv*, jclass, jint width, jint height)
 {
 	SetRendererSize((uint32_t)width, (uint32_t)height);

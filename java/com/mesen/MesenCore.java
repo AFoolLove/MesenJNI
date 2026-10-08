@@ -107,6 +107,32 @@ public final class MesenCore
     /** Maps a controller button to a key scan code (see Mesen.BUTTON_*). */
     public static native void setControllerKey(int consoleType, int port, int button, int keyCode);
 
+    // --- Palette config ----------------------------------------------------
+
+    /** Sets the NES custom palette; array of up to 512 entries (0xRRGGBB). */
+    public static native void setNesCustomPalette(int[] palette);
+
+    /** Enables the NES full 512-color palette (instead of the classic 64 colors). */
+    public static native void setNesFullColorPalette(boolean enabled);
+
+    /** Enables the custom VS System palette. */
+    public static native void setNesUseCustomVsPalette(boolean enabled);
+
+    /** Sets the PCE custom palette; array of up to 512 entries (0xRRGGBB). */
+    public static native void setPceCustomPalette(int[] palette);
+
+    /** Sets the GB (DMG) 4-color palettes; each array has 4 entries (0xRRGGBB). */
+    public static native void setGameboyPalette(int[] background, int[] obj0, int[] obj1);
+
+    /** Enables the SMS SG palette. */
+    public static native void setSmsUseSgPalette(boolean enabled);
+
+    /** Enables GBA color correction. */
+    public static native void setGbaAdjustColors(boolean enabled);
+
+    /** Enables WonderSwan LCD color adjustment. */
+    public static native void setWsLcdAdjustColors(boolean enabled);
+
     public static native void setRendererSize(int width, int height);
     public static native double getAspectRatio();
     public static native FrameInfo getBaseScreenSize();
