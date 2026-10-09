@@ -272,6 +272,34 @@ public final class Mesen
     public static final int DEBUGGER_FLAG_GBA = 1 << 11;
     public static final int DEBUGGER_FLAG_WS = 1 << 12;
 
+    // --- ConsoleNotificationType (Core/Shared/Interfaces/INotificationListener.h)
+    // 用于 NotificationListener.processNotification(int type) 的 type 参数。
+    public static final int NOTIFICATION_GAME_LOADED = 0;
+    public static final int NOTIFICATION_STATE_LOADED = 1;
+    public static final int NOTIFICATION_GAME_RESET = 2;
+    public static final int NOTIFICATION_GAME_PAUSED = 3;
+    public static final int NOTIFICATION_GAME_RESUMED = 4;
+    public static final int NOTIFICATION_CODE_BREAK = 5;
+    public static final int NOTIFICATION_DEBUGGER_RESUMED = 6;
+    public static final int NOTIFICATION_PPU_FRAME_DONE = 7;
+    public static final int NOTIFICATION_RESOLUTION_CHANGED = 8;
+    public static final int NOTIFICATION_EXECUTE_SHORTCUT = 9;
+    public static final int NOTIFICATION_RELEASE_SHORTCUT = 10;
+    public static final int NOTIFICATION_EMULATION_STOPPED = 11;
+    public static final int NOTIFICATION_BEFORE_EMULATION_STOP = 12;
+    public static final int NOTIFICATION_VIEWER_REFRESH = 13;
+    public static final int NOTIFICATION_EVENT_VIEWER_REFRESH = 14;
+    public static final int NOTIFICATION_MISSING_FIRMWARE = 15;
+    public static final int NOTIFICATION_SUFAMI_TURBO_FILE_PROMPT = 16;
+    public static final int NOTIFICATION_BEFORE_GAME_UNLOAD = 17;
+    public static final int NOTIFICATION_BEFORE_GAME_LOAD = 18;
+    public static final int NOTIFICATION_GAME_LOAD_FAILED = 19;
+    public static final int NOTIFICATION_CHEATS_CHANGED = 20;
+    public static final int NOTIFICATION_REQUEST_CONFIG_CHANGE = 21;
+    public static final int NOTIFICATION_REFRESH_SOFTWARE_RENDERER = 22;
+    public static final int NOTIFICATION_AFTER_INIT_CONSOLE = 23;
+    public static final int NOTIFICATION_NETPLAY_STOPPED = 24;
+
     // --- 按钮名 -> BUTTON_* id ---------------------------------------------
     private static final java.util.Map<String, Integer> BUTTON_IDS = buildButtonIds();
 

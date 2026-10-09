@@ -37,10 +37,28 @@ public final class MesenCore
 
     // --- 回调注册（实现 Core/Shared/Interfaces） --------------------------
 
+    /**
+     * 注册通知监听器（实现 Core 的 INotificationListener）。
+     * 事件类型见 {@link Mesen} 的 {@code NOTIFICATION_*} 常量。
+     */
     public static native void registerNotificationListener(NotificationListener listener);
+
+    /**
+     * 注册音频设备（实现 Core 的 IAudioDevice）。
+     * 注册后音频不再播放到声卡，而是以 PCM 形式回调到 Java。
+     */
     public static native void registerAudioDevice(AudioDevice device);
+
+    /** 注册键盘/输入管理器（实现 Core 的 IKeyManager），用于程序化输入。 */
     public static native void registerKeyManager(KeyManager manager);
+
+    /** 注册鼠标管理器（实现 Core 的 IMouseManager）。 */
     public static native void registerMouseManager(MouseManager manager);
+
+    /**
+     * 注册渲染设备（实现 Core 的 IRenderingDevice）。
+     * 注册后帧以 32-bit ARGB 形式回调到 Java，而不是内部软件渲染器。
+     */
     public static native void registerRenderingDevice(RenderingDevice device);
 
     // --- Lifecycle / info --------------------------------------------------
