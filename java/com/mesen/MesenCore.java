@@ -118,6 +118,12 @@ public final class MesenCore
     /** Enables the custom VS System palette. */
     public static native void setNesUseCustomVsPalette(boolean enabled);
 
+    /** Sets the NES console region (see Mesen.REGION_*). */
+    public static native void setNesRegion(int region);
+
+    /** Enables/disables the NES sprite limit (8 sprites per scanline). */
+    public static native void setNesRemoveSpriteLimit(boolean enabled);
+
     /** Sets the PCE custom palette; array of up to 512 entries (0xRRGGBB). */
     public static native void setPceCustomPalette(int[] palette);
 

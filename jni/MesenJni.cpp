@@ -410,6 +410,20 @@ JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setNesUseCustomVsPalette(JNIEnv*
 	SetNesConfig(cfg);
 }
 
+JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setNesRegion(JNIEnv*, jclass, jint region)
+{
+	NesConfig cfg = GetNesConfig();
+	cfg.Region = (ConsoleRegion)region;
+	SetNesConfig(cfg);
+}
+
+JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setNesRemoveSpriteLimit(JNIEnv*, jclass, jboolean enabled)
+{
+	NesConfig cfg = GetNesConfig();
+	cfg.RemoveSpriteLimit = enabled;
+	SetNesConfig(cfg);
+}
+
 JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setPceCustomPalette(JNIEnv* env, jclass, jintArray palette)
 {
 	PcEngineConfig cfg = GetPcEngineConfig();

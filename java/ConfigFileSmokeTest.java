@@ -1,44 +1,60 @@
 import com.mesen.MesenConfig;
 import com.mesen.MesenCore;
+import com.mesen.NesSettings;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-/** Smoke test for the Java-side MesenConfig class. */
+/** Smoke test for the Java-side MesenConfig (global + NES section + file reference). */
 public class ConfigFileSmokeTest
 {
     public static void main(String[] args) throws Exception
     {
-        Path file = Files.createTempFile("mesen-config", ".json");
+        Path dir = Files.createTempDirectory("mesen-cfg-test");
+        Path file = dir.resolve("mesen.json");
 
         // 1) 生成默认配置文件
         MesenConfig.createDefaultFile(file);
-
-        // 打印生成的内容（应为 JSON）
-        System.out.println("--- config json ---");
+        System.out.println("--- 默认配置 JSON ---");
         System.out.println(Files.readString(file));
 
-        // 2) 读回
+        // 2) 读回并校验默认值
         MesenConfig cfg = MesenConfig.load(file);
-
-        // 3) 校验默认值（重点是默认音量 = 100）
         if(cfg.masterVolume != 100) {
-            throw new AssertionError("默认音量应为 100，实际 " + cfg.masterVolume);
+            throw new AssertionError("默认音量应为 100");
         }
-        if(!cfg.enableAudio || cfg.sampleRate != 48000) {
-            throw new AssertionError("默认音频配置不对");
+        NesSettings nes = cfg.getNesSettings();
+        if(nes.region != 0 || nes.controllerType != 10) {
+            throw new AssertionError("NES 默认配置不对: region=" + nes.region + " controllerType=" + nes.controllerType);
         }
+        System.out.println("masterVolume = " + cfg.masterVolume + ", nes.region = " + nes.region + ", nes.controllerType = " + nes.controllerType);
 
-        // 4) 应用到 core（含恢复默认音量）
+        // 3) 测试文件引用：把 NES 配置导出到单独文件
+        Path nesFile = dir.resolve("nes.json");
+        cfg.exportNes(nesFile);
+        cfg.save(file);
+        System.out.println("--- 引用后的主配置 JSON ---");
+        System.out.println(Files.readString(file));
+
+        // 重新加载，跟随文件引用解析
+        MesenConfig cfg2 = MesenConfig.load(file);
+        NesSettings nes2 = cfg2.getNesSettings();
+        if(nes2.region != 0 || nes2.controllerType != 10) {
+            throw new AssertionError("文件引用解析失败");
+        }
+        System.out.println("文件引用解析成功: nes.region = " + nes2.region + ", keys = " + nes2.controllerKeys);
+
+        // 4) 应用到 core（含默认音量 + NES 配置）
         MesenCore.initDll();
-        MesenCore.initializeEmu("./cfg-home", true, false, false, true);
-        cfg.apply();
+        MesenCore.initializeEmu(dir.resolve("home").toString(), true, false, false, true);
+        cfg2.apply();
 
-        System.out.println("masterVolume = " + cfg.masterVolume);
-        System.out.println("sampleRate = " + cfg.sampleRate);
         System.out.println("CONFIG FILE TEST PASSED");
-
         MesenCore.release();
-        Files.deleteIfExists(file);
+
+        // 清理
+        Files.walk(dir).sorted(java.util.Comparator.reverseOrder()).forEach(p -> {
+            try { Files.deleteIfExists(p); } catch(Exception ignored) {}
+        });
     }
 }

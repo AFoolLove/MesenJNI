@@ -271,4 +271,29 @@ public final class Mesen
     public static final int DEBUGGER_FLAG_SMS = 1 << 10;
     public static final int DEBUGGER_FLAG_GBA = 1 << 11;
     public static final int DEBUGGER_FLAG_WS = 1 << 12;
+
+    // --- 按钮名 -> BUTTON_* id ---------------------------------------------
+    private static final java.util.Map<String, Integer> BUTTON_IDS = buildButtonIds();
+
+    private static java.util.Map<String, Integer> buildButtonIds()
+    {
+        java.util.Map<String, Integer> m = new java.util.HashMap<>();
+        m.put("A", BUTTON_A); m.put("B", BUTTON_B); m.put("X", BUTTON_X); m.put("Y", BUTTON_Y);
+        m.put("L", BUTTON_L); m.put("R", BUTTON_R);
+        m.put("Up", BUTTON_UP); m.put("Down", BUTTON_DOWN); m.put("Left", BUTTON_LEFT); m.put("Right", BUTTON_RIGHT);
+        m.put("Start", BUTTON_START); m.put("Select", BUTTON_SELECT);
+        m.put("U", BUTTON_U); m.put("D", BUTTON_D);
+        m.put("TurboA", BUTTON_TURBO_A); m.put("TurboB", BUTTON_TURBO_B);
+        m.put("TurboX", BUTTON_TURBO_X); m.put("TurboY", BUTTON_TURBO_Y);
+        m.put("TurboL", BUTTON_TURBO_L); m.put("TurboR", BUTTON_TURBO_R);
+        m.put("TurboSelect", BUTTON_TURBO_SELECT); m.put("TurboStart", BUTTON_TURBO_START);
+        return m;
+    }
+
+    /** 把按钮名（如 "Start"）转成 BUTTON_* id；未知返回 -1。 */
+    public static int buttonId(String name)
+    {
+        Integer id = BUTTON_IDS.get(name);
+        return id == null ? -1 : id;
+    }
 }
