@@ -250,18 +250,28 @@ public class SwingPreview
 
     private void startAudio()
     {
-        try {
-            int rate = MesenCore.getAudioSampleRate();
-            // 无头音频为双声道交错 int16 PCM
-            audioFormat = new AudioFormat(rate, 16, 2, true, false);
-            DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
-            audioLine = (SourceDataLine)AudioSystem.getLine(info);
-            audioLine.open(audioFormat, rate * 4); // 约 1 秒缓冲（字节）
-            audioLine.start();
-            audioStatus = "音频 " + rate + "Hz 已开启";
-        } catch(Exception e) {
-            audioLine = null;
-            audioStatus = "音频不可用: " + e.getMessage();
+        // 逐个尝试常见采样率，选一个声卡支持的；并把 core 的输出采样率改成它，
+        // 这样音频由模拟器端重采样，Java 侧无需手动重采样。
+        int[] rates = { config.sampleRate, 44100, 22050, 16000 };
+        for(int rate : rates) {
+            try {
+                AudioFormat fmt = new AudioFormat(rate, 16, 2, true, false);
+                DataLine.Info info = new DataLine.Info(SourceDataLine.class, fmt);
+                audioLine = (SourceDataLine)AudioSystem.getLine(info);
+                audioLine.open(fmt, rate * 4); // 约 1 秒缓冲（字节）
+                audioLine.start();
+
+                audioFormat = fmt;
+                if(rate != config.sampleRate) {
+                    config.sampleRate = rate;
+                    config.apply(); // 让模拟器按该采样率输出
+                }
+                audioStatus = "音频 " + rate + "Hz 已开启";
+                break;
+            } catch(Exception e) {
+                audioLine = null;
+                audioStatus = "音频不可用: " + e.getMessage();
+            }
         }
         System.out.println("[音频] " + audioStatus);
     }
