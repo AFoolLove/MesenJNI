@@ -13,6 +13,7 @@
 [Rr]elease/
 x64/
 build/
+build-android/
 [Bb]in/
 [Oo]bj/
 [Oo]bj.x86/

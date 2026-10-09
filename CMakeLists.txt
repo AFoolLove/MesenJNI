@@ -119,16 +119,21 @@ endif()
 option(MESEN_BUILD_JNI "Build the JNI bindings (requires a JDK)" ON)
 set(MESEN_JNI_SOURCES "")
 if(MESEN_BUILD_JNI)
-    find_package(JNI)
-    if(JNI_FOUND)
+    if(ANDROID)
+        # Android: jni.h comes from the NDK sysroot (already on the include
+        # path), and the JNI symbols are provided by the ART runtime. No
+        # find_package(JNI) (it would pick the host JDK's win32 jni_md.h) and
+        # no libjvm to link.
         set(MESEN_JNI_SOURCES "${PROJECT_SOURCE_DIR}/jni/MesenJni.cpp")
-        if(ANDROID)
-            # On Android the JNI symbols are provided by the ART runtime; there
-            # is no libjvm to link against.
-            set(JNI_LIBRARIES "")
-        endif()
+        set(JNI_LIBRARIES "")
+        set(JNI_INCLUDE_DIRS "")
     else()
-        message(STATUS "JNI not found - skipping JNI bindings")
+        find_package(JNI)
+        if(JNI_FOUND)
+            set(MESEN_JNI_SOURCES "${PROJECT_SOURCE_DIR}/jni/MesenJni.cpp")
+        else()
+            message(STATUS "JNI not found - skipping JNI bindings")
+        endif()
     endif()
 endif()
 
