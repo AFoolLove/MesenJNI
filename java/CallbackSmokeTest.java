@@ -1,13 +1,15 @@
 import mesen.MesenCore;
 import mesen.NotificationListener;
 import mesen.AudioDevice;
+import mesen.KeyManager;
+import mesen.MouseManager;
 import mesen.RenderingDevice;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/** Smoke test for the Java interface callbacks (INotificationListener/IAudioDevice/IRenderingDevice). */
+/** Smoke test for the Java interface callbacks (all five Core/Shared/Interfaces). */
 public class CallbackSmokeTest
 {
     public static void main(String[] args) throws Exception
@@ -40,6 +42,7 @@ public class CallbackSmokeTest
         AtomicInteger notifications = new AtomicInteger();
         AtomicInteger audioFrames = new AtomicInteger();
         AtomicInteger frames = new AtomicInteger();
+        AtomicInteger keyUpdates = new AtomicInteger();
 
         MesenCore.initDll();
         MesenCore.initializeEmu("./cb-home", true, false, false, true);
@@ -67,16 +70,44 @@ public class CallbackSmokeTest
             public void setFullscreenMode(int mode, int width, int height) {}
         });
 
+        MesenCore.registerKeyManager(new KeyManager() {
+            public void refreshState() {}
+            public void updateDevices() { keyUpdates.incrementAndGet(); }
+            public boolean isMouseButtonPressed(int button) { return false; }
+            public boolean isKeyPressed(int keyCode) { return false; }
+            public int[] getPressedKeys() { return new int[0]; }
+            public String getKeyName(int keyCode) { return ""; }
+            public int getKeyCode(String keyName) { return 0; }
+            public boolean setKeyState(int scanCode, boolean state) { return false; }
+            public void resetKeyState() {}
+            public void setDisabled(boolean disabled) {}
+        });
+
+        MesenCore.registerMouseManager(new MouseManager() {
+            public int[] getSystemMouseState() { return new int[] {0, 0, 0, 0, 0, 0, 0}; }
+            public boolean captureMouse(int x, int y, int w, int h) { return false; }
+            public void releaseMouse() {}
+            public void setSystemMousePosition(int x, int y) {}
+            public void setCursorImage(int cursor) {}
+            public double getPixelScale() { return 1.0; }
+        });
+
         MesenCore.loadRom(rom.toString(), null);
         MesenCore.resume();
         Thread.sleep(2000);
         MesenCore.pause();
 
+        // 触发 KeyManager.updateDevices
+        for(int i = 0; i < 3; i++) {
+            MesenCore.updateInputDevices();
+        }
+
         System.out.println("notifications=" + notifications.get()
             + " audioFrames=" + audioFrames.get()
-            + " frames=" + frames.get());
+            + " frames=" + frames.get()
+            + " keyUpdates=" + keyUpdates.get());
 
-        boolean ok = notifications.get() > 0 && audioFrames.get() > 0 && frames.get() > 0;
+        boolean ok = notifications.get() > 0 && audioFrames.get() > 0 && frames.get() > 0 && keyUpdates.get() > 0;
         System.out.println(ok ? "CALLBACK TEST PASSED" : "CALLBACK TEST PARTIAL");
 
         MesenCore.stop();
