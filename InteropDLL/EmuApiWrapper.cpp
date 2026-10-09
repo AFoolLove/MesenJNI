@@ -65,9 +65,13 @@ struct InteropRomInfo
 
 IRenderingDevice* InitRenderer()
 {
-	if(_softwareRenderer) {
-		_softwareRendererInstance = new SoftwareRenderer(_emu.get());
-		return _softwareRendererInstance;
+	if(_softwareRenderer || _windowHandle == nullptr) {
+		// Headless (or explicit software renderer): no window to attach to.
+		SoftwareRenderer* renderer = new SoftwareRenderer(_emu.get());
+		if(_softwareRenderer) {
+			_softwareRendererInstance = renderer;
+		}
+		return renderer;
 	} else {
 #ifdef _WIN32
 		return new Renderer(_emu.get(), (HWND)_viewerHandle);
@@ -124,12 +128,11 @@ extern "C"
 		_viewerHandle = viewerHandle;
 		_softwareRenderer = softwareRenderer;
 
-		// Set up audio/video when a window/viewer is provided, or when the
-		// software renderer is requested (headless mode produces frames without
-		// a window). The flags map to their matching callback directly.
-		if((windowHandle != nullptr && viewerHandle != nullptr) || softwareRenderer) {
-			_emu->SetAudioVideoInitCallback(noAudio ? nullptr : InitSoundManager, noVideo ? nullptr : InitRenderer);
-		}
+		// Always set up audio/video callbacks: the software renderer (and
+		// headless audio) are the only devices that work without a window, so
+		// they are created even when `softwareRenderer` is false. The flag only
+		// controls whether the polling buffer is kept via _softwareRendererInstance.
+		_emu->SetAudioVideoInitCallback(noAudio ? nullptr : InitSoundManager, noVideo ? nullptr : InitRenderer);
 
 		if(!noInput && windowHandle != nullptr) {
 #ifdef _WIN32
