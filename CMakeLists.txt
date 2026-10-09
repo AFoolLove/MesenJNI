@@ -11,6 +11,13 @@
 #   cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 #   cmake --build build
 #
+# Build (Android, headless, arm64 — requires the NDK and a JDK):
+#   cmake -S . -B build-android \
+#     -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake \
+#     -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-24 \
+#     -DCMAKE_BUILD_TYPE=Release -DJAVA_HOME=/path/to/jdk
+#   cmake --build build-android
+#
 # The library is written to bin/<platform>/<config>/ (matching the upstream
 # Mesen layout), e.g. bin/win-x64/Release/MesenCore.dll.
 
@@ -40,11 +47,16 @@ if(WIN32)
     set(MESEN_OS "win")
 elseif(APPLE)
     set(MESEN_OS "osx")
+elseif(ANDROID)
+    set(MESEN_OS "android")
 else()
     set(MESEN_OS "linux")
 endif()
 
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|ARM64|arm64")
+if(ANDROID)
+    # Use the ABI (arm64-v8a, armeabi-v7a, x86_64, x86) for the output dir.
+    set(MESEN_ARCH "${ANDROID_ABI}")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|ARM64|arm64")
     set(MESEN_ARCH "arm64")
 else()
     set(MESEN_ARCH "x64")
@@ -89,6 +101,11 @@ elseif(APPLE)
     file(GLOB_RECURSE MESEN_PLATFORM_SOURCES CONFIGURE_DEPENDS
         "${PROJECT_SOURCE_DIR}/Sdl/*.cpp"
         "${PROJECT_SOURCE_DIR}/MacOS/*.mm")
+elseif(ANDROID)
+    # Headless Android: no native window/audio/input layer. Input, audio and
+    # rendering are provided from Java via the JNI callbacks (IKeyManager,
+    # IMouseManager, IAudioDevice, IRenderingDevice).
+    set(MESEN_PLATFORM_SOURCES "")
 else()
     file(GLOB_RECURSE MESEN_PLATFORM_SOURCES CONFIGURE_DEPENDS
         "${PROJECT_SOURCE_DIR}/Sdl/*.cpp"
@@ -105,6 +122,11 @@ if(MESEN_BUILD_JNI)
     find_package(JNI)
     if(JNI_FOUND)
         set(MESEN_JNI_SOURCES "${PROJECT_SOURCE_DIR}/jni/MesenJni.cpp")
+        if(ANDROID)
+            # On Android the JNI symbols are provided by the ART runtime; there
+            # is no libjvm to link against.
+            set(JNI_LIBRARIES "")
+        endif()
     else()
         message(STATUS "JNI not found - skipping JNI bindings")
     endif()
@@ -122,10 +144,14 @@ add_library(MesenCore SHARED
     ${MESEN_PLATFORM_SOURCES}
     ${MESEN_JNI_SOURCES})
 
-# Upstream ships `MesenCore.so` / `MesenCore.dylib` without the `lib` prefix.
+# Upstream ships `MesenCore.so` / `MesenCore.dylib` without the `lib` prefix
+# on desktop platforms, but Android's System.loadLibrary() needs the standard
+# `lib` prefix (libMesenCore.so).
 set_target_properties(MesenCore PROPERTIES
-    OUTPUT_NAME "MesenCore"
-    PREFIX "")
+    OUTPUT_NAME "MesenCore")
+if(NOT ANDROID)
+    set_target_properties(MesenCore PROPERTIES PREFIX "")
+endif()
 
 target_include_directories(MesenCore PRIVATE
     "${PROJECT_SOURCE_DIR}"
