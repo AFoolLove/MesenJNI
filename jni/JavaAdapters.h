@@ -74,10 +74,12 @@ class JavaAudioDevice : public JniCallback, public IAudioDevice
 {
 private:
 	jmethodID _play, _stop, _pause, _endFrame, _devices, _setDevice;
+	jshortArray _audioBuffer = nullptr;  // 缓冲池：复用，避免每次分配
+	jsize _audioBufferSize = 0;
 public:
 	JavaAudioDevice(JNIEnv* env, jobject o) : JniCallback(env, o)
 	{
-		_play = env->GetMethodID(cls, "playBuffer", "([SIZ)V");
+		_play = env->GetMethodID(cls, "playBuffer", "([SIIZ)V");
 		_stop = env->GetMethodID(cls, "stop", "()V");
 		_pause = env->GetMethodID(cls, "pause", "()V");
 		_endFrame = env->GetMethodID(cls, "processEndOfFrame", "()V");
@@ -85,15 +87,33 @@ public:
 		_setDevice = env->GetMethodID(cls, "setAudioDevice", "(Ljava/lang/String;)V");
 	}
 
+	~JavaAudioDevice()
+	{
+		JNIEnv* env = getEnv();
+		if(env && _audioBuffer) {
+			env->DeleteGlobalRef(_audioBuffer);
+			_audioBuffer = nullptr;
+		}
+	}
+
 	void PlayBuffer(int16_t* soundBuffer, uint32_t bufferSize, uint32_t sampleRate, bool isStereo) override
 	{
 		JNIEnv* env = getEnv();
 		if(!env || !_play) return;
 		jint count = (jint)(bufferSize * (isStereo ? 2 : 1));
-		jshortArray arr = env->NewShortArray(count);
-		env->SetShortArrayRegion(arr, 0, count, (const jshort*)soundBuffer);
-		env->CallVoidMethod(obj, _play, arr, (jint)sampleRate, (jboolean)isStereo);
-		env->DeleteLocalRef(arr);
+
+		// 缓冲池：不够大时才扩容，否则复用
+		if(_audioBuffer == nullptr || _audioBufferSize < count) {
+			if(_audioBuffer) env->DeleteGlobalRef(_audioBuffer);
+			jsize newSize = count > 0x10000 ? count : 0x10000;
+			jshortArray local = env->NewShortArray(newSize);
+			_audioBuffer = (jshortArray)env->NewGlobalRef(local);
+			env->DeleteLocalRef(local);
+			_audioBufferSize = newSize;
+		}
+
+		env->SetShortArrayRegion(_audioBuffer, 0, count, (const jshort*)soundBuffer);
+		env->CallVoidMethod(obj, _play, _audioBuffer, count, (jint)sampleRate, (jboolean)isStereo);
 	}
 
 	void Stop() override
@@ -317,6 +337,8 @@ class JavaRenderingDevice : public JniCallback, public IRenderingDevice
 {
 private:
 	jmethodID _update, _clear, _render, _reset, _fullscreen;
+	jintArray _frameBuffer = nullptr;  // 缓冲池：复用帧缓冲
+	jsize _frameBufferSize = 0;
 public:
 	JavaRenderingDevice(JNIEnv* env, jobject o) : JniCallback(env, o)
 	{
@@ -327,14 +349,32 @@ public:
 		_fullscreen = env->GetMethodID(cls, "setFullscreenMode", "(III)V");
 	}
 
+	~JavaRenderingDevice()
+	{
+		JNIEnv* env = getEnv();
+		if(env && _frameBuffer) {
+			env->DeleteGlobalRef(_frameBuffer);
+			_frameBuffer = nullptr;
+		}
+	}
+
 	void UpdateFrame(RenderedFrame& frame) override
 	{
 		JNIEnv* env = getEnv();
 		if(!env || !_update) return;
-		jintArray arr = env->NewIntArray((jsize)(frame.Width * frame.Height));
-		env->SetIntArrayRegion(arr, 0, (jsize)(frame.Width * frame.Height), (const jint*)frame.FrameBuffer);
-		env->CallVoidMethod(obj, _update, (jint)frame.Width, (jint)frame.Height, arr, (jint)frame.FrameNumber);
-		env->DeleteLocalRef(arr);
+		jsize size = (jsize)(frame.Width * frame.Height);
+
+		// 分辨率不变时复用同一个数组，只在尺寸变化时重建
+		if(_frameBuffer == nullptr || _frameBufferSize != size) {
+			if(_frameBuffer) env->DeleteGlobalRef(_frameBuffer);
+			jintArray local = env->NewIntArray(size);
+			_frameBuffer = (jintArray)env->NewGlobalRef(local);
+			env->DeleteLocalRef(local);
+			_frameBufferSize = size;
+		}
+
+		env->SetIntArrayRegion(_frameBuffer, 0, size, (const jint*)frame.FrameBuffer);
+		env->CallVoidMethod(obj, _update, (jint)frame.Width, (jint)frame.Height, _frameBuffer, (jint)frame.FrameNumber);
 	}
 
 	void ClearFrame() override

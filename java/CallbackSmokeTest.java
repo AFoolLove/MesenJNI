@@ -54,7 +54,7 @@ public class CallbackSmokeTest
         });
 
         MesenCore.registerAudioDevice(new AudioDevice() {
-            public void playBuffer(short[] samples, int sampleRate, boolean stereo) { audioFrames.incrementAndGet(); }
+            public void playBuffer(short[] samples, int sampleCount, int sampleRate, boolean stereo) { audioFrames.incrementAndGet(); }
             public void stop() {}
             public void pause() {}
             public void processEndOfFrame() {}

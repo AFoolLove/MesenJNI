@@ -6,7 +6,10 @@ package mesen;
  */
 public interface RenderingDevice
 {
-    /** 收到一帧；argb 为 32-bit ARGB，长度 width*height。 */
+    /**
+     * 收到一帧；argb 为 32-bit ARGB，长度 width*height。
+     * 注意：argb 是复用的缓冲，回调返回后内容会被覆盖，需在方法内消费掉。
+     */
     void updateFrame(int width, int height, int[] argb, int frameNumber);
 
     void clearFrame();
