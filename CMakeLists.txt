@@ -97,6 +97,20 @@ else()
 endif()
 
 # ---------------------------------------------------------------------------
+# JNI bindings (merged into MesenCore so adapters share the same DLL/heap)
+# ---------------------------------------------------------------------------
+option(MESEN_BUILD_JNI "Build the JNI bindings (requires a JDK)" ON)
+set(MESEN_JNI_SOURCES "")
+if(MESEN_BUILD_JNI)
+    find_package(JNI)
+    if(JNI_FOUND)
+        set(MESEN_JNI_SOURCES "${PROJECT_SOURCE_DIR}/jni/MesenJni.cpp")
+    else()
+        message(STATUS "JNI not found - skipping JNI bindings")
+    endif()
+endif()
+
+# ---------------------------------------------------------------------------
 # Target
 # ---------------------------------------------------------------------------
 add_library(MesenCore SHARED
@@ -105,7 +119,8 @@ add_library(MesenCore SHARED
     ${MESEN_SEVENZIP_SOURCES}
     ${MESEN_LUA_SOURCES}
     ${MESEN_INTEROP_SOURCES}
-    ${MESEN_PLATFORM_SOURCES})
+    ${MESEN_PLATFORM_SOURCES}
+    ${MESEN_JNI_SOURCES})
 
 # Upstream ships `MesenCore.so` / `MesenCore.dylib` without the `lib` prefix.
 set_target_properties(MesenCore PROPERTIES
@@ -119,7 +134,9 @@ target_include_directories(MesenCore PRIVATE
     "${PROJECT_SOURCE_DIR}/Sdl"
     "${PROJECT_SOURCE_DIR}/Linux"
     "${PROJECT_SOURCE_DIR}/MacOS"
-    "${PROJECT_SOURCE_DIR}/InteropDLL")
+    "${PROJECT_SOURCE_DIR}/InteropDLL"
+    "${PROJECT_SOURCE_DIR}/jni"
+    ${JNI_INCLUDE_DIRS})
 
 if(MSVC)
     target_compile_definitions(MesenCore PRIVATE
@@ -129,7 +146,7 @@ if(MSVC)
         NOMINMAX
         _CRT_SECURE_NO_WARNINGS
         _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
-    target_compile_options(MesenCore PRIVATE /MP)
+    target_compile_options(MesenCore PRIVATE /MP /utf-8)
     # Match upstream: static CRT, so no VC++ redistributable is required.
     set_property(TARGET MesenCore PROPERTY
         MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
@@ -161,10 +178,11 @@ if(WIN32)
         odbccp32
         dsound
         dxgi
-        ws2_32)
+        ws2_32
+        ${JNI_LIBRARIES})
 else()
     find_package(Threads REQUIRED)
-    target_link_libraries(MesenCore PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
+    target_link_libraries(MesenCore PRIVATE Threads::Threads ${CMAKE_DL_LIBS} ${JNI_LIBRARIES})
 
     if(APPLE)
         find_library(FOUNDATION_LIB Foundation REQUIRED)
@@ -182,38 +200,3 @@ else()
     endif()
 endif()
 
-# ---------------------------------------------------------------------------
-# JNI bindings (MesenJNI)
-# ---------------------------------------------------------------------------
-option(MESEN_BUILD_JNI "Build the JNI bindings (requires a JDK)" ON)
-
-if(MESEN_BUILD_JNI)
-    find_package(JNI)
-
-    if(JNI_FOUND)
-        add_library(MesenJNI SHARED
-            "${PROJECT_SOURCE_DIR}/jni/MesenJni.cpp")
-
-        target_include_directories(MesenJNI PRIVATE
-            "${PROJECT_SOURCE_DIR}"
-            "${PROJECT_SOURCE_DIR}/Core"
-            "${PROJECT_SOURCE_DIR}/Utilities"
-            "${PROJECT_SOURCE_DIR}/jni"
-            ${JNI_INCLUDE_DIRS})
-
-        # MesenJNI links the core and calls its exported C API.
-        target_link_libraries(MesenJNI PRIVATE MesenCore ${JNI_LIBRARIES})
-
-        if(MSVC)
-            target_compile_definitions(MesenJNI PRIVATE
-                WIN32
-                NOMINMAX
-                _CRT_SECURE_NO_WARNINGS)
-            target_compile_options(MesenJNI PRIVATE /MP)
-            set_property(TARGET MesenJNI PROPERTY
-                MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-        endif()
-    else()
-        message(STATUS "JNI not found - skipping MesenJNI target")
-    endif()
-endif()

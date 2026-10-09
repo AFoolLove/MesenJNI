@@ -8,12 +8,30 @@
 #include <jni.h>
 #include <cstring>
 #include <functional>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "MesenApi.h"
+#include "JavaAdapters.h"
+#include "Core/Shared/KeyManager.h"
+#include "Core/Shared/NotificationManager.h"
+#include "Core/Shared/Audio/SoundMixer.h"
+#include "Core/Shared/Video/VideoRenderer.h"
 
 using std::string;
+using std::shared_ptr;
+using std::unique_ptr;
+
+// InteropDLL internal globals (same DLL as the JNI glue)
+extern unique_ptr<Emulator> _emu;
+extern unique_ptr<IKeyManager> _keyManager;
+extern unique_ptr<IMouseManager> _mouseManager;
+
+// Keep Java-registered adapters alive (the core only holds raw/weak pointers)
+static shared_ptr<JavaNotificationListener> _javaNotificationListener;
+static shared_ptr<JavaAudioDevice> _javaAudioDevice;
+static shared_ptr<JavaRenderingDevice> _javaRenderingDevice;
 
 namespace
 {
@@ -124,6 +142,43 @@ namespace
 
 extern "C"
 {
+
+// --- Interface callback registration (Core/Shared/Interfaces) ------------
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_registerNotificationListener(JNIEnv* env, jclass, jobject listener)
+{
+	if(!listener || !_emu) return;
+	_javaNotificationListener = shared_ptr<JavaNotificationListener>(new JavaNotificationListener(env, listener));
+	_emu->GetNotificationManager()->RegisterNotificationListener(_javaNotificationListener);
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_registerAudioDevice(JNIEnv* env, jclass, jobject device)
+{
+	if(!device || !_emu) return;
+	_javaAudioDevice = shared_ptr<JavaAudioDevice>(new JavaAudioDevice(env, device));
+	_emu->GetSoundMixer()->RegisterAudioDevice(_javaAudioDevice.get());
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_registerKeyManager(JNIEnv* env, jclass, jobject manager)
+{
+	if(!manager || !_emu) return;
+	JavaKeyManager* km = new JavaKeyManager(env, manager);
+	_keyManager.reset(km);
+	KeyManager::RegisterKeyManager(km);
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_registerMouseManager(JNIEnv* env, jclass, jobject manager)
+{
+	if(!manager || !_emu) return;
+	_mouseManager.reset(new JavaMouseManager(env, manager));
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_registerRenderingDevice(JNIEnv* env, jclass, jobject device)
+{
+	if(!device || !_emu) return;
+	_javaRenderingDevice = shared_ptr<JavaRenderingDevice>(new JavaRenderingDevice(env, device));
+	_emu->GetVideoRenderer()->RegisterRenderingDevice(_javaRenderingDevice.get());
+}
 
 // --- Lifecycle / info -----------------------------------------------------
 

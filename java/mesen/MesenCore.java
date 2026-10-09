@@ -28,14 +28,20 @@ package mesen;
 public final class MesenCore
 {
     static {
-        // Load the core first so the JNI library can resolve its MesenCore
-        // dependency (Windows does not search the JNI DLL's own directory).
+        // JNI 胶水已并入 MesenCore，只加载这一个库。
         System.loadLibrary("MesenCore");
-        System.loadLibrary("MesenJNI");
     }
 
     private MesenCore() {
     }
+
+    // --- 回调注册（实现 Core/Shared/Interfaces） --------------------------
+
+    public static native void registerNotificationListener(NotificationListener listener);
+    public static native void registerAudioDevice(AudioDevice device);
+    public static native void registerKeyManager(KeyManager manager);
+    public static native void registerMouseManager(MouseManager manager);
+    public static native void registerRenderingDevice(RenderingDevice device);
 
     // --- Lifecycle / info --------------------------------------------------
 
