@@ -9,10 +9,14 @@ public class ConfigFileSmokeTest
 {
     public static void main(String[] args) throws Exception
     {
-        Path file = Files.createTempFile("mesen-config", ".properties");
+        Path file = Files.createTempFile("mesen-config", ".json");
 
         // 1) 生成默认配置文件
         MesenConfig.createDefaultFile(file);
+
+        // 打印生成的内容（应为 JSON）
+        System.out.println("--- config json ---");
+        System.out.println(Files.readString(file));
 
         // 2) 读回
         MesenConfig cfg = MesenConfig.load(file);

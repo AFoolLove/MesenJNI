@@ -1,24 +1,33 @@
 package com.mesen;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Properties;
 
 /**
- * Mesen 无头模式的配置（Java 侧持久化，纯 JDK 实现，无第三方依赖）。
+ * Mesen 无头模式的配置（Java 侧持久化，JSON 格式，依赖 Gson）。
  *
  * 使用方式：
  * <pre>
- *   MesenConfig cfg = MesenConfig.load("mesen-config.properties"); // 不存在则用默认值
- *   cfg.apply();                                                    // 写入 MesenCore
+ *   MesenConfig cfg = MesenConfig.load("mesen-config.json"); // 不存在则用默认值
+ *   cfg.apply();                                             // 写入 MesenCore
  * </pre>
  *
  * 生成默认配置文件：
  * <pre>
- *   MesenConfig.createDefaultFile("mesen-config.properties");
+ *   MesenConfig.createDefaultFile("mesen-config.json");
+ * </pre>
+ *
+ * 编译/运行时需把 Gson 加进 classpath，例如：
+ * <pre>
+ *   javac -cp lib/gson-2.9.0.jar -d out com/mesen/*.java
+ *   java  -cp "out;lib/gson-2.9.0.jar" ...
  * </pre>
  */
 public class MesenConfig
@@ -40,6 +49,8 @@ public class MesenConfig
     public int masterVolume = 100;   // 默认音量 100
     public int sampleRate = 48000;
     public int audioLatency = 60;
+
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     /**
      * 类似 Config.InitializeDefaults()：把所有字段重置为默认值
@@ -71,19 +82,16 @@ public class MesenConfig
         MesenCore.setAudioConfig(enableAudio, masterVolume, sampleRate, audioLatency);
     }
 
-    /** 保存到文件（Properties 键值格式）。 */
+    /** 保存为 JSON 文件（美化格式）。 */
     public void save(Path path) throws IOException
     {
-        Properties p = toProperties();
         if(path.getParent() != null) {
             Files.createDirectories(path.getParent());
         }
-        try(OutputStream out = Files.newOutputStream(path)) {
-            p.store(out, "Mesen headless config");
-        }
+        Files.writeString(path, GSON.toJson(this), StandardCharsets.UTF_8);
     }
 
-    /** 从文件加载；文件不存在或读取失败时保持默认值。 */
+    /** 从 JSON 文件加载；文件不存在、字段缺失或读取失败时保持默认值。 */
     public static MesenConfig load(Path path)
     {
         MesenConfig cfg = new MesenConfig();
@@ -91,11 +99,25 @@ public class MesenConfig
         if(path == null || !Files.exists(path)) {
             return cfg;
         }
-        try(InputStream in = Files.newInputStream(path)) {
-            Properties p = new Properties();
-            p.load(in);
-            cfg.fromProperties(p);
-        } catch(IOException e) {
+        try {
+            String json = Files.readString(path, StandardCharsets.UTF_8);
+            JsonObject o = JsonParser.parseString(json).getAsJsonObject();
+
+            cfg.emulationSpeed = getInt(o, "emulationSpeed", cfg.emulationSpeed);
+            cfg.turboSpeed = getInt(o, "turboSpeed", cfg.turboSpeed);
+            cfg.rewindSpeed = getInt(o, "rewindSpeed", cfg.rewindSpeed);
+            cfg.runAheadFrames = getInt(o, "runAheadFrames", cfg.runAheadFrames);
+
+            cfg.videoFilter = getInt(o, "videoFilter", cfg.videoFilter);
+            cfg.aspectRatio = getInt(o, "aspectRatio", cfg.aspectRatio);
+            cfg.customAspectRatio = getDouble(o, "customAspectRatio", cfg.customAspectRatio);
+            cfg.screenRotation = getInt(o, "screenRotation", cfg.screenRotation);
+
+            cfg.enableAudio = getBool(o, "enableAudio", cfg.enableAudio);
+            cfg.masterVolume = getInt(o, "masterVolume", cfg.masterVolume);
+            cfg.sampleRate = getInt(o, "sampleRate", cfg.sampleRate);
+            cfg.audioLatency = getInt(o, "audioLatency", cfg.audioLatency);
+        } catch(Exception e) {
             // 忽略，保持默认值
         }
         return cfg;
@@ -109,64 +131,18 @@ public class MesenConfig
         cfg.save(path);
     }
 
-    private Properties toProperties()
+    private static int getInt(JsonObject o, String key, int def)
     {
-        Properties p = new Properties();
-        p.setProperty("emulationSpeed", String.valueOf(emulationSpeed));
-        p.setProperty("turboSpeed", String.valueOf(turboSpeed));
-        p.setProperty("rewindSpeed", String.valueOf(rewindSpeed));
-        p.setProperty("runAheadFrames", String.valueOf(runAheadFrames));
-
-        p.setProperty("videoFilter", String.valueOf(videoFilter));
-        p.setProperty("aspectRatio", String.valueOf(aspectRatio));
-        p.setProperty("customAspectRatio", String.valueOf(customAspectRatio));
-        p.setProperty("screenRotation", String.valueOf(screenRotation));
-
-        p.setProperty("enableAudio", String.valueOf(enableAudio));
-        p.setProperty("masterVolume", String.valueOf(masterVolume));
-        p.setProperty("sampleRate", String.valueOf(sampleRate));
-        p.setProperty("audioLatency", String.valueOf(audioLatency));
-        return p;
+        return o.has(key) ? o.get(key).getAsInt() : def;
     }
 
-    private void fromProperties(Properties p)
+    private static double getDouble(JsonObject o, String key, double def)
     {
-        emulationSpeed = intValue(p, "emulationSpeed", emulationSpeed);
-        turboSpeed = intValue(p, "turboSpeed", turboSpeed);
-        rewindSpeed = intValue(p, "rewindSpeed", rewindSpeed);
-        runAheadFrames = intValue(p, "runAheadFrames", runAheadFrames);
-
-        videoFilter = intValue(p, "videoFilter", videoFilter);
-        aspectRatio = intValue(p, "aspectRatio", aspectRatio);
-        customAspectRatio = doubleValue(p, "customAspectRatio", customAspectRatio);
-        screenRotation = intValue(p, "screenRotation", screenRotation);
-
-        enableAudio = booleanValue(p, "enableAudio", enableAudio);
-        masterVolume = intValue(p, "masterVolume", masterVolume);
-        sampleRate = intValue(p, "sampleRate", sampleRate);
-        audioLatency = intValue(p, "audioLatency", audioLatency);
+        return o.has(key) ? o.get(key).getAsDouble() : def;
     }
 
-    private static int intValue(Properties p, String key, int def)
+    private static boolean getBool(JsonObject o, String key, boolean def)
     {
-        try {
-            return Integer.parseInt(p.getProperty(key, String.valueOf(def)));
-        } catch(NumberFormatException e) {
-            return def;
-        }
-    }
-
-    private static double doubleValue(Properties p, String key, double def)
-    {
-        try {
-            return Double.parseDouble(p.getProperty(key, String.valueOf(def)));
-        } catch(NumberFormatException e) {
-            return def;
-        }
-    }
-
-    private static boolean booleanValue(Properties p, String key, boolean def)
-    {
-        return Boolean.parseBoolean(p.getProperty(key, String.valueOf(def)));
+        return o.has(key) ? o.get(key).getAsBoolean() : def;
     }
 }

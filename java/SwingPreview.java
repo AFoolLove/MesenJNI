@@ -83,7 +83,7 @@ public class SwingPreview
         MesenCore.initializeEmu(homeFolder, /*softwareRenderer*/true, /*noAudio*/false, /*noVideo*/false, /*noInput*/true);
 
         // 加载并应用配置（不存在则用默认值，含默认音量 100）
-        configFile = Path.of(homeFolder, "mesen.properties");
+        configFile = Path.of(homeFolder, "mesen.json");
         config = MesenConfig.load(configFile);
         config.apply();
 
