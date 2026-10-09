@@ -39,7 +39,7 @@ public class AudioSmokeTest
 
         // Headless with software renderer + audio capture (noAudio=false).
         MesenCore.initDll();
-        MesenCore.initializeEmu("./audio-home", true, false, false, true);
+        MesenCore.initializeEmu("./home", true, false, false, true);
         MesenCore.loadRom(rom.toString(), null);
         MesenCore.resume();
 

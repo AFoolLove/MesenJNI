@@ -26,7 +26,7 @@ public class LuaSmokeTest
         Files.write(rom, rb);
 
         MesenCore.initDll();
-        MesenCore.initializeEmu("./lua-home", true, true, true, true);
+        MesenCore.initializeEmu("./home", true, true, true, true);
         MesenCore.loadRom(rom.toString(), null);
 
         String src = "emu.log('hello from lua')";

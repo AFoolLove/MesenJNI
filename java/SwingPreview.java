@@ -79,7 +79,7 @@ public class SwingPreview
     {
         // 1) 初始化无头模拟器：软件渲染 + 音频捕获、无 OS 输入
         MesenCore.initDll();
-        String homeFolder = new File("./preview-home").getAbsolutePath();
+        String homeFolder = new File("./home").getAbsolutePath();
         MesenCore.initializeEmu(homeFolder, /*softwareRenderer*/true, /*noAudio*/false, /*noVideo*/false, /*noInput*/true);
 
         // 加载并应用配置（不存在则用默认值，含默认音量 100）

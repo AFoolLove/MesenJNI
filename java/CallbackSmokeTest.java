@@ -45,7 +45,7 @@ public class CallbackSmokeTest
         AtomicInteger keyUpdates = new AtomicInteger();
 
         MesenCore.initDll();
-        MesenCore.initializeEmu("./cb-home", true, false, false, true);
+        MesenCore.initializeEmu("./home", true, false, false, true);
 
         MesenCore.registerNotificationListener(new NotificationListener() {
             public void processNotification(int type) {

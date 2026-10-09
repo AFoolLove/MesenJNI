@@ -7,7 +7,7 @@ public class ConfigSmokeTest
     public static void main(String[] args)
     {
         MesenCore.initDll();
-        MesenCore.initializeEmu("./config-home", true, true, false, true);
+        MesenCore.initializeEmu("./home", true, true, false, true);
 
         // Emulation / video / audio config
         MesenCore.setEmulationConfig(100, 300, 100, 1);

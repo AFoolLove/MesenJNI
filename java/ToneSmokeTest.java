@@ -36,7 +36,7 @@ public class ToneSmokeTest
         Files.write(rom, romBytes);
 
         MesenCore.initDll();
-        MesenCore.initializeEmu("./tone-home", true, false, false, true);
+        MesenCore.initializeEmu("./home", true, false, false, true);
         MesenCore.loadRom(rom.toString(), null);
         MesenCore.resume();
 

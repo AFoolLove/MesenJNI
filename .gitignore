@@ -195,7 +195,7 @@ UI/Dependencies.zip
 MesenCE-clone/
 
 # Emulator home folders (recent games, settings, saves) created by smoke tests
-*-home/
+home/
 
 # Test ROMs (do not track)
 roms/

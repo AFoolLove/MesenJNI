@@ -12,7 +12,7 @@ public class SmokeTest
         System.out.println("version = " + MesenCore.getMesenVersion());
         System.out.println("buildDate = " + MesenCore.getMesenBuildDate());
 
-        MesenCore.initializeEmu("./smoke-home", true, true, false, true);
+        MesenCore.initializeEmu("./home", true, true, false, true);
         int w = MesenCore.getFrameWidth();
         int h = MesenCore.getFrameHeight();
         System.out.println("frame " + w + "x" + h);
