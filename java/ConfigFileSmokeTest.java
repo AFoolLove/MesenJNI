@@ -1,6 +1,6 @@
-import com.mesen.MesenConfig;
-import com.mesen.MesenCore;
-import com.mesen.NesSettings;
+import mesen.MesenConfig;
+import mesen.MesenCore;
+import mesen.NesSettings;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

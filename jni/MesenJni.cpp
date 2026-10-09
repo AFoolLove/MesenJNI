@@ -2,7 +2,7 @@
 // MesenJni.cpp
 //
 // JNI bindings for the MesenCore (InteropDLL) C API.
-// Implements the native methods declared in com.mesen.MesenCore.
+// Implements the native methods declared in mesen.MesenCore.
 // ---------------------------------------------------------------------------
 
 #include <jni.h>
@@ -127,27 +127,27 @@ extern "C"
 
 // --- Lifecycle / info -----------------------------------------------------
 
-JNIEXPORT jboolean JNICALL Java_com_mesen_MesenCore_testDll(JNIEnv*, jclass)
+JNIEXPORT jboolean JNICALL Java_mesen_MesenCore_testDll(JNIEnv*, jclass)
 {
 	return TestDll() ? JNI_TRUE : JNI_FALSE;
 }
 
-JNIEXPORT jint JNICALL Java_com_mesen_MesenCore_getMesenVersion(JNIEnv*, jclass)
+JNIEXPORT jint JNICALL Java_mesen_MesenCore_getMesenVersion(JNIEnv*, jclass)
 {
 	return (jint)GetMesenVersion();
 }
 
-JNIEXPORT jstring JNICALL Java_com_mesen_MesenCore_getMesenBuildDate(JNIEnv* env, jclass)
+JNIEXPORT jstring JNICALL Java_mesen_MesenCore_getMesenBuildDate(JNIEnv* env, jclass)
 {
 	return Utf8ToJString(env, GetMesenBuildDate());
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_initDll(JNIEnv*, jclass)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_initDll(JNIEnv*, jclass)
 {
 	InitDll();
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_initializeEmu(JNIEnv* env, jclass, jstring homeFolder, jboolean softwareRenderer, jboolean noAudio, jboolean noVideo, jboolean noInput)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_initializeEmu(JNIEnv* env, jclass, jstring homeFolder, jboolean softwareRenderer, jboolean noAudio, jboolean noVideo, jboolean noInput)
 {
 	string home = JStringToUtf8(env, homeFolder);
 	// Headless: null window/viewer handles. The software renderer is created
@@ -155,69 +155,69 @@ JNIEXPORT void JNICALL Java_com_mesen_MesenCore_initializeEmu(JNIEnv* env, jclas
 	InitializeEmu(home.c_str(), nullptr, nullptr, softwareRenderer, noAudio, noVideo, noInput);
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_release(JNIEnv*, jclass)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_release(JNIEnv*, jclass)
 {
 	Release();
 }
 
-JNIEXPORT jboolean JNICALL Java_com_mesen_MesenCore_isRunning(JNIEnv*, jclass)
+JNIEXPORT jboolean JNICALL Java_mesen_MesenCore_isRunning(JNIEnv*, jclass)
 {
 	return IsRunning() ? JNI_TRUE : JNI_FALSE;
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_stop(JNIEnv*, jclass)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_stop(JNIEnv*, jclass)
 {
 	Stop();
 }
 
-JNIEXPORT jint JNICALL Java_com_mesen_MesenCore_getStopCode(JNIEnv*, jclass)
+JNIEXPORT jint JNICALL Java_mesen_MesenCore_getStopCode(JNIEnv*, jclass)
 {
 	return (jint)GetStopCode();
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_pause(JNIEnv*, jclass)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_pause(JNIEnv*, jclass)
 {
 	Pause();
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_resume(JNIEnv*, jclass)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_resume(JNIEnv*, jclass)
 {
 	Resume();
 }
 
-JNIEXPORT jboolean JNICALL Java_com_mesen_MesenCore_isPaused(JNIEnv*, jclass)
+JNIEXPORT jboolean JNICALL Java_mesen_MesenCore_isPaused(JNIEnv*, jclass)
 {
 	return IsPaused() ? JNI_TRUE : JNI_FALSE;
 }
 
 // --- ROM ------------------------------------------------------------------
 
-JNIEXPORT jboolean JNICALL Java_com_mesen_MesenCore_loadRom(JNIEnv* env, jclass, jstring filename, jstring patchFile)
+JNIEXPORT jboolean JNICALL Java_mesen_MesenCore_loadRom(JNIEnv* env, jclass, jstring filename, jstring patchFile)
 {
 	string fn = JStringToUtf8(env, filename);
 	string pf = JStringToUtf8(env, patchFile);
 	return LoadRom(fn.empty() ? nullptr : fn.data(), pf.empty() ? nullptr : pf.data()) ? JNI_TRUE : JNI_FALSE;
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_loadRecentGame(JNIEnv* env, jclass, jstring filepath, jboolean resetGame)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_loadRecentGame(JNIEnv* env, jclass, jstring filepath, jboolean resetGame)
 {
 	string fp = JStringToUtf8(env, filepath);
 	LoadRecentGame(fp.empty() ? nullptr : fp.data(), resetGame);
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_addKnownGameFolder(JNIEnv* env, jclass, jstring folder)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_addKnownGameFolder(JNIEnv* env, jclass, jstring folder)
 {
 	string f = JStringToUtf8(env, folder);
 	AddKnownGameFolder(f.empty() ? nullptr : f.data());
 }
 
-JNIEXPORT jobject JNICALL Java_com_mesen_MesenCore_getRomInfo(JNIEnv* env, jclass)
+JNIEXPORT jobject JNICALL Java_mesen_MesenCore_getRomInfo(JNIEnv* env, jclass)
 {
 	InteropRomInfo info;
 	memset(&info, 0, sizeof(info));
 	GetRomInfo(info);
 
-	jclass cls = env->FindClass("com/mesen/RomInfo");
+	jclass cls = env->FindClass("mesen/RomInfo");
 	jmethodID ctor = env->GetMethodID(cls, "<init>", "()V");
 	jobject obj = env->NewObject(cls, ctor);
 
@@ -241,7 +241,7 @@ JNIEXPORT jobject JNICALL Java_com_mesen_MesenCore_getRomInfo(JNIEnv* env, jclas
 	return obj;
 }
 
-JNIEXPORT jstring JNICALL Java_com_mesen_MesenCore_getRomHash(JNIEnv* env, jclass, jint hashType)
+JNIEXPORT jstring JNICALL Java_mesen_MesenCore_getRomHash(JNIEnv* env, jclass, jint hashType)
 {
 	std::vector<char> buf(1000000, 0);
 	GetRomHash((HashType)hashType, buf.data(), (uint32_t)buf.size());
@@ -250,46 +250,46 @@ JNIEXPORT jstring JNICALL Java_com_mesen_MesenCore_getRomHash(JNIEnv* env, jclas
 
 // --- State ----------------------------------------------------------------
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_saveState(JNIEnv*, jclass, jint slot)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_saveState(JNIEnv*, jclass, jint slot)
 {
 	SaveState((uint32_t)slot);
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_loadState(JNIEnv*, jclass, jint slot)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_loadState(JNIEnv*, jclass, jint slot)
 {
 	LoadState((uint32_t)slot);
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_saveStateFile(JNIEnv* env, jclass, jstring filepath)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_saveStateFile(JNIEnv* env, jclass, jstring filepath)
 {
 	string fp = JStringToUtf8(env, filepath);
 	SaveStateFile(fp.empty() ? nullptr : fp.data());
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_loadStateFile(JNIEnv* env, jclass, jstring filepath)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_loadStateFile(JNIEnv* env, jclass, jstring filepath)
 {
 	string fp = JStringToUtf8(env, filepath);
 	LoadStateFile(fp.empty() ? nullptr : fp.data());
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_takeScreenshot(JNIEnv*, jclass)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_takeScreenshot(JNIEnv*, jclass)
 {
 	TakeScreenshot();
 }
 
 // --- Memory ---------------------------------------------------------------
 
-JNIEXPORT jlong JNICALL Java_com_mesen_MesenCore_getMemorySize(JNIEnv*, jclass, jint memoryType)
+JNIEXPORT jlong JNICALL Java_mesen_MesenCore_getMemorySize(JNIEnv*, jclass, jint memoryType)
 {
 	return (jlong)GetMemorySize((MemoryType)memoryType);
 }
 
-JNIEXPORT jint JNICALL Java_com_mesen_MesenCore_getMemoryValue(JNIEnv*, jclass, jint memoryType, jlong address)
+JNIEXPORT jint JNICALL Java_mesen_MesenCore_getMemoryValue(JNIEnv*, jclass, jint memoryType, jlong address)
 {
 	return (jint)GetMemoryValue((MemoryType)memoryType, (uint32_t)address);
 }
 
-JNIEXPORT jbyteArray JNICALL Java_com_mesen_MesenCore_getMemoryValues(JNIEnv* env, jclass, jint memoryType, jlong start, jlong end)
+JNIEXPORT jbyteArray JNICALL Java_mesen_MesenCore_getMemoryValues(JNIEnv* env, jclass, jint memoryType, jlong start, jlong end)
 {
 	uint32_t s = (uint32_t)start;
 	uint32_t e = (uint32_t)end;
@@ -307,12 +307,12 @@ JNIEXPORT jbyteArray JNICALL Java_com_mesen_MesenCore_getMemoryValues(JNIEnv* en
 	return result;
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setMemoryValue(JNIEnv*, jclass, jint memoryType, jlong address, jint value)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setMemoryValue(JNIEnv*, jclass, jint memoryType, jlong address, jint value)
 {
 	SetMemoryValue((MemoryType)memoryType, (uint32_t)address, (uint8_t)value);
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setMemoryValues(JNIEnv* env, jclass, jint memoryType, jlong address, jbyteArray data)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setMemoryValues(JNIEnv* env, jclass, jint memoryType, jlong address, jbyteArray data)
 {
 	jsize len = env->GetArrayLength(data);
 	jbyte* bytes = env->GetByteArrayElements(data, nullptr);
@@ -324,17 +324,17 @@ JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setMemoryValues(JNIEnv* env, jcl
 
 // --- Config ---------------------------------------------------------------
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setEmulationFlag(JNIEnv*, jclass, jint flag, jboolean enabled)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setEmulationFlag(JNIEnv*, jclass, jint flag, jboolean enabled)
 {
 	SetEmulationFlag((EmulationFlags)flag, enabled);
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setDebuggerFlag(JNIEnv*, jclass, jint flag, jboolean enabled)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setDebuggerFlag(JNIEnv*, jclass, jint flag, jboolean enabled)
 {
 	SetDebuggerFlag((DebuggerFlags)flag, enabled);
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setEmulationConfig(JNIEnv*, jclass, jint emulationSpeed, jint turboSpeed, jint rewindSpeed, jint runAheadFrames)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setEmulationConfig(JNIEnv*, jclass, jint emulationSpeed, jint turboSpeed, jint rewindSpeed, jint runAheadFrames)
 {
 	EmulationConfig cfg = GetEmulationConfig();
 	cfg.EmulationSpeed = (uint32_t)emulationSpeed;
@@ -344,7 +344,7 @@ JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setEmulationConfig(JNIEnv*, jcla
 	SetEmulationConfig(cfg);
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setVideoConfig(JNIEnv*, jclass, jint videoFilter, jint aspectRatio, jdouble customAspectRatio, jint screenRotation)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setVideoConfig(JNIEnv*, jclass, jint videoFilter, jint aspectRatio, jdouble customAspectRatio, jint screenRotation)
 {
 	VideoConfig cfg = GetVideoConfig();
 	cfg.VideoFilter = (VideoFilterType)videoFilter;
@@ -354,7 +354,7 @@ JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setVideoConfig(JNIEnv*, jclass, 
 	SetVideoConfig(cfg);
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setAudioConfig(JNIEnv*, jclass, jboolean enableAudio, jint masterVolume, jint sampleRate, jint audioLatency)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setAudioConfig(JNIEnv*, jclass, jboolean enableAudio, jint masterVolume, jint sampleRate, jint audioLatency)
 {
 	AudioConfig cfg = GetAudioConfig();
 	cfg.EnableAudio = enableAudio;
@@ -364,14 +364,14 @@ JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setAudioConfig(JNIEnv*, jclass, 
 	SetAudioConfig(cfg);
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setControllerType(JNIEnv*, jclass, jint consoleType, jint port, jint controllerType)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setControllerType(JNIEnv*, jclass, jint consoleType, jint port, jint controllerType)
 {
 	ApplyControllerConfig(consoleType, port, [&](ControllerConfig& cfg) {
 		cfg.Type = (ControllerType)controllerType;
 	});
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setControllerKey(JNIEnv*, jclass, jint consoleType, jint port, jint button, jint keyCode)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setControllerKey(JNIEnv*, jclass, jint consoleType, jint port, jint button, jint keyCode)
 {
 	ApplyControllerConfig(consoleType, port, [&](ControllerConfig& cfg) {
 		uint16_t* field = GetKeyMappingField(cfg.Keys.Mapping1, button);
@@ -383,7 +383,7 @@ JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setControllerKey(JNIEnv*, jclass
 
 // --- Palette config -------------------------------------------------------
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setNesCustomPalette(JNIEnv* env, jclass, jintArray palette)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setNesCustomPalette(JNIEnv* env, jclass, jintArray palette)
 {
 	NesConfig cfg = GetNesConfig();
 	jsize len = env->GetArrayLength(palette);
@@ -396,35 +396,35 @@ JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setNesCustomPalette(JNIEnv* env,
 	SetNesConfig(cfg);
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setNesFullColorPalette(JNIEnv*, jclass, jboolean enabled)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setNesFullColorPalette(JNIEnv*, jclass, jboolean enabled)
 {
 	NesConfig cfg = GetNesConfig();
 	cfg.IsFullColorPalette = enabled;
 	SetNesConfig(cfg);
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setNesUseCustomVsPalette(JNIEnv*, jclass, jboolean enabled)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setNesUseCustomVsPalette(JNIEnv*, jclass, jboolean enabled)
 {
 	NesConfig cfg = GetNesConfig();
 	cfg.UseCustomVsPalette = enabled;
 	SetNesConfig(cfg);
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setNesRegion(JNIEnv*, jclass, jint region)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setNesRegion(JNIEnv*, jclass, jint region)
 {
 	NesConfig cfg = GetNesConfig();
 	cfg.Region = (ConsoleRegion)region;
 	SetNesConfig(cfg);
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setNesRemoveSpriteLimit(JNIEnv*, jclass, jboolean enabled)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setNesRemoveSpriteLimit(JNIEnv*, jclass, jboolean enabled)
 {
 	NesConfig cfg = GetNesConfig();
 	cfg.RemoveSpriteLimit = enabled;
 	SetNesConfig(cfg);
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setPceCustomPalette(JNIEnv* env, jclass, jintArray palette)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setPceCustomPalette(JNIEnv* env, jclass, jintArray palette)
 {
 	PcEngineConfig cfg = GetPcEngineConfig();
 	jsize len = env->GetArrayLength(palette);
@@ -437,7 +437,7 @@ JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setPceCustomPalette(JNIEnv* env,
 	SetPcEngineConfig(cfg);
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setGameboyPalette(JNIEnv* env, jclass, jintArray bg, jintArray obj0, jintArray obj1)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setGameboyPalette(JNIEnv* env, jclass, jintArray bg, jintArray obj0, jintArray obj1)
 {
 	GameboyConfig cfg = GetGameboyConfig();
 
@@ -460,41 +460,41 @@ JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setGameboyPalette(JNIEnv* env, j
 	SetGameboyConfig(cfg);
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setSmsUseSgPalette(JNIEnv*, jclass, jboolean enabled)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setSmsUseSgPalette(JNIEnv*, jclass, jboolean enabled)
 {
 	SmsConfig cfg = GetSmsConfig();
 	cfg.UseSgPalette = enabled;
 	SetSmsConfig(cfg);
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setGbaAdjustColors(JNIEnv*, jclass, jboolean enabled)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setGbaAdjustColors(JNIEnv*, jclass, jboolean enabled)
 {
 	GbaConfig cfg = GetGbaConfig();
 	cfg.GbaAdjustColors = enabled;
 	SetGbaConfig(cfg);
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setWsLcdAdjustColors(JNIEnv*, jclass, jboolean enabled)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setWsLcdAdjustColors(JNIEnv*, jclass, jboolean enabled)
 {
 	WsConfig cfg = GetWsConfig();
 	cfg.LcdAdjustColors = enabled;
 	SetWsConfig(cfg);
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setRendererSize(JNIEnv*, jclass, jint width, jint height)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setRendererSize(JNIEnv*, jclass, jint width, jint height)
 {
 	SetRendererSize((uint32_t)width, (uint32_t)height);
 }
 
-JNIEXPORT jdouble JNICALL Java_com_mesen_MesenCore_getAspectRatio(JNIEnv*, jclass)
+JNIEXPORT jdouble JNICALL Java_mesen_MesenCore_getAspectRatio(JNIEnv*, jclass)
 {
 	return (jdouble)GetAspectRatio();
 }
 
-JNIEXPORT jobject JNICALL Java_com_mesen_MesenCore_getBaseScreenSize(JNIEnv* env, jclass)
+JNIEXPORT jobject JNICALL Java_mesen_MesenCore_getBaseScreenSize(JNIEnv* env, jclass)
 {
 	FrameInfo f = GetBaseScreenSize();
-	jclass cls = env->FindClass("com/mesen/FrameInfo");
+	jclass cls = env->FindClass("mesen/FrameInfo");
 	jmethodID ctor = env->GetMethodID(cls, "<init>", "()V");
 	jobject obj = env->NewObject(cls, ctor);
 	env->SetIntField(obj, env->GetFieldID(cls, "width", "I"), (jint)f.Width);
@@ -502,10 +502,10 @@ JNIEXPORT jobject JNICALL Java_com_mesen_MesenCore_getBaseScreenSize(JNIEnv* env
 	return obj;
 }
 
-JNIEXPORT jobject JNICALL Java_com_mesen_MesenCore_getTimingInfo(JNIEnv* env, jclass, jint cpuType)
+JNIEXPORT jobject JNICALL Java_mesen_MesenCore_getTimingInfo(JNIEnv* env, jclass, jint cpuType)
 {
 	TimingInfo t = GetTimingInfo((CpuType)cpuType);
-	jclass cls = env->FindClass("com/mesen/TimingInfo");
+	jclass cls = env->FindClass("mesen/TimingInfo");
 	jmethodID ctor = env->GetMethodID(cls, "<init>", "()V");
 	jobject obj = env->NewObject(cls, ctor);
 	env->SetDoubleField(obj, env->GetFieldID(cls, "fps", "D"), t.Fps);
@@ -520,70 +520,70 @@ JNIEXPORT jobject JNICALL Java_com_mesen_MesenCore_getTimingInfo(JNIEnv* env, jc
 
 // --- Input ----------------------------------------------------------------
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setKeyState(JNIEnv*, jclass, jint scanCode, jboolean state)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setKeyState(JNIEnv*, jclass, jint scanCode, jboolean state)
 {
 	SetKeyState((uint16_t)scanCode, state);
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_resetKeyState(JNIEnv*, jclass)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_resetKeyState(JNIEnv*, jclass)
 {
 	ResetKeyState();
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_disableAllKeys(JNIEnv*, jclass, jboolean disabled)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_disableAllKeys(JNIEnv*, jclass, jboolean disabled)
 {
 	DisableAllKeys(disabled);
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_updateInputDevices(JNIEnv*, jclass)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_updateInputDevices(JNIEnv*, jclass)
 {
 	UpdateInputDevices();
 }
 
-JNIEXPORT jint JNICALL Java_com_mesen_MesenCore_getKeyCode(JNIEnv* env, jclass, jstring keyName)
+JNIEXPORT jint JNICALL Java_mesen_MesenCore_getKeyCode(JNIEnv* env, jclass, jstring keyName)
 {
 	string kn = JStringToUtf8(env, keyName);
 	return (jint)GetKeyCode(kn.empty() ? nullptr : kn.data());
 }
 
-JNIEXPORT jstring JNICALL Java_com_mesen_MesenCore_getKeyName(JNIEnv* env, jclass, jint keyCode)
+JNIEXPORT jstring JNICALL Java_mesen_MesenCore_getKeyName(JNIEnv* env, jclass, jint keyCode)
 {
 	std::vector<char> buf(256, 0);
 	GetKeyName((uint16_t)keyCode, buf.data(), (uint32_t)buf.size());
 	return Utf8ToJString(env, buf.data());
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setMousePosition(JNIEnv*, jclass, jdouble x, jdouble y)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setMousePosition(JNIEnv*, jclass, jdouble x, jdouble y)
 {
 	SetMousePosition(x, y);
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_setMouseMovement(JNIEnv*, jclass, jint x, jint y)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setMouseMovement(JNIEnv*, jclass, jint x, jint y)
 {
 	SetMouseMovement((int16_t)x, (int16_t)y);
 }
 
-JNIEXPORT jboolean JNICALL Java_com_mesen_MesenCore_hasControlDevice(JNIEnv*, jclass, jint controllerType)
+JNIEXPORT jboolean JNICALL Java_mesen_MesenCore_hasControlDevice(JNIEnv*, jclass, jint controllerType)
 {
 	return HasControlDevice((ControllerType)controllerType) ? JNI_TRUE : JNI_FALSE;
 }
 
 // --- Log / messages -------------------------------------------------------
 
-JNIEXPORT jstring JNICALL Java_com_mesen_MesenCore_getLog(JNIEnv* env, jclass)
+JNIEXPORT jstring JNICALL Java_mesen_MesenCore_getLog(JNIEnv* env, jclass)
 {
 	std::vector<char> buf(100000, 0);
 	GetLog(buf.data(), (uint32_t)buf.size());
 	return Utf8ToJString(env, buf.data());
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_writeLogEntry(JNIEnv* env, jclass, jstring message)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_writeLogEntry(JNIEnv* env, jclass, jstring message)
 {
 	string m = JStringToUtf8(env, message);
 	WriteLogEntry(m.empty() ? nullptr : m.data());
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_displayMessage(JNIEnv* env, jclass, jstring title, jstring message, jstring param)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_displayMessage(JNIEnv* env, jclass, jstring title, jstring message, jstring param)
 {
 	string t = JStringToUtf8(env, title);
 	string m = JStringToUtf8(env, message);
@@ -593,7 +593,7 @@ JNIEXPORT void JNICALL Java_com_mesen_MesenCore_displayMessage(JNIEnv* env, jcla
 
 // --- Software-rendered frame ----------------------------------------------
 
-JNIEXPORT jint JNICALL Java_com_mesen_MesenCore_getFrameWidth(JNIEnv*, jclass)
+JNIEXPORT jint JNICALL Java_mesen_MesenCore_getFrameWidth(JNIEnv*, jclass)
 {
 	uint32_t width = 0, height = 0;
 	uint32_t* buffer = nullptr;
@@ -601,7 +601,7 @@ JNIEXPORT jint JNICALL Java_com_mesen_MesenCore_getFrameWidth(JNIEnv*, jclass)
 	return (jint)width;
 }
 
-JNIEXPORT jint JNICALL Java_com_mesen_MesenCore_getFrameHeight(JNIEnv*, jclass)
+JNIEXPORT jint JNICALL Java_mesen_MesenCore_getFrameHeight(JNIEnv*, jclass)
 {
 	uint32_t width = 0, height = 0;
 	uint32_t* buffer = nullptr;
@@ -609,7 +609,7 @@ JNIEXPORT jint JNICALL Java_com_mesen_MesenCore_getFrameHeight(JNIEnv*, jclass)
 	return (jint)height;
 }
 
-JNIEXPORT void JNICALL Java_com_mesen_MesenCore_copyFrameBuffer(JNIEnv* env, jclass, jintArray argb)
+JNIEXPORT void JNICALL Java_mesen_MesenCore_copyFrameBuffer(JNIEnv* env, jclass, jintArray argb)
 {
 	uint32_t width = 0, height = 0;
 	uint32_t* buffer = nullptr;
@@ -633,12 +633,12 @@ JNIEXPORT void JNICALL Java_com_mesen_MesenCore_copyFrameBuffer(JNIEnv* env, jcl
 
 // --- Captured audio -------------------------------------------------------
 
-JNIEXPORT jint JNICALL Java_com_mesen_MesenCore_getAudioSampleRate(JNIEnv*, jclass)
+JNIEXPORT jint JNICALL Java_mesen_MesenCore_getAudioSampleRate(JNIEnv*, jclass)
 {
 	return (jint)GetAudioSampleRate();
 }
 
-JNIEXPORT jint JNICALL Java_com_mesen_MesenCore_readAudioSamples(JNIEnv* env, jclass, jshortArray out)
+JNIEXPORT jint JNICALL Java_mesen_MesenCore_readAudioSamples(JNIEnv* env, jclass, jshortArray out)
 {
 	jsize capacity = env->GetArrayLength(out);
 	if(capacity <= 0) {

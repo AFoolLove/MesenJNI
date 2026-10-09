@@ -1,5 +1,5 @@
-import com.mesen.MesenCore;
-import com.mesen.Mesen;
+import mesen.MesenCore;
+import mesen.Mesen;
 
 /** Minimal smoke test: loads the native library and calls a few bindings. */
 public class SmokeTest

@@ -1,4 +1,4 @@
-package com.mesen;
+package mesen;
 
 /**
  * JNI bindings for the Mesen core (MesenCore native library).

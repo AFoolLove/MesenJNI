@@ -1,5 +1,5 @@
-import com.mesen.MesenCore;
-import com.mesen.Mesen;
+import mesen.MesenCore;
+import mesen.Mesen;
 
 /** Smoke test for the JNI config APIs. */
 public class ConfigSmokeTest

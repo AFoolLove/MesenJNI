@@ -1,4 +1,4 @@
-package com.mesen;
+package mesen;
 
 /** A width/height pair. */
 public class FrameInfo

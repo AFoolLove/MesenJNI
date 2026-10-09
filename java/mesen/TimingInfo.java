@@ -1,4 +1,4 @@
-package com.mesen;
+package mesen;
 
 /** Emulation timing information for a CPU. */
 public class TimingInfo

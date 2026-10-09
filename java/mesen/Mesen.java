@@ -1,4 +1,4 @@
-package com.mesen;
+package mesen;
 
 /**
  * Constants matching the MesenCore native enums. The int values correspond to

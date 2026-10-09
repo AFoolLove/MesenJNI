@@ -1,4 +1,4 @@
-package com.mesen;
+package mesen;
 
 /** Information about the currently loaded ROM. */
 public class RomInfo

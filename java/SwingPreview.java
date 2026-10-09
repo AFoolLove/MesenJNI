@@ -1,7 +1,7 @@
-import com.mesen.MesenCore;
-import com.mesen.Mesen;
-import com.mesen.MesenConfig;
-import com.mesen.RomInfo;
+import mesen.MesenCore;
+import mesen.Mesen;
+import mesen.MesenConfig;
+import mesen.RomInfo;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;

@@ -1,4 +1,4 @@
-import com.mesen.MesenCore;
+import mesen.MesenCore;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
