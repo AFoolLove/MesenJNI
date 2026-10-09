@@ -67,11 +67,10 @@ IRenderingDevice* InitRenderer()
 {
 	if(_softwareRenderer || _windowHandle == nullptr) {
 		// Headless (or explicit software renderer): no window to attach to.
-		SoftwareRenderer* renderer = new SoftwareRenderer(_emu.get());
-		if(_softwareRenderer) {
-			_softwareRendererInstance = renderer;
-		}
-		return renderer;
+		// Always keep the polling buffer reference so getFrameWidth/copyFrameBuffer
+		// work regardless of the softwareRenderer flag.
+		_softwareRendererInstance = new SoftwareRenderer(_emu.get());
+		return _softwareRendererInstance;
 	} else {
 #ifdef _WIN32
 		return new Renderer(_emu.get(), (HWND)_viewerHandle);
