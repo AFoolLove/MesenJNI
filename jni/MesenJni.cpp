@@ -377,6 +377,28 @@ JNIEXPORT void JNICALL Java_mesen_MesenCore_setMemoryValues(JNIEnv* env, jclass,
 	}
 }
 
+// --- Lua scripting --------------------------------------------------------
+
+JNIEXPORT jint JNICALL Java_mesen_MesenCore_loadScript(JNIEnv* env, jclass, jstring name, jstring path, jstring content, jint scriptId)
+{
+	string n = JStringToUtf8(env, name);
+	string p = JStringToUtf8(env, path);
+	string c = JStringToUtf8(env, content);
+	return (jint)LoadScript(n.data(), p.data(), c.data(), scriptId);
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_removeScript(JNIEnv*, jclass, jint scriptId)
+{
+	RemoveScript(scriptId);
+}
+
+JNIEXPORT jstring JNICALL Java_mesen_MesenCore_getScriptLog(JNIEnv* env, jclass, jint scriptId)
+{
+	std::vector<char> buf(100000, 0);
+	GetScriptLog(scriptId, buf.data(), (uint32_t)buf.size());
+	return Utf8ToJString(env, buf.data());
+}
+
 // --- Config ---------------------------------------------------------------
 
 JNIEXPORT void JNICALL Java_mesen_MesenCore_setEmulationFlag(JNIEnv*, jclass, jint flag, jboolean enabled)

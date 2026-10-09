@@ -109,6 +109,11 @@ MESEN_EXTERN
 	void MESEN_CALL SetMemoryValue(MemoryType type, uint32_t address, uint8_t value);
 	void MESEN_CALL SetMemoryValues(MemoryType type, uint32_t address, uint8_t* data, int32_t length);
 
+	// --- DebugApiWrapper (Lua scripting) ---
+	int32_t MESEN_CALL LoadScript(char* name, char* path, char* content, int32_t scriptId);
+	void MESEN_CALL RemoveScript(int32_t scriptId);
+	void MESEN_CALL GetScriptLog(int32_t scriptId, char* outScriptLog, uint32_t maxLength);
+
 	// --- InputApiWrapper ---
 	void MESEN_CALL SetMousePosition(double x, double y);
 	void MESEN_CALL SetMouseMovement(int16_t x, int16_t y);
