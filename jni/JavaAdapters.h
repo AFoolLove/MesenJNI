@@ -46,7 +46,13 @@ public:
 	JNIEnv* getEnv()
 	{
 		JNIEnv* env = nullptr;
+#ifdef __ANDROID__
+		// NDK (r28+) 的 JavaVM::AttachCurrentThread 签名是 JNIEnv**，
+		// 而 JDK 的是 void**；这里按平台区分。
+		vm->AttachCurrentThread(&env, nullptr);
+#else
 		vm->AttachCurrentThread((void**)&env, nullptr);
+#endif
 		return env;
 	}
 };
