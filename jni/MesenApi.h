@@ -21,6 +21,7 @@
 #include "Core/Debugger/DebuggerFeatures.h"   // DebuggerFeatures
 #include "Core/Debugger/DisassemblySearch.h"  // DisassemblySearchOptions
 #include "Core/Debugger/PpuTools.h"           // DebugTilemapInfo, DebugSpriteInfo, ...
+#include "Core/Debugger/BaseEventManager.h"   // DebugEventInfo, BaseEventViewerConfig
 
 class Breakpoint;
 struct AddressCounters;
@@ -181,6 +182,17 @@ MESEN_EXTERN
 	uint32_t MESEN_CALL AssembleCode(CpuType cpuType, char* code, uint32_t startAddress, int16_t* assembledOutput);
 	void MESEN_CALL GetRomHeader(uint8_t* headerData, uint32_t& size);
 	bool MESEN_CALL SaveRomToDisk(char* filename, bool saveIpsFile, CdlStripOption cdlStripOption);
+
+	// --- DebugApiWrapper (event viewer) ---
+	void MESEN_CALL SetEventViewerConfig(CpuType cpuType, BaseEventViewerConfig& config);
+	void MESEN_CALL GetDebugEvents(CpuType cpuType, DebugEventInfo* infoArray, uint32_t& maxEventCount);
+	uint32_t MESEN_CALL GetDebugEventCount(CpuType cpuType);
+	FrameInfo MESEN_CALL GetEventViewerDisplaySize(CpuType cpuType);
+	void MESEN_CALL GetEventViewerOutput(CpuType cpuType, uint32_t* buffer, uint32_t bufferSize);
+	DebugEventInfo MESEN_CALL GetEventViewerEvent(CpuType cpuType, uint16_t scanline, uint16_t cycle);
+	uint32_t MESEN_CALL TakeEventSnapshot(CpuType cpuType, bool forAutoRefresh);
+	void MESEN_CALL SetViewerUpdateTiming(uint32_t viewerId, uint16_t scanline, uint16_t cycle, CpuType cpuType);
+	void MESEN_CALL RemoveViewerId(uint32_t viewerId, CpuType cpuType);
 
 	// --- DebugApiWrapper (labels / undo / address conversion) ---
 	void MESEN_CALL SetLabel(uint32_t address, MemoryType memType, char* label, char* comment);

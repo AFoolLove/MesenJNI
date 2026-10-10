@@ -22,6 +22,14 @@
 #include "Core/GBA/GbaTypes.h"
 #include "Core/WS/WsTypes.h"
 
+#include "Core/NES/Debugger/NesEventManager.h"
+#include "Core/SNES/Debugger/SnesEventManager.h"
+#include "Core/Gameboy/Debugger/GbEventManager.h"
+#include "Core/GBA/Debugger/GbaEventManager.h"
+#include "Core/PCE/Debugger/PceEventManager.h"
+#include "Core/SMS/Debugger/SmsEventManager.h"
+#include "Core/WS/Debugger/WsEventManager.h"
+
 #include <jni.h>
 
 #include <cstring>
@@ -192,6 +200,25 @@ namespace
 		jfieldID piPaletteMemType, piPaletteMemOffset, piHasMemType, piColorCount,
 			piBgColorCount, piSpriteColorCount, piSpritePaletteOffset, piColorsPerPalette,
 			piRawFormat, piRawPalette, piRgbPalette;
+
+		// Event viewer
+		jclass debugEventInfo;
+		jmethodID debugEventInfoCtor;
+		jfieldID deiOperation, deiType, deiProgramCounter, deiScanline, deiCycle,
+			deiBreakpointId, deiDmaChannel, deiDmaSrcAddress, deiDmaTransferSize,
+			deiDmaHdmaTableAddress, deiDmaSrcBank, deiDmaDestAddress, deiDmaActive,
+			deiDmaInvertDirection, deiDmaDecrement, deiDmaFixedTransfer,
+			deiDmaHdmaIndirectAddressing, deiDmaTransferMode, deiDmaHdmaBank,
+			deiDmaHdmaLineCounter, deiDmaDoTransfer, deiDmaUnusedControlFlag,
+			deiDmaUnusedRegister, deiFlags, deiRegisterId, deiTargetMemory, deiColor;
+
+		jclass eventViewerConfig;
+		jmethodID eventViewerConfigCtor;
+		jfieldID evcCategoryNames, evcVisible, evcColors, evcShowPreviousFrame;
+
+		jclass viewerSize;
+		jmethodID viewerSizeCtor;
+		jfieldID vsWidth, vsHeight;
 	};
 
 	JniCache g_cache;
@@ -241,6 +268,10 @@ namespace
 		g_cache.spriteListResult = findClass("mesen/debugger/SpriteListResult");
 		g_cache.paletteInfo = findClass("mesen/debugger/PaletteInfo");
 
+		g_cache.debugEventInfo = findClass("mesen/debugger/DebugEventInfo");
+		g_cache.eventViewerConfig = findClass("mesen/debugger/EventViewerConfig");
+		g_cache.viewerSize = findClass("mesen/debugger/ViewerSize");
+
 		if(!g_cache.addressInfo || !g_cache.effectiveAddress || !g_cache.codeLine ||
 			!g_cache.breakpoint || !g_cache.stackFrame || !g_cache.cdlStatistics ||
 			!g_cache.cpuVector || !g_cache.debuggerFeatures || !g_cache.memoryOperation ||
@@ -249,7 +280,8 @@ namespace
 			!g_cache.tileViewOptions || !g_cache.tileView || !g_cache.tilemapOptions ||
 			!g_cache.tilemapInfo || !g_cache.tilemapResult || !g_cache.tilemapTileInfo ||
 			!g_cache.spriteOptions || !g_cache.spritePreviewInfo || !g_cache.spriteInfo ||
-			!g_cache.spriteListResult || !g_cache.paletteInfo) {
+			!g_cache.spriteListResult || !g_cache.paletteInfo ||
+			!g_cache.debugEventInfo || !g_cache.eventViewerConfig || !g_cache.viewerSize) {
 			return false;
 		}
 
@@ -521,6 +553,45 @@ namespace
 		g_cache.piRawFormat = field(g_cache.paletteInfo, "rawFormat", "I");
 		g_cache.piRawPalette = field(g_cache.paletteInfo, "rawPalette", "[I");
 		g_cache.piRgbPalette = field(g_cache.paletteInfo, "rgbPalette", "[I");
+
+		g_cache.debugEventInfoCtor = env->GetMethodID(g_cache.debugEventInfo, "<init>", "()V");
+		g_cache.deiOperation = field(g_cache.debugEventInfo, "operation", "Lmesen/debugger/MemoryOperation;");
+		g_cache.deiType = field(g_cache.debugEventInfo, "type", "I");
+		g_cache.deiProgramCounter = field(g_cache.debugEventInfo, "programCounter", "I");
+		g_cache.deiScanline = field(g_cache.debugEventInfo, "scanline", "I");
+		g_cache.deiCycle = field(g_cache.debugEventInfo, "cycle", "I");
+		g_cache.deiBreakpointId = field(g_cache.debugEventInfo, "breakpointId", "I");
+		g_cache.deiDmaChannel = field(g_cache.debugEventInfo, "dmaChannel", "I");
+		g_cache.deiDmaSrcAddress = field(g_cache.debugEventInfo, "dmaSrcAddress", "I");
+		g_cache.deiDmaTransferSize = field(g_cache.debugEventInfo, "dmaTransferSize", "I");
+		g_cache.deiDmaHdmaTableAddress = field(g_cache.debugEventInfo, "dmaHdmaTableAddress", "I");
+		g_cache.deiDmaSrcBank = field(g_cache.debugEventInfo, "dmaSrcBank", "I");
+		g_cache.deiDmaDestAddress = field(g_cache.debugEventInfo, "dmaDestAddress", "I");
+		g_cache.deiDmaActive = field(g_cache.debugEventInfo, "dmaActive", "Z");
+		g_cache.deiDmaInvertDirection = field(g_cache.debugEventInfo, "dmaInvertDirection", "Z");
+		g_cache.deiDmaDecrement = field(g_cache.debugEventInfo, "dmaDecrement", "Z");
+		g_cache.deiDmaFixedTransfer = field(g_cache.debugEventInfo, "dmaFixedTransfer", "Z");
+		g_cache.deiDmaHdmaIndirectAddressing = field(g_cache.debugEventInfo, "dmaHdmaIndirectAddressing", "Z");
+		g_cache.deiDmaTransferMode = field(g_cache.debugEventInfo, "dmaTransferMode", "I");
+		g_cache.deiDmaHdmaBank = field(g_cache.debugEventInfo, "dmaHdmaBank", "I");
+		g_cache.deiDmaHdmaLineCounter = field(g_cache.debugEventInfo, "dmaHdmaLineCounterAndRepeat", "I");
+		g_cache.deiDmaDoTransfer = field(g_cache.debugEventInfo, "dmaDoTransfer", "Z");
+		g_cache.deiDmaUnusedControlFlag = field(g_cache.debugEventInfo, "dmaUnusedControlFlag", "Z");
+		g_cache.deiDmaUnusedRegister = field(g_cache.debugEventInfo, "dmaUnusedRegister", "I");
+		g_cache.deiFlags = field(g_cache.debugEventInfo, "flags", "I");
+		g_cache.deiRegisterId = field(g_cache.debugEventInfo, "registerId", "I");
+		g_cache.deiTargetMemory = field(g_cache.debugEventInfo, "targetMemory", "Lmesen/debugger/MemoryOperation;");
+		g_cache.deiColor = field(g_cache.debugEventInfo, "color", "I");
+
+		g_cache.eventViewerConfigCtor = env->GetMethodID(g_cache.eventViewerConfig, "<init>", "()V");
+		g_cache.evcCategoryNames = field(g_cache.eventViewerConfig, "categoryNames", "[Ljava/lang/String;");
+		g_cache.evcVisible = field(g_cache.eventViewerConfig, "visible", "[Z");
+		g_cache.evcColors = field(g_cache.eventViewerConfig, "colors", "[I");
+		g_cache.evcShowPreviousFrame = field(g_cache.eventViewerConfig, "showPreviousFrameEvents", "Z");
+
+		g_cache.viewerSizeCtor = env->GetMethodID(g_cache.viewerSize, "<init>", "()V");
+		g_cache.vsWidth = field(g_cache.viewerSize, "width", "I");
+		g_cache.vsHeight = field(g_cache.viewerSize, "height", "I");
 
 		if(env->ExceptionCheck()) {
 			return false;
@@ -1803,6 +1874,442 @@ extern "C"
 			(CdlStripOption)cdlStripOption);
 		env->ReleaseStringUTFChars(filename, chars);
 		return result ? JNI_TRUE : JNI_FALSE;
+	}
+
+	// -----------------------------------------------------------------------
+	// Event viewer
+	//
+	// The per-console config structs are a contiguous run of EventViewerCategoryCfg
+	// starting at offset 0 (verified by the static_asserts below), followed by a
+	// ShowPreviousFrameEvents flag. That lets one generic table-driven fill serve
+	// every console instead of marshalling ~166 named fields by hand.
+	// -----------------------------------------------------------------------
+
+	using CategoryCfg = EventViewerCategoryCfg;
+
+	static_assert(sizeof(CategoryCfg) == 8, "EventViewerCategoryCfg layout changed");
+	static_assert(offsetof(NesEventViewerConfig, Irq) == 0, "NES event categories moved");
+	static_assert(offsetof(SnesEventViewerConfig, Irq) == 0, "SNES event categories moved");
+	static_assert(offsetof(GbEventViewerConfig, Irq) == 0, "GB event categories moved");
+	static_assert(offsetof(GbaEventViewerConfig, Irq) == 0, "GBA event categories moved");
+	static_assert(offsetof(PceEventViewerConfig, Irq) == 0, "PCE event categories moved");
+	static_assert(offsetof(SmsEventViewerConfig, Irq) == 0, "SMS event categories moved");
+	static_assert(offsetof(WsEventViewerConfig, PpuPaletteRead) == 0, "WS event categories moved");
+
+	struct EventCategoryTable
+	{
+		uint32_t count;
+		const char* const* names;
+	};
+
+	const char* const NES_EVENT_CATEGORIES[] = {
+		"Irq", "Nmi", "MarkedBreakpoints",
+		"MapperRegisterWrites", "MapperRegisterReads",
+		"ApuRegisterWrites", "ApuRegisterReads",
+		"ControlRegisterWrites", "ControlRegisterReads",
+		"Ppu2000Write", "Ppu2001Write", "Ppu2003Write", "Ppu2004Write",
+		"Ppu2005Write", "Ppu2006Write", "Ppu2007Write",
+		"Ppu2002Read", "Ppu2004Read", "Ppu2007Read",
+		"DmcDmaReads", "OtherDmaReads", "SpriteZeroHit"
+	};
+
+	const char* const SNES_EVENT_CATEGORIES[] = {
+		"Irq", "Nmi", "MarkedBreakpoints",
+		"PpuRegisterReads", "PpuRegisterCgramWrites", "PpuRegisterVramWrites",
+		"PpuRegisterOamWrites", "PpuRegisterMode7Writes", "PpuRegisterBgOptionWrites",
+		"PpuRegisterBgScrollWrites", "PpuRegisterWindowWrites", "PpuRegisterOtherWrites",
+		"ApuRegisterReads", "ApuRegisterWrites",
+		"CpuRegisterReads", "CpuRegisterWrites",
+		"WorkRamRegisterReads", "WorkRamRegisterWrites"
+	};
+
+	const char* const GB_EVENT_CATEGORIES[] = {
+		"Irq", "MarkedBreakpoints",
+		"PpuRegisterCgramWrites", "PpuRegisterVramWrites", "PpuRegisterOamWrites",
+		"PpuRegisterBgScrollWrites", "PpuRegisterWindowWrites", "PpuRegisterOtherWrites",
+		"PpuRegisterCgramReads", "PpuRegisterVramReads", "PpuRegisterOamReads",
+		"PpuRegisterBgScrollReads", "PpuRegisterWindowReads", "PpuRegisterOtherReads",
+		"ApuRegisterReads", "ApuRegisterWrites",
+		"SerialReads", "SerialWrites",
+		"TimerReads", "TimerWrites",
+		"InputReads", "InputWrites",
+		"OtherRegisterReads", "OtherRegisterWrites"
+	};
+
+	const char* const GBA_EVENT_CATEGORIES[] = {
+		"Irq", "MarkedBreakpoints",
+		"PaletteReads", "PaletteWrites", "VramReads", "VramWrites", "OamReads", "OamWrites",
+		"PpuRegisterBgScrollReads", "PpuRegisterBgScrollWrites",
+		"PpuRegisterWindowReads", "PpuRegisterWindowWrites",
+		"PpuRegisterOtherReads", "PpuRegisterOtherWrites",
+		"DmaRegisterReads", "DmaRegisterWrites",
+		"ApuRegisterReads", "ApuRegisterWrites",
+		"SerialReads", "SerialWrites",
+		"TimerReads", "TimerWrites",
+		"InputReads", "InputWrites",
+		"OtherRegisterReads", "OtherRegisterWrites"
+	};
+
+	const char* const PCE_EVENT_CATEGORIES[] = {
+		"Irq", "MarkedBreakpoints",
+		"VdcStatusReads", "VdcVramWrites", "VdcVramReads",
+		"VdcRegSelectWrites", "VdcControlWrites", "VdcRcrWrites", "VdcHvConfigWrites",
+		"VdcMemoryWidthWrites", "VdcScrollWrites", "VdcDmaWrites",
+		"VceWrites", "VceReads",
+		"PsgWrites", "PsgReads",
+		"TimerWrites", "TimerReads",
+		"IoWrites", "IoReads",
+		"IrqControlWrites", "IrqControlReads",
+		"CdRomWrites", "CdRomReads",
+		"AdpcmWrites", "AdpcmReads",
+		"ArcadeCardWrites", "ArcadeCardReads",
+		"VpcWrites", "VpcReads"
+	};
+
+	const char* const SMS_EVENT_CATEGORIES[] = {
+		"Irq", "Nmi", "MarkedBreakpoints",
+		"VdpPaletteWrite", "VdpVramWrite",
+		"VdpVCounterRead", "VdpHCounterRead", "VdpVramRead",
+		"VdpControlPortRead", "VdpControlPortWrite",
+		"PsgWrite", "IoWrite", "IoRead", "MemoryControlWrite",
+		"GameGearPortWrite", "GameGearPortRead"
+	};
+
+	const char* const WS_EVENT_CATEGORIES[] = {
+		"PpuPaletteRead", "PpuPaletteWrite", "PpuVramRead", "PpuVramWrite",
+		"PpuVCounterRead", "PpuScrollRead", "PpuScrollWrite",
+		"PpuWindowRead", "PpuWindowWrite", "PpuOtherRead", "PpuOtherWrite",
+		"AudioRead", "AudioWrite", "SerialRead", "SerialWrite",
+		"DmaRead", "DmaWrite", "InputRead", "InputWrite",
+		"IrqRead", "IrqWrite", "TimerRead", "TimerWrite",
+		"EepromRead", "EepromWrite", "CartRead", "CartWrite",
+		"OtherRead", "OtherWrite", "Irq", "MarkedBreakpoints"
+	};
+
+	EventCategoryTable GetEventCategoryTable(CpuType type)
+	{
+		switch(type) {
+			case CpuType::Snes:
+			case CpuType::Spc:
+			case CpuType::NecDsp:
+			case CpuType::Sa1:
+			case CpuType::Gsu:
+			case CpuType::Cx4:
+			case CpuType::St018:
+				return { (uint32_t)(sizeof(SNES_EVENT_CATEGORIES) / sizeof(char*)), SNES_EVENT_CATEGORIES };
+			case CpuType::Gameboy:
+				return { (uint32_t)(sizeof(GB_EVENT_CATEGORIES) / sizeof(char*)), GB_EVENT_CATEGORIES };
+			case CpuType::Nes:
+				return { (uint32_t)(sizeof(NES_EVENT_CATEGORIES) / sizeof(char*)), NES_EVENT_CATEGORIES };
+			case CpuType::Pce:
+				return { (uint32_t)(sizeof(PCE_EVENT_CATEGORIES) / sizeof(char*)), PCE_EVENT_CATEGORIES };
+			case CpuType::Sms:
+				return { (uint32_t)(sizeof(SMS_EVENT_CATEGORIES) / sizeof(char*)), SMS_EVENT_CATEGORIES };
+			case CpuType::Gba:
+				return { (uint32_t)(sizeof(GBA_EVENT_CATEGORIES) / sizeof(char*)), GBA_EVENT_CATEGORIES };
+			case CpuType::Ws:
+				return { (uint32_t)(sizeof(WS_EVENT_CATEGORIES) / sizeof(char*)), WS_EVENT_CATEGORIES };
+			default:
+				return { 0, nullptr };
+		}
+	}
+
+	union EventConfigStorage
+	{
+		NesEventViewerConfig nes;
+		SnesEventViewerConfig snes;
+		GbEventViewerConfig gb;
+		GbaEventViewerConfig gba;
+		PceEventViewerConfig pce;
+		SmsEventViewerConfig sms;
+		WsEventViewerConfig ws;
+	};
+
+	jobject NewMemoryOperation(JNIEnv* env, const MemoryOperationInfo& info)
+	{
+		jobject obj = env->NewObject(g_cache.memoryOperation, g_cache.memoryOperationCtor);
+		env->SetIntField(obj, g_cache.moAddress, (jint)info.Address);
+		env->SetIntField(obj, g_cache.moValue, (jint)info.Value);
+		env->SetIntField(obj, g_cache.moOperationType, (jint)info.Type);
+		env->SetIntField(obj, g_cache.moMemoryType, (jint)info.MemType);
+		return obj;
+	}
+
+	jobject NewDebugEventInfo(JNIEnv* env, const DebugEventInfo& event)
+	{
+		jobject obj = env->NewObject(g_cache.debugEventInfo, g_cache.debugEventInfoCtor);
+
+		jobject operation = NewMemoryOperation(env, event.Operation);
+		env->SetObjectField(obj, g_cache.deiOperation, operation);
+		env->DeleteLocalRef(operation);
+
+		jobject target = NewMemoryOperation(env, event.TargetMemory);
+		env->SetObjectField(obj, g_cache.deiTargetMemory, target);
+		env->DeleteLocalRef(target);
+
+		env->SetIntField(obj, g_cache.deiType, (jint)event.Type);
+		env->SetIntField(obj, g_cache.deiProgramCounter, (jint)event.ProgramCounter);
+		env->SetIntField(obj, g_cache.deiScanline, (jint)event.Scanline);
+		env->SetIntField(obj, g_cache.deiCycle, (jint)event.Cycle);
+		env->SetIntField(obj, g_cache.deiBreakpointId, (jint)event.BreakpointId);
+		env->SetIntField(obj, g_cache.deiDmaChannel, (jint)event.DmaChannel);
+
+		const DmaChannelConfig& dma = event.DmaChannelInfo;
+		env->SetIntField(obj, g_cache.deiDmaSrcAddress, (jint)dma.SrcAddress);
+		env->SetIntField(obj, g_cache.deiDmaTransferSize, (jint)dma.TransferSize);
+		env->SetIntField(obj, g_cache.deiDmaHdmaTableAddress, (jint)dma.HdmaTableAddress);
+		env->SetIntField(obj, g_cache.deiDmaSrcBank, (jint)dma.SrcBank);
+		env->SetIntField(obj, g_cache.deiDmaDestAddress, (jint)dma.DestAddress);
+		env->SetBooleanField(obj, g_cache.deiDmaActive, dma.DmaActive ? JNI_TRUE : JNI_FALSE);
+		env->SetBooleanField(obj, g_cache.deiDmaInvertDirection, dma.InvertDirection ? JNI_TRUE : JNI_FALSE);
+		env->SetBooleanField(obj, g_cache.deiDmaDecrement, dma.Decrement ? JNI_TRUE : JNI_FALSE);
+		env->SetBooleanField(obj, g_cache.deiDmaFixedTransfer, dma.FixedTransfer ? JNI_TRUE : JNI_FALSE);
+		env->SetBooleanField(obj, g_cache.deiDmaHdmaIndirectAddressing, dma.HdmaIndirectAddressing ? JNI_TRUE : JNI_FALSE);
+		env->SetIntField(obj, g_cache.deiDmaTransferMode, (jint)dma.TransferMode);
+		env->SetIntField(obj, g_cache.deiDmaHdmaBank, (jint)dma.HdmaBank);
+		env->SetIntField(obj, g_cache.deiDmaHdmaLineCounter, (jint)dma.HdmaLineCounterAndRepeat);
+		env->SetBooleanField(obj, g_cache.deiDmaDoTransfer, dma.DoTransfer ? JNI_TRUE : JNI_FALSE);
+		env->SetBooleanField(obj, g_cache.deiDmaUnusedControlFlag, dma.UnusedControlFlag ? JNI_TRUE : JNI_FALSE);
+		env->SetIntField(obj, g_cache.deiDmaUnusedRegister, (jint)dma.UnusedRegister);
+
+		env->SetIntField(obj, g_cache.deiFlags, (jint)event.Flags);
+		env->SetIntField(obj, g_cache.deiRegisterId, (jint)event.RegisterId);
+		env->SetIntField(obj, g_cache.deiColor, (jint)event.Color);
+		return obj;
+	}
+
+	// Fills the contiguous category run. ShowPreviousFrameEvents is set by the
+	// caller (a plain function, not a template: this sits inside extern "C").
+	void ApplyEventConfigCategories(void* config, const EventCategoryTable& table,
+		const std::vector<jboolean>& visible, const std::vector<jint>& colors)
+	{
+		CategoryCfg* categories = reinterpret_cast<CategoryCfg*>(config);
+		for(uint32_t i = 0; i < table.count; i++) {
+			categories[i].Visible = i < visible.size() && visible[i] == JNI_TRUE;
+			categories[i].Color = i < colors.size() ? (uint32_t)colors[i] : 0;
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// Event viewer: JNI entry points
+	// -----------------------------------------------------------------------
+
+	JNIEXPORT jobject JNICALL Java_mesen_MesenDebugger_getEventViewerConfig(JNIEnv* env, jclass, jint cpuType)
+	{
+		if(!InitCache(env)) {
+			return nullptr;
+		}
+
+		EventCategoryTable table = GetEventCategoryTable((CpuType)cpuType);
+		jobject obj = env->NewObject(g_cache.eventViewerConfig, g_cache.eventViewerConfigCtor);
+		if(table.count == 0) {
+			return obj;
+		}
+
+		jclass stringClass = env->FindClass("java/lang/String");
+		jobjectArray names = env->NewObjectArray((jsize)table.count, stringClass, nullptr);
+		for(uint32_t i = 0; i < table.count; i++) {
+			jstring name = env->NewStringUTF(table.names[i]);
+			env->SetObjectArrayElement(names, (jsize)i, name);
+			env->DeleteLocalRef(name);
+		}
+		env->DeleteLocalRef(stringClass);
+		env->SetObjectField(obj, g_cache.evcCategoryNames, names);
+		env->DeleteLocalRef(names);
+
+		std::vector<jboolean> visible(table.count, JNI_FALSE);
+		jbooleanArray visibleArray = env->NewBooleanArray((jsize)table.count);
+		env->SetBooleanArrayRegion(visibleArray, 0, (jsize)table.count, visible.data());
+		env->SetObjectField(obj, g_cache.evcVisible, visibleArray);
+		env->DeleteLocalRef(visibleArray);
+
+		std::vector<jint> colors(table.count, 0);
+		jintArray colorArray = env->NewIntArray((jsize)table.count);
+		env->SetIntArrayRegion(colorArray, 0, (jsize)table.count, colors.data());
+		env->SetObjectField(obj, g_cache.evcColors, colorArray);
+		env->DeleteLocalRef(colorArray);
+
+		return obj;
+	}
+
+	JNIEXPORT void JNICALL Java_mesen_MesenDebugger_setEventViewerConfig(
+		JNIEnv* env, jclass, jint cpuType, jobject configObj)
+	{
+		if(!InitCache(env) || !configObj) {
+			return;
+		}
+
+		CpuType type = (CpuType)cpuType;
+		EventCategoryTable table = GetEventCategoryTable(type);
+		if(table.count == 0) {
+			return;
+		}
+
+		std::vector<jboolean> visible;
+		jbooleanArray visibleArray = (jbooleanArray)env->GetObjectField(configObj, g_cache.evcVisible);
+		if(visibleArray) {
+			jsize length = env->GetArrayLength(visibleArray);
+			visible.resize((size_t)length);
+			if(length > 0) {
+				env->GetBooleanArrayRegion(visibleArray, 0, length, visible.data());
+			}
+			env->DeleteLocalRef(visibleArray);
+		}
+
+		std::vector<jint> colors;
+		jintArray colorArray = (jintArray)env->GetObjectField(configObj, g_cache.evcColors);
+		if(colorArray) {
+			jsize length = env->GetArrayLength(colorArray);
+			colors.resize((size_t)length);
+			if(length > 0) {
+				env->GetIntArrayRegion(colorArray, 0, length, colors.data());
+			}
+			env->DeleteLocalRef(colorArray);
+		}
+
+		bool showPreviousFrame = env->GetBooleanField(configObj, g_cache.evcShowPreviousFrame) == JNI_TRUE;
+
+		EventConfigStorage storage = {};
+		switch(type) {
+			case CpuType::Snes:
+			case CpuType::Spc:
+			case CpuType::NecDsp:
+			case CpuType::Sa1:
+			case CpuType::Gsu:
+			case CpuType::Cx4:
+			case CpuType::St018:
+				ApplyEventConfigCategories(&storage.snes, table, visible, colors);
+				storage.snes.ShowPreviousFrameEvents = showPreviousFrame;
+				SetEventViewerConfig(type, storage.snes);
+				break;
+
+			case CpuType::Gameboy:
+				ApplyEventConfigCategories(&storage.gb, table, visible, colors);
+				storage.gb.ShowPreviousFrameEvents = showPreviousFrame;
+				SetEventViewerConfig(type, storage.gb);
+				break;
+
+			case CpuType::Nes:
+				ApplyEventConfigCategories(&storage.nes, table, visible, colors);
+				storage.nes.ShowPreviousFrameEvents = showPreviousFrame;
+				SetEventViewerConfig(type, storage.nes);
+				break;
+
+			case CpuType::Pce:
+				ApplyEventConfigCategories(&storage.pce, table, visible, colors);
+				storage.pce.ShowPreviousFrameEvents = showPreviousFrame;
+				SetEventViewerConfig(type, storage.pce);
+				break;
+
+			case CpuType::Sms:
+				ApplyEventConfigCategories(&storage.sms, table, visible, colors);
+				storage.sms.ShowPreviousFrameEvents = showPreviousFrame;
+				SetEventViewerConfig(type, storage.sms);
+				break;
+
+			case CpuType::Gba:
+				ApplyEventConfigCategories(&storage.gba, table, visible, colors);
+				storage.gba.ShowPreviousFrameEvents = showPreviousFrame;
+				SetEventViewerConfig(type, storage.gba);
+				break;
+
+			case CpuType::Ws:
+				ApplyEventConfigCategories(&storage.ws, table, visible, colors);
+				storage.ws.ShowPreviousFrameEvents = showPreviousFrame;
+				SetEventViewerConfig(type, storage.ws);
+				break;
+		}
+	}
+
+	JNIEXPORT jint JNICALL Java_mesen_MesenDebugger_getDebugEventCount(JNIEnv*, jclass, jint cpuType)
+	{
+		return (jint)GetDebugEventCount((CpuType)cpuType);
+	}
+
+	JNIEXPORT jobjectArray JNICALL Java_mesen_MesenDebugger_getDebugEvents(JNIEnv* env, jclass, jint cpuType)
+	{
+		if(!InitCache(env)) {
+			return nullptr;
+		}
+
+		CpuType type = (CpuType)cpuType;
+		uint32_t count = GetDebugEventCount(type);
+		if(count == 0) {
+			return env->NewObjectArray(0, g_cache.debugEventInfo, nullptr);
+		}
+
+		std::vector<DebugEventInfo> events(count);
+		uint32_t capacity = count;
+		GetDebugEvents(type, events.data(), capacity);
+		if(capacity > count) {
+			capacity = count;
+		}
+
+		jobjectArray result = env->NewObjectArray((jsize)capacity, g_cache.debugEventInfo, nullptr);
+		for(uint32_t i = 0; i < capacity; i++) {
+			jobject event = NewDebugEventInfo(env, events[i]);
+			env->SetObjectArrayElement(result, (jsize)i, event);
+			env->DeleteLocalRef(event);
+		}
+		return result;
+	}
+
+	JNIEXPORT jobject JNICALL Java_mesen_MesenDebugger_getEventViewerDisplaySize(JNIEnv* env, jclass, jint cpuType)
+	{
+		if(!InitCache(env)) {
+			return nullptr;
+		}
+
+		FrameInfo size = GetEventViewerDisplaySize((CpuType)cpuType);
+		jobject obj = env->NewObject(g_cache.viewerSize, g_cache.viewerSizeCtor);
+		env->SetIntField(obj, g_cache.vsWidth, (jint)size.Width);
+		env->SetIntField(obj, g_cache.vsHeight, (jint)size.Height);
+		return obj;
+	}
+
+	JNIEXPORT jintArray JNICALL Java_mesen_MesenDebugger_getEventViewerOutput(JNIEnv* env, jclass, jint cpuType)
+	{
+		FrameInfo size = GetEventViewerDisplaySize((CpuType)cpuType);
+		uint32_t pixelCount = size.Width * size.Height;
+
+		jintArray result = env->NewIntArray((jsize)pixelCount);
+		if(pixelCount == 0) {
+			return result;
+		}
+
+		std::vector<uint32_t> buffer(pixelCount, 0);
+		GetEventViewerOutput((CpuType)cpuType, buffer.data(), pixelCount);
+		env->SetIntArrayRegion(result, 0, (jsize)pixelCount, (const jint*)buffer.data());
+		return result;
+	}
+
+	JNIEXPORT jobject JNICALL Java_mesen_MesenDebugger_getEventViewerEvent(
+		JNIEnv* env, jclass, jint cpuType, jint scanline, jint cycle)
+	{
+		if(!InitCache(env)) {
+			return nullptr;
+		}
+
+		DebugEventInfo event = GetEventViewerEvent((CpuType)cpuType, (uint16_t)scanline, (uint16_t)cycle);
+		return NewDebugEventInfo(env, event);
+	}
+
+	JNIEXPORT jint JNICALL Java_mesen_MesenDebugger_takeEventSnapshot(
+		JNIEnv*, jclass, jint cpuType, jboolean forAutoRefresh)
+	{
+		return (jint)TakeEventSnapshot((CpuType)cpuType, forAutoRefresh == JNI_TRUE);
+	}
+
+	JNIEXPORT void JNICALL Java_mesen_MesenDebugger_setViewerUpdateTiming(
+		JNIEnv*, jclass, jint viewerId, jint scanline, jint cycle, jint cpuType)
+	{
+		SetViewerUpdateTiming((uint32_t)viewerId, (uint16_t)scanline, (uint16_t)cycle, (CpuType)cpuType);
+	}
+
+	JNIEXPORT void JNICALL Java_mesen_MesenDebugger_removeViewerId(
+		JNIEnv*, jclass, jint viewerId, jint cpuType)
+	{
+		RemoveViewerId((uint32_t)viewerId, (CpuType)cpuType);
 	}
 
 	// -----------------------------------------------------------------------

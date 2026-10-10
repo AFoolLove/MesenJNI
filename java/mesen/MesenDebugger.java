@@ -5,8 +5,10 @@ import mesen.debugger.AddressInfo;
 import mesen.debugger.Breakpoint;
 import mesen.debugger.CdlStatistics;
 import mesen.debugger.CodeLine;
+import mesen.debugger.DebugEventInfo;
 import mesen.debugger.DebuggerFeatures;
 import mesen.debugger.EvalResult;
+import mesen.debugger.EventViewerConfig;
 import mesen.debugger.InstructionProgress;
 import mesen.debugger.NesCpuState;
 import mesen.debugger.NesPpuState;
@@ -22,6 +24,7 @@ import mesen.debugger.TilemapInfo;
 import mesen.debugger.TilemapOptions;
 import mesen.debugger.TilemapResult;
 import mesen.debugger.TilemapTileInfo;
+import mesen.debugger.ViewerSize;
 
 /**
  * 调试器 API（Core/Debugger 的核心子集）。
@@ -280,6 +283,53 @@ public final class MesenDebugger
      * @return 是否成功
      */
     public static native boolean saveRomToDisk(String filename, boolean saveAsIps, int cdlStripOption);
+
+    // ---- 事件查看器 -------------------------------------------------------
+
+    /**
+     * 取事件查看器的类别列表（空配置的模板）。
+     *
+     * <p>返回对象的 {@code categoryNames} 已填好（顺序与 core 的结构体一致），
+     * {@code visible}/{@code colors} 全空，改完交给
+     * {@link #setEventViewerConfig(int, EventViewerConfig)} 应用。</p>
+     */
+    public static native EventViewerConfig getEventViewerConfig(int cpuType);
+
+    /** 应用事件查看器配置。 */
+    public static native void setEventViewerConfig(int cpuType, EventViewerConfig config);
+
+    /**
+     * 当前帧记录了多少条事件。
+     *
+     * <p><b>先调 {@link #takeEventSnapshot(int, boolean)}</b>：这个计数读的是最近一次快照，
+     * 不是实时事件表。</p>
+     */
+    public static native int getDebugEventCount(int cpuType);
+
+    /**
+     * 取当前帧的全部事件。
+     *
+     * <p>同样需要先 {@link #takeEventSnapshot(int, boolean)}。</p>
+     */
+    public static native DebugEventInfo[] getDebugEvents(int cpuType);
+
+    /** 取事件查看器渲染缓冲区的尺寸（像素）。 */
+    public static native ViewerSize getEventViewerDisplaySize(int cpuType);
+
+    /** 渲染事件查看器（返回 ARGB 像素，长度 = 宽度 × 高度）。 */
+    public static native int[] getEventViewerOutput(int cpuType);
+
+    /** 取某个 (scanline, cycle) 处的事件（没有则返回 null）。 */
+    public static native DebugEventInfo getEventViewerEvent(int cpuType, int scanline, int cycle);
+
+    /** 拍一张事件快照，返回事件数。 */
+    public static native int takeEventSnapshot(int cpuType, boolean forAutoRefresh);
+
+    /** 设置某个查看器的刷新时机（scanline/cycle）。 */
+    public static native void setViewerUpdateTiming(int viewerId, int scanline, int cycle, int cpuType);
+
+    /** 移除某个查看器的刷新时机。 */
+    public static native void removeViewerId(int viewerId, int cpuType);
 
     // ---- 内存快照 --------------------------------------------------------
 

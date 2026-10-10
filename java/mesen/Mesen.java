@@ -173,6 +173,24 @@ public final class Mesen
     public static final int CDL_STRIP_UNUSED = 1;
     public static final int CDL_STRIP_USED = 2;
 
+    // --- DebugEventType (Core/Debugger/DebugTypes.h) -----------------------
+    public static final int EVENT_REGISTER = 0;
+    public static final int EVENT_NMI = 1;
+    public static final int EVENT_IRQ = 2;
+    public static final int EVENT_BREAKPOINT = 3;
+    public static final int EVENT_BG_COLOR_CHANGE = 4;
+    public static final int EVENT_SPRITE_ZERO_HIT = 5;
+    public static final int EVENT_DMC_DMA_READ = 6;
+    public static final int EVENT_DMA_READ = 7;
+
+    // --- EventFlags (Core/Debugger/BaseEventManager.h) ---------------------
+    public static final int EVENT_FLAG_PREVIOUS_FRAME = 1 << 0;
+    public static final int EVENT_FLAG_REG_FIRST_WRITE = 1 << 1;
+    public static final int EVENT_FLAG_REG_SECOND_WRITE = 1 << 2;
+    public static final int EVENT_FLAG_WITH_TARGET_MEMORY = 1 << 3;
+    public static final int EVENT_FLAG_SMS_VDP_PALETTE_WRITE = 1 << 4;
+    public static final int EVENT_FLAG_READ_WRITE_OP = 1 << 5;
+
     // --- ConsoleType (Core/Shared/SettingTypes.h) --------------------------
     public static final int CONSOLE_SNES = 0;
     public static final int CONSOLE_GAMEBOY = 1;
