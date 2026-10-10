@@ -119,18 +119,20 @@ endif()
 option(MESEN_BUILD_JNI "Build the JNI bindings (requires a JDK)" ON)
 set(MESEN_JNI_SOURCES "")
 if(MESEN_BUILD_JNI)
+    # Every .cpp under jni/ belongs to the bindings (MesenJni.cpp, DebugJni.cpp, ...).
+    file(GLOB MESEN_JNI_SOURCE_FILES CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/jni/*.cpp")
     if(ANDROID)
         # Android: jni.h comes from the NDK sysroot (already on the include
         # path), and the JNI symbols are provided by the ART runtime. No
         # find_package(JNI) (it would pick the host JDK's win32 jni_md.h) and
         # no libjvm to link.
-        set(MESEN_JNI_SOURCES "${PROJECT_SOURCE_DIR}/jni/MesenJni.cpp")
+        set(MESEN_JNI_SOURCES ${MESEN_JNI_SOURCE_FILES})
         set(JNI_LIBRARIES "")
         set(JNI_INCLUDE_DIRS "")
     else()
         find_package(JNI)
         if(JNI_FOUND)
-            set(MESEN_JNI_SOURCES "${PROJECT_SOURCE_DIR}/jni/MesenJni.cpp")
+            set(MESEN_JNI_SOURCES ${MESEN_JNI_SOURCE_FILES})
         else()
             message(STATUS "JNI not found - skipping JNI bindings")
         endif()

@@ -15,6 +15,15 @@
 #include "Core/Shared/MemoryType.h"    // MemoryType
 #include "Core/Shared/Emulator.h"      // HashType
 
+#include "Core/Debugger/AddressInfo.h"        // AddressInfo
+#include "Core/Debugger/DebugTypes.h"         // CodeLineData, StackFrameInfo, CdlStatistics, CpuInstructionProgress, StepType
+#include "Core/Debugger/DebuggerFeatures.h"   // DebuggerFeatures
+#include "Core/Debugger/DisassemblySearch.h"  // DisassemblySearchOptions
+
+class Breakpoint;
+struct AddressCounters;
+enum class EvalResultType : int32_t;
+
 #ifdef _WIN32
 	#define MESEN_CALL __stdcall
 #else
@@ -113,6 +122,56 @@ MESEN_EXTERN
 	int32_t MESEN_CALL LoadScript(char* name, char* path, char* content, int32_t scriptId);
 	void MESEN_CALL RemoveScript(int32_t scriptId);
 	void MESEN_CALL GetScriptLog(int32_t scriptId, char* outScriptLog, uint32_t maxLength);
+
+	// --- DebugApiWrapper (debugger control) ---
+	void MESEN_CALL InitializeDebugger();
+	void MESEN_CALL ReleaseDebugger();
+	bool MESEN_CALL IsDebuggerRunning();
+	bool MESEN_CALL IsExecutionStopped();
+	void MESEN_CALL ResumeExecution();
+	void MESEN_CALL Step(CpuType cpuType, uint32_t count, StepType type);
+
+	// --- DebugApiWrapper (disassembly) ---
+	uint32_t MESEN_CALL GetDisassemblyOutput(CpuType type, uint32_t lineIndex, CodeLineData output[], uint32_t rowCount);
+	uint32_t MESEN_CALL GetDisassemblyRowAddress(CpuType type, uint32_t address, int32_t rowOffset);
+	int32_t MESEN_CALL SearchDisassembly(CpuType type, const char* searchString, int32_t startPosition, DisassemblySearchOptions options);
+	uint32_t MESEN_CALL FindOccurrences(CpuType type, const char* searchString, DisassemblySearchOptions options, CodeLineData results[], uint32_t maxResultCount);
+
+	// --- DebugApiWrapper (breakpoints / expression) ---
+	void MESEN_CALL SetBreakpoints(Breakpoint breakpoints[], uint32_t length);
+	int64_t MESEN_CALL EvaluateExpression(const char* expression, CpuType cpuType, EvalResultType* resultType, bool useCache);
+	void MESEN_CALL GetTokenList(CpuType cpuType, char* tokenList);
+
+	// --- DebugApiWrapper (callstack / pc / features) ---
+	void MESEN_CALL GetCallstack(CpuType cpuType, StackFrameInfo* callstackArray, uint32_t& callstackSize);
+	uint32_t MESEN_CALL GetProgramCounter(CpuType cpuType, bool getInstPc);
+	void MESEN_CALL SetProgramCounter(CpuType cpuType, uint32_t addr);
+	DebuggerFeatures MESEN_CALL GetDebuggerFeatures(CpuType cpuType);
+	CpuInstructionProgress MESEN_CALL GetInstructionProgress(CpuType cpuType);
+	void MESEN_CALL GetDebuggerLog(char* outBuffer, uint32_t maxLength);
+
+	// --- DebugApiWrapper (frozen addresses) ---
+	void MESEN_CALL UpdateFrozenAddresses(CpuType cpuType, uint32_t start, uint32_t end, bool freeze);
+	void MESEN_CALL GetFrozenState(CpuType cpuType, uint32_t start, uint32_t end, bool* outState);
+
+	// --- DebugApiWrapper (labels / undo / address conversion) ---
+	void MESEN_CALL SetLabel(uint32_t address, MemoryType memType, char* label, char* comment);
+	void MESEN_CALL ClearLabels();
+	bool MESEN_CALL HasUndoHistory();
+	void MESEN_CALL PerformUndo();
+	AddressInfo MESEN_CALL GetAbsoluteAddress(AddressInfo relAddress);
+	AddressInfo MESEN_CALL GetRelativeAddress(AddressInfo absAddress, CpuType cpuType);
+
+	// --- DebugApiWrapper (bulk memory snapshot) ---
+	void MESEN_CALL GetMemoryState(MemoryType type, uint8_t* buffer);
+	void MESEN_CALL SetMemoryState(MemoryType type, uint8_t* buffer, int32_t length);
+
+	// --- DebugApiWrapper (CDL / access counters) ---
+	CdlStatistics MESEN_CALL GetCdlStatistics(MemoryType memoryType);
+	uint32_t MESEN_CALL GetCdlFunctions(MemoryType memoryType, uint32_t functions[], uint32_t maxSize);
+	void MESEN_CALL ResetCdl(MemoryType memoryType);
+	void MESEN_CALL GetMemoryAccessCounts(uint32_t offset, uint32_t length, MemoryType memoryType, AddressCounters* counts);
+	void MESEN_CALL ResetMemoryAccessCounts();
 
 	// --- InputApiWrapper ---
 	void MESEN_CALL SetMousePosition(double x, double y);

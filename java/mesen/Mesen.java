@@ -24,6 +24,39 @@ public final class Mesen
     public static final int CPU_GBA = 11;
     public static final int CPU_WS = 12;
 
+    // --- StepType (Core/Debugger/DebugTypes.h) -----------------------------
+    public static final int STEP_STEP = 0;
+    public static final int STEP_OUT = 1;
+    public static final int STEP_OVER = 2;
+    public static final int STEP_CPU_CYCLE = 3;
+    public static final int STEP_PPU = 4;
+    public static final int STEP_PPU_SCANLINE = 5;
+    public static final int STEP_PPU_FRAME = 6;
+    public static final int STEP_SPECIFIC_SCANLINE = 7;
+    public static final int STEP_RUN_TO_NMI = 8;
+    public static final int STEP_RUN_TO_IRQ = 9;
+    public static final int STEP_BACK = 10;
+
+    // --- BreakpointTypeFlags (Core/Debugger/DebugTypes.h) ------------------
+    public static final int BREAK_NONE = 0;
+    public static final int BREAK_READ = 1;
+    public static final int BREAK_WRITE = 2;
+    public static final int BREAK_EXECUTE = 4;
+    public static final int BREAK_FORBID = 8;
+
+    // --- EvalResultType (Core/Debugger/ExpressionEvaluator.h) --------------
+    public static final int EVAL_NUMERIC = 0;
+    public static final int EVAL_BOOLEAN = 1;
+    public static final int EVAL_INVALID = 2;
+    public static final int EVAL_DIVIDE_BY_ZERO = 3;
+    public static final int EVAL_OUT_OF_SCOPE = 4;
+
+    // --- StackFrameFlags (Core/Debugger/DebugTypes.h) ----------------------
+    public static final int STACK_FRAME_NONE = 0;
+    public static final int STACK_FRAME_NMI = 1;
+    public static final int STACK_FRAME_IRQ = 2;
+    public static final int STACK_FRAME_HALT = 4;
+
     // --- ConsoleType (Core/Shared/SettingTypes.h) --------------------------
     public static final int CONSOLE_SNES = 0;
     public static final int CONSOLE_GAMEBOY = 1;
