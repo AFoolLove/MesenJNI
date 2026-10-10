@@ -14,6 +14,13 @@
 #include "Core/Debugger/MemoryAccessCounter.h"
 #include "Core/NES/NesTypes.h"
 #include "Core/NES/Debugger/NesPpuTools.h"
+#include "Core/SNES/SnesPpuTypes.h"
+#include "Core/SNES/Debugger/SnesPpuTools.h"
+#include "Core/Gameboy/GbTypes.h"
+#include "Core/PCE/PceTypes.h"
+#include "Core/SMS/SmsTypes.h"
+#include "Core/GBA/GbaTypes.h"
+#include "Core/WS/WsTypes.h"
 
 #include <jni.h>
 
@@ -1210,39 +1217,124 @@ extern "C"
 	// PPU tools (NES)
 	// -----------------------------------------------------------------------
 
-	// Snapshots everything the NES PPU tools need: register state, tool state,
-	// VRAM (MEM_NES_PPU) and the RGB palette. Callers stay free of that plumbing.
-	struct NesPpuContext
+	// Snapshots everything the PPU tools need for a given CPU: register state,
+	// tool state, VRAM, sprite RAM and the RGB palette. Callers stay free of
+	// that plumbing, and the state types never surface in Java.
+	struct PpuContext
 	{
-		NesPpuState state = {};
-		NesPpuToolsState toolsState = {};
-		std::vector<uint8_t> vram;
-		std::vector<uint32_t> palette;
-
-		bool Load()
+		// State objects are opaque to Java, so one union per kind is enough.
+		union StateStorage
 		{
-			GetPpuState(static_cast<BaseState&>(state), CpuType::Nes);
-			GetPpuToolsState(CpuType::Nes, *reinterpret_cast<BaseState*>(&toolsState));
+			SnesPpuState snes;
+			GbPpuState gameboy;
+			NesPpuState nes;
+			PceVideoState pce;
+			SmsVdpState sms;
+			GbaPpuState gba;
+			WsPpuState ws;
+		} state = {};
 
-			uint32_t vramSize = GetMemorySize(MemoryType::NesPpuMemory);
-			vram.assign(vramSize, 0);
-			if(vramSize > 0) {
-				GetMemoryState(MemoryType::NesPpuMemory, vram.data());
+		union ToolsStateStorage
+		{
+			SnesPpuToolsState snes;
+			NesPpuToolsState nes;
+			uint64_t padding[64];
+		} toolsState = {};
+
+		std::vector<uint8_t> vram;
+		std::vector<uint8_t> spriteRam;
+		std::vector<uint32_t> palette;
+		bool loaded = false;
+
+		// VRAM / sprite RAM memory types per console (same mapping the .NET
+		// interop uses in CpuTypeExtensions).
+		static MemoryType GetVramMemoryType(CpuType type)
+		{
+			switch(type) {
+				case CpuType::Snes:
+				case CpuType::Spc:
+				case CpuType::NecDsp:
+				case CpuType::Sa1:
+				case CpuType::Gsu:
+				case CpuType::Cx4:
+				case CpuType::St018: return MemoryType::SnesVideoRam;
+				case CpuType::Gameboy: return MemoryType::GbVideoRam;
+				case CpuType::Nes: return MemoryType::NesPpuMemory;
+				case CpuType::Pce: return MemoryType::PceVideoRam;
+				case CpuType::Sms: return MemoryType::SmsVideoRam;
+				case CpuType::Gba: return MemoryType::GbaVideoRam;
+				case CpuType::Ws: return MemoryType::WsWorkRam;
+				default: return MemoryType::None;
 			}
-
-			GetPaletteInfoOptions options = {};
-			options.Format = TileFormat::NesBpp2;
-			DebugPaletteInfo info = GetPaletteInfo(CpuType::Nes, options);
-			palette.assign(info.RgbPalette, info.RgbPalette + 512);
-			return true;
 		}
 
-		BaseState& State() { return static_cast<BaseState&>(state); }
+		static MemoryType GetSpriteRamMemoryType(CpuType type)
+		{
+			switch(type) {
+				case CpuType::Snes:
+				case CpuType::Spc:
+				case CpuType::NecDsp:
+				case CpuType::Sa1:
+				case CpuType::Gsu:
+				case CpuType::Cx4:
+				case CpuType::St018: return MemoryType::SnesSpriteRam;
+				case CpuType::Gameboy: return MemoryType::GbSpriteRam;
+				case CpuType::Nes: return MemoryType::NesSpriteRam;
+				case CpuType::Pce: return MemoryType::PceSpriteRam;
+				case CpuType::Gba: return MemoryType::GbaSpriteRam;
+				default: return MemoryType::None;   // SMS / WonderSwan have none
+			}
+		}
 
-		// NesPpuToolsState does not derive from BaseState; the core casts it back
-		// internally (NesPpuTools::GetPpuToolsState does the same in reverse).
-		BaseState& ToolsState() { return *reinterpret_cast<BaseState*>(&toolsState); }
+		static void ReadMemory(MemoryType type, std::vector<uint8_t>& out)
+		{
+			uint32_t size = type == MemoryType::None ? 0 : GetMemorySize(type);
+			out.assign(size ? size : 1, 0);
+			if(size > 0) {
+				GetMemoryState(type, out.data());
+			}
+		}
+
+		void Load(CpuType cpuType, TileFormat paletteFormat = TileFormat::Bpp2)
+		{
+			// Core hazard: Debugger::GetPpuState()/GetPpuToolsState() dereference the
+			// per-CPU debugger without a null check, so calling them for a console
+			// that isn't loaded is an access violation. The VRAM memory type only
+			// exists once that console is running, so use it as the guard.
+			loaded = false;
+			MemoryType vramType = GetVramMemoryType(cpuType);
+			if(vramType == MemoryType::None || GetMemorySize(vramType) == 0) {
+				return;
+			}
+
+			// Only SNES and NES implement GetPpuToolsState; the base is a no-op.
+			GetPpuState(StateRef(), cpuType);
+			GetPpuToolsState(cpuType, *reinterpret_cast<BaseState*>(&toolsState));
+
+			ReadMemory(vramType, vram);
+			ReadMemory(GetSpriteRamMemoryType(cpuType), spriteRam);
+
+			GetPaletteInfoOptions options = {};
+			options.Format = paletteFormat;
+			DebugPaletteInfo info = GetPaletteInfo(cpuType, options);
+			palette.assign(info.RgbPalette, info.RgbPalette + 512);
+			loaded = true;
+		}
+
+		// Hand the core a reference to the state object matching this CPU type.
+		BaseState& StateRef()
+		{
+			return *reinterpret_cast<BaseState*>(&state);
+		}
+
+		BaseState& ToolsStateRef()
+		{
+			return *reinterpret_cast<BaseState*>(&toolsState);
+		}
 	};
+
+	// Kept for backward compatibility with the NES-only code paths.
+	using NesPpuContext = PpuContext;
 
 	jintArray NewIntArrayFromUint32(JNIEnv* env, const std::vector<uint32_t>& values)
 	{
@@ -1365,7 +1457,7 @@ extern "C"
 	// PPU tools: JNI entry points
 	// -----------------------------------------------------------------------
 
-	JNIEXPORT jobject JNICALL Java_mesen_MesenDebugger_getTileView(JNIEnv* env, jclass, jobject optionsObj)
+	JNIEXPORT jobject JNICALL Java_mesen_MesenDebugger_getTileView(JNIEnv* env, jclass, jint cpuType, jobject optionsObj)
 	{
 		if(!InitCache(env) || !optionsObj) {
 			return nullptr;
@@ -1395,14 +1487,15 @@ extern "C"
 
 		GetPaletteInfoOptions paletteOptions = {};
 		paletteOptions.Format = options.Format;
-		DebugPaletteInfo palette = GetPaletteInfo(CpuType::Nes, paletteOptions);
+		DebugPaletteInfo palette = GetPaletteInfo((CpuType)cpuType, paletteOptions);
 
-		// Every tile is 8x8 for the formats bound here.
+		// Every tile is 8x8 for the formats bound here (the PCE 16x16 sprite
+		// formats halve Width/Height internally, so the pixel size is the same).
 		int pixelWidth = options.Width * 8;
 		int pixelHeight = options.Height * 8;
 		std::vector<uint32_t> buffer((size_t)pixelWidth * pixelHeight, 0);
 
-		GetTileView(CpuType::Nes, options, source.data(), srcSize, palette.RgbPalette, buffer.data());
+		GetTileView((CpuType)cpuType, options, source.data(), srcSize, palette.RgbPalette, buffer.data());
 
 		jobject result = env->NewObject(g_cache.tileView, g_cache.tileViewCtor);
 		env->SetIntField(result, g_cache.tvWidth, pixelWidth);
@@ -1413,7 +1506,7 @@ extern "C"
 		return result;
 	}
 
-	JNIEXPORT jobject JNICALL Java_mesen_MesenDebugger_getTilemap(JNIEnv* env, jclass, jobject optionsObj)
+	JNIEXPORT jobject JNICALL Java_mesen_MesenDebugger_getTilemap(JNIEnv* env, jclass, jint cpuType, jobject optionsObj)
 	{
 		if(!InitCache(env)) {
 			return nullptr;
@@ -1421,16 +1514,19 @@ extern "C"
 
 		GetTilemapOptions options = ReadTilemapOptions(env, optionsObj);
 
-		NesPpuContext context;
-		context.Load();
+		PpuContext context;
+		context.Load((CpuType)cpuType);
+		if(!context.loaded) {
+			return nullptr;
+		}
 
-		FrameInfo size = GetTilemapSize(CpuType::Nes, options, context.State());
+		FrameInfo size = GetTilemapSize((CpuType)cpuType, options, context.StateRef());
 		if(size.Width == 0 || size.Height == 0) {
 			return nullptr;
 		}
 
 		std::vector<uint32_t> buffer((size_t)size.Width * size.Height, 0);
-		DebugTilemapInfo info = GetTilemap(CpuType::Nes, options, context.State(), context.ToolsState(),
+		DebugTilemapInfo info = GetTilemap((CpuType)cpuType, options, context.StateRef(), context.ToolsStateRef(),
 			context.vram.data(), context.palette.data(), buffer.data());
 
 		jobject result = env->NewObject(g_cache.tilemapResult, g_cache.tilemapResultCtor);
@@ -1446,7 +1542,7 @@ extern "C"
 	}
 
 	JNIEXPORT jobject JNICALL Java_mesen_MesenDebugger_getTilemapTileInfo(
-		JNIEnv* env, jclass, jint x, jint y, jobject optionsObj)
+		JNIEnv* env, jclass, jint cpuType, jint x, jint y, jobject optionsObj)
 	{
 		if(!InitCache(env)) {
 			return nullptr;
@@ -1454,11 +1550,14 @@ extern "C"
 
 		GetTilemapOptions options = ReadTilemapOptions(env, optionsObj);
 
-		NesPpuContext context;
-		context.Load();
+		PpuContext context;
+		context.Load((CpuType)cpuType);
+		if(!context.loaded) {
+			return nullptr;
+		}
 
-		DebugTilemapTileInfo info = GetTilemapTileInfo((uint32_t)x, (uint32_t)y, CpuType::Nes,
-			options, context.vram.data(), context.State(), context.ToolsState());
+		DebugTilemapTileInfo info = GetTilemapTileInfo((uint32_t)x, (uint32_t)y, (CpuType)cpuType,
+			options, context.vram.data(), context.StateRef(), context.ToolsStateRef());
 
 		jobject obj = env->NewObject(g_cache.tilemapTileInfo, g_cache.tilemapTileInfoCtor);
 		env->SetIntField(obj, g_cache.ttiRow, (jint)info.Row);
@@ -1494,7 +1593,7 @@ extern "C"
 		return obj;
 	}
 
-	JNIEXPORT jobject JNICALL Java_mesen_MesenDebugger_getSpritePreviewInfo(JNIEnv* env, jclass, jobject optionsObj)
+	JNIEXPORT jobject JNICALL Java_mesen_MesenDebugger_getSpritePreviewInfo(JNIEnv* env, jclass, jint cpuType, jobject optionsObj)
 	{
 		if(!InitCache(env)) {
 			return nullptr;
@@ -1502,15 +1601,18 @@ extern "C"
 
 		GetSpritePreviewOptions options = ReadSpriteOptions(env, optionsObj);
 
-		NesPpuContext context;
-		context.Load();
+		PpuContext context;
+		context.Load((CpuType)cpuType);
+		if(!context.loaded) {
+			return nullptr;
+		}
 
-		DebugSpritePreviewInfo info = GetSpritePreviewInfo(CpuType::Nes, options,
-			context.State(), context.ToolsState());
+		DebugSpritePreviewInfo info = GetSpritePreviewInfo((CpuType)cpuType, options,
+			context.StateRef(), context.ToolsStateRef());
 		return NewSpritePreviewInfo(env, info);
 	}
 
-	JNIEXPORT jobject JNICALL Java_mesen_MesenDebugger_getSpriteList(JNIEnv* env, jclass, jobject optionsObj)
+	JNIEXPORT jobject JNICALL Java_mesen_MesenDebugger_getSpriteList(JNIEnv* env, jclass, jint cpuType, jobject optionsObj)
 	{
 		if(!InitCache(env)) {
 			return nullptr;
@@ -1518,11 +1620,14 @@ extern "C"
 
 		GetSpritePreviewOptions options = ReadSpriteOptions(env, optionsObj);
 
-		NesPpuContext context;
-		context.Load();
+		PpuContext context;
+		context.Load((CpuType)cpuType);
+		if(!context.loaded) {
+			return nullptr;
+		}
 
-		DebugSpritePreviewInfo info = GetSpritePreviewInfo(CpuType::Nes, options,
-			context.State(), context.ToolsState());
+		DebugSpritePreviewInfo info = GetSpritePreviewInfo((CpuType)cpuType, options,
+			context.StateRef(), context.ToolsStateRef());
 
 		uint32_t spriteCount = info.SpriteCount;
 		uint32_t previewSize = (uint32_t)info.Width * info.Height;
@@ -1531,14 +1636,12 @@ extern "C"
 		std::vector<uint32_t> previews((size_t)(spriteCount ? spriteCount : 1) * previewSize, 0);
 		std::vector<uint32_t> screen(previewSize ? previewSize : 1, 0);
 
-		uint32_t spriteRamSize = GetMemorySize(MemoryType::NesSpriteRam);
-		std::vector<uint8_t> spriteRam(spriteRamSize ? spriteRamSize : 1, 0);
-		if(spriteRamSize > 0) {
-			GetMemoryState(MemoryType::NesSpriteRam, spriteRam.data());
-		}
+		// SMS/WonderSwan have no sprite RAM; the core expects null there.
+		uint8_t* spriteRam = PpuContext::GetSpriteRamMemoryType((CpuType)cpuType) == MemoryType::None
+			? nullptr : context.spriteRam.data();
 
-		GetSpriteList(CpuType::Nes, options, context.State(), context.ToolsState(),
-			context.vram.data(), spriteRam.data(), context.palette.data(),
+		GetSpriteList((CpuType)cpuType, options, context.StateRef(), context.ToolsStateRef(),
+			context.vram.data(), spriteRam, context.palette.data(),
 			sprites.data(), previews.data(), screen.data());
 
 		jobject result = env->NewObject(g_cache.spriteListResult, g_cache.spriteListResultCtor);
@@ -1568,7 +1671,7 @@ extern "C"
 		return result;
 	}
 
-	JNIEXPORT jobject JNICALL Java_mesen_MesenDebugger_getPaletteInfo(JNIEnv* env, jclass, jint tileFormat)
+	JNIEXPORT jobject JNICALL Java_mesen_MesenDebugger_getPaletteInfo(JNIEnv* env, jclass, jint cpuType, jint tileFormat)
 	{
 		if(!InitCache(env)) {
 			return nullptr;
@@ -1576,7 +1679,7 @@ extern "C"
 
 		GetPaletteInfoOptions options = {};
 		options.Format = (TileFormat)tileFormat;
-		DebugPaletteInfo info = GetPaletteInfo(CpuType::Nes, options);
+		DebugPaletteInfo info = GetPaletteInfo((CpuType)cpuType, options);
 
 		uint32_t count = info.ColorCount;
 		if(count > 512) {

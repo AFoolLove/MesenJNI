@@ -213,7 +213,11 @@ public final class MesenDebugger
     /** 写回 NES PPU 状态。 */
     public static native void setNesPpuState(NesPpuState state);
 
-    // ---- PPU 工具（NES 优先）---------------------------------------------
+    // ---- PPU 工具（所有机种）---------------------------------------------
+    //
+    // 这些方法都收 cpuType（Mesen.CPU_*）。VRAM / sprite RAM / PPU 状态 / 调色板
+    // 都由 JNI 内部按机种取，Java 侧不用准备缓冲。
+    // 该机种没在跑时统一返回 null（core 对未加载机种断言失败会直接崩，这里挡住了）。
 
     /**
      * 渲染瓦片视图（瓦片表 → ARGB 图）。
@@ -222,7 +226,7 @@ public final class MesenDebugger
      * {@code Mesen.MEM_NES_CHR_ROM} 或 {@code MEM_NES_CHR_RAM}），
      * 调色板内部取。NES 的格式用 {@code Mesen.TILE_FORMAT_NES_BPP2}。</p>
      */
-    public static native TileView getTileView(TileViewOptions options);
+    public static native TileView getTileView(int cpuType, TileViewOptions options);
 
     /**
      * 渲染瓦片地图（nametable → ARGB 图）。
@@ -231,19 +235,19 @@ public final class MesenDebugger
      * 建议先 {@link MesenCore#pause()} 并等 {@link #isExecutionStopped()}，
      * 否则渲染出来的可能是撕裂的中间态。</p>
      */
-    public static native TilemapResult getTilemap(TilemapOptions options);
+    public static native TilemapResult getTilemap(int cpuType, TilemapOptions options);
 
     /** 取瓦片地图里屏幕坐标 (x,y) 处瓦片的详细信息。 */
-    public static native TilemapTileInfo getTilemapTileInfo(int x, int y, TilemapOptions options);
+    public static native TilemapTileInfo getTilemapTileInfo(int cpuType, int x, int y, TilemapOptions options);
 
     /** 取精灵预览区信息（尺寸 + 精灵数）。 */
-    public static native SpritePreviewInfo getSpritePreviewInfo(SpriteOptions options);
+    public static native SpritePreviewInfo getSpritePreviewInfo(int cpuType, SpriteOptions options);
 
     /** 取精灵列表 + 每个精灵的预览图 + 整屏合成预览。 */
-    public static native SpriteListResult getSpriteList(SpriteOptions options);
+    public static native SpriteListResult getSpriteList(int cpuType, SpriteOptions options);
 
     /** 取调色板（原始值 + 转好的 ARGB）。 */
-    public static native PaletteInfo getPaletteInfo(int tileFormat);
+    public static native PaletteInfo getPaletteInfo(int cpuType, int tileFormat);
 
     /** 改调色板里的某个颜色（{@code color} 为 ARGB）。 */
     public static native void setPaletteColor(int cpuType, int colorIndex, int color);

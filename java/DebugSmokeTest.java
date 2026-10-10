@@ -188,7 +188,7 @@ public class DebugSmokeTest
         // ---- PPU 工具 ----
         System.out.println("== PPU 工具 ==");
 
-        PaletteInfo palette = MesenDebugger.getPaletteInfo(Mesen.TILE_FORMAT_NES_BPP2);
+        PaletteInfo palette = MesenDebugger.getPaletteInfo(Mesen.CPU_NES, Mesen.TILE_FORMAT_NES_BPP2);
         check(palette != null && palette.colorCount > 0, "getPaletteInfo() -> " + palette);
         if(palette != null && palette.rgbPalette.length > 1) {
             System.out.printf("      颜色 [0]=%08X [1]=%08X [2]=%08X%n",
@@ -200,7 +200,7 @@ public class DebugSmokeTest
         tvOptions.format = Mesen.TILE_FORMAT_NES_BPP2;
         tvOptions.width = 16;
         tvOptions.height = 8;
-        TileView view = MesenDebugger.getTileView(tvOptions);
+        TileView view = MesenDebugger.getTileView(Mesen.CPU_NES, tvOptions);
         check(view != null && view.width == 128 && view.height == 64, "getTileView() -> " + view);
         if(view != null && view.pixels.length > 0) {
             int nonBlack = 0;
@@ -211,7 +211,7 @@ public class DebugSmokeTest
         }
 
         TilemapOptions tmOptions = new TilemapOptions();
-        TilemapResult tilemap = MesenDebugger.getTilemap(tmOptions);
+        TilemapResult tilemap = MesenDebugger.getTilemap(Mesen.CPU_NES, tmOptions);
         check(tilemap != null && tilemap.pixels.length > 0, "getTilemap() -> " + tilemap);
         if(tilemap != null && tilemap.pixels.length > 0) {
             int nonBlack = 0;
@@ -221,7 +221,7 @@ public class DebugSmokeTest
             System.out.printf("      瓦片地图非黑像素 %d / %d%n", nonBlack, tilemap.pixels.length);
         }
 
-        TilemapTileInfo tileInfo = MesenDebugger.getTilemapTileInfo(8, 8, tmOptions);
+        TilemapTileInfo tileInfo = MesenDebugger.getTilemapTileInfo(Mesen.CPU_NES, 8, 8, tmOptions);
         check(tileInfo != null, "getTilemapTileInfo(8,8) -> " + tileInfo);
 
         // 导出 PNG 便于肉眼确认（temp/ 已 gitignore）
@@ -241,11 +241,11 @@ public class DebugSmokeTest
             new AddressInfo(0, Mesen.MEM_NES_CHR_ROM), Mesen.TILE_FORMAT_NES_BPP2, 0, 0);
         check(tilePixel >= 0, "getTilePixel($0, 0, 0) = " + tilePixel);
 
-        SpritePreviewInfo spritePreview = MesenDebugger.getSpritePreviewInfo(new SpriteOptions());
+        SpritePreviewInfo spritePreview = MesenDebugger.getSpritePreviewInfo(Mesen.CPU_NES, new SpriteOptions());
         check(spritePreview != null && spritePreview.spriteCount > 0,
             "getSpritePreviewInfo() -> " + spritePreview);
 
-        SpriteListResult sprites = MesenDebugger.getSpriteList(new SpriteOptions());
+        SpriteListResult sprites = MesenDebugger.getSpriteList(Mesen.CPU_NES, new SpriteOptions());
         check(sprites != null && sprites.sprites.length > 0 && sprites.screenPreview.length > 0,
             "getSpriteList() -> " + sprites);
         if(sprites != null && sprites.sprites.length > 0) {
@@ -253,6 +253,13 @@ public class DebugSmokeTest
             System.out.printf("      预览图 %d ints, 整屏 %d ints%n",
                 sprites.spritePreviews.length, sprites.screenPreview.length);
         }
+
+        // 泛化路径：未加载的机种应安全返回，不能崩
+        TilemapResult otherTilemap = MesenDebugger.getTilemap(Mesen.CPU_SNES, new TilemapOptions());
+        check(otherTilemap == null, "未加载 SNES 时 getTilemap() 安全返回 null");
+
+        SpritePreviewInfo otherSprites = MesenDebugger.getSpritePreviewInfo(Mesen.CPU_SNES, new SpriteOptions());
+        check(otherSprites == null, "未加载 SNES 时 getSpritePreviewInfo() 安全返回 null");
 
         // ---- 汇编 / ROM 导出 ----
         System.out.println("== 汇编 / ROM 导出 ==");
