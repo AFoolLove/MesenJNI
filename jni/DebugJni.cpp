@@ -1635,6 +1635,74 @@ extern "C"
 	}
 
 	// -----------------------------------------------------------------------
+	// Assembly / ROM export
+	// -----------------------------------------------------------------------
+
+	JNIEXPORT jshortArray JNICALL Java_mesen_MesenDebugger_assembleCode(
+		JNIEnv* env, jclass, jint cpuType, jstring code, jint startAddress)
+	{
+		if(!code) {
+			return nullptr;
+		}
+
+		const char* chars = env->GetStringUTFChars(code, nullptr);
+		if(!chars) {
+			return nullptr;
+		}
+
+		// Same buffer convention the .NET interop uses.
+		std::vector<int16_t> buffer(100000, 0);
+		uint32_t count = AssembleCode((CpuType)cpuType, const_cast<char*>(chars),
+			(uint32_t)startAddress, buffer.data());
+		env->ReleaseStringUTFChars(code, chars);
+
+		if(count > buffer.size()) {
+			count = (uint32_t)buffer.size();
+		}
+
+		jshortArray result = env->NewShortArray((jsize)count);
+		if(count > 0) {
+			env->SetShortArrayRegion(result, 0, (jsize)count, buffer.data());
+		}
+		return result;
+	}
+
+	JNIEXPORT jbyteArray JNICALL Java_mesen_MesenDebugger_getRomHeader(JNIEnv* env, jclass)
+	{
+		uint32_t size = 0x1000;
+		std::vector<uint8_t> buffer(size, 0);
+		GetRomHeader(buffer.data(), size);
+
+		if(size > buffer.size()) {
+			size = (uint32_t)buffer.size();
+		}
+
+		jbyteArray result = env->NewByteArray((jsize)size);
+		if(size > 0) {
+			env->SetByteArrayRegion(result, 0, (jsize)size, (const jbyte*)buffer.data());
+		}
+		return result;
+	}
+
+	JNIEXPORT jboolean JNICALL Java_mesen_MesenDebugger_saveRomToDisk(
+		JNIEnv* env, jclass, jstring filename, jboolean saveAsIps, jint cdlStripOption)
+	{
+		if(!filename) {
+			return JNI_FALSE;
+		}
+
+		const char* chars = env->GetStringUTFChars(filename, nullptr);
+		if(!chars) {
+			return JNI_FALSE;
+		}
+
+		bool result = SaveRomToDisk(const_cast<char*>(chars), saveAsIps == JNI_TRUE,
+			(CdlStripOption)cdlStripOption);
+		env->ReleaseStringUTFChars(filename, chars);
+		return result ? JNI_TRUE : JNI_FALSE;
+	}
+
+	// -----------------------------------------------------------------------
 	// Bulk memory
 	// -----------------------------------------------------------------------
 

@@ -177,6 +177,11 @@ MESEN_EXTERN
 	int32_t MESEN_CALL GetTilePixel(AddressInfo tileAddress, TileFormat format, int32_t x, int32_t y);
 	void MESEN_CALL SetTilePixel(AddressInfo tileAddress, TileFormat format, int32_t x, int32_t y, int32_t color);
 
+	// --- DebugApiWrapper (assembly / ROM export) ---
+	uint32_t MESEN_CALL AssembleCode(CpuType cpuType, char* code, uint32_t startAddress, int16_t* assembledOutput);
+	void MESEN_CALL GetRomHeader(uint8_t* headerData, uint32_t& size);
+	bool MESEN_CALL SaveRomToDisk(char* filename, bool saveIpsFile, CdlStripOption cdlStripOption);
+
 	// --- DebugApiWrapper (labels / undo / address conversion) ---
 	void MESEN_CALL SetLabel(uint32_t address, MemoryType memType, char* label, char* comment);
 	void MESEN_CALL ClearLabels();

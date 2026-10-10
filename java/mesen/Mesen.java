@@ -168,6 +168,11 @@ public final class Mesen
     public static final int SPRITE_MODE_WINDOW = 2;
     public static final int SPRITE_MODE_STEREOSCOPIC = 3;
 
+    // --- CdlStripOption ----------------------------------------------------
+    public static final int CDL_STRIP_NONE = 0;
+    public static final int CDL_STRIP_UNUSED = 1;
+    public static final int CDL_STRIP_USED = 2;
+
     // --- ConsoleType (Core/Shared/SettingTypes.h) --------------------------
     public static final int CONSOLE_SNES = 0;
     public static final int CONSOLE_GAMEBOY = 1;

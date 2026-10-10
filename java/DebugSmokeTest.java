@@ -254,6 +254,33 @@ public class DebugSmokeTest
                 sprites.spritePreviews.length, sprites.screenPreview.length);
         }
 
+        // ---- 汇编 / ROM 导出 ----
+        System.out.println("== 汇编 / ROM 导出 ==");
+        short[] assembled = MesenDebugger.assembleCode(Mesen.CPU_NES, "LDA #$10\nSTA $20", 0x8000);
+        check(assembled != null && assembled.length > 0, "assembleCode() -> "
+            + (assembled == null ? "null" : assembled.length + " 条"));
+        if(assembled != null && assembled.length > 0) {
+            StringBuilder sb = new StringBuilder();
+            for(short s : assembled) {
+                sb.append(String.format("%04X ", s & 0xFFFF));
+            }
+            System.out.println("      编码: " + sb.toString().trim());
+        }
+
+        byte[] header = MesenDebugger.getRomHeader();
+        check(header != null && header.length > 0, "getRomHeader() -> "
+            + (header == null ? "null" : header.length + " 字节"));
+        if(header != null && header.length >= 16) {
+            StringBuilder sb = new StringBuilder();
+            for(int i = 0; i < 16; i++) {
+                sb.append(String.format("%02X ", header[i]));
+            }
+            System.out.println("      头 16 字节: " + sb.toString().trim());
+        }
+
+        boolean saved = MesenDebugger.saveRomToDisk("temp/exported.nes", false, Mesen.CDL_STRIP_NONE);
+        check(saved, "saveRomToDisk() -> " + saved);
+
         // ---- 断点 ----
         System.out.println("== 断点 ==");
         Breakpoint bp = new Breakpoint();

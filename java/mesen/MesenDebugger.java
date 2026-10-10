@@ -254,6 +254,29 @@ public final class MesenDebugger
     /** 写某个瓦片内 (x,y) 像素的颜色索引。 */
     public static native void setTilePixel(AddressInfo tileAddress, int tileFormat, int x, int y, int color);
 
+    // ---- 汇编 / ROM 导出 --------------------------------------------------
+
+    /**
+     * 汇编一段代码。
+     *
+     * <p>返回的是汇编出来的指令编码（每条指令一个 short），长度 = 实际条数。
+     * 该 CPU 不支持汇编时返回空数组（查 {@link #getDebuggerFeatures(int)} 之类不能判断，
+     * 支持汇编的是 SNES/SA-1/GB/NES/PCE/SMS）。</p>
+     */
+    public static native short[] assembleCode(int cpuType, String code, int startAddress);
+
+    /** 取当前 ROM 的头（最多 4096 字节，按实际长度截断；无头则返回空数组）。 */
+    public static native byte[] getRomHeader();
+
+    /**
+     * 把当前 ROM 保存到磁盘。
+     *
+     * @param saveAsIps      是否同时生成 IPS 补丁
+     * @param cdlStripOption 剥离 CDL 数据的方式（{@code Mesen.CDL_STRIP_*}）
+     * @return 是否成功
+     */
+    public static native boolean saveRomToDisk(String filename, boolean saveAsIps, int cdlStripOption);
+
     // ---- 内存快照 --------------------------------------------------------
 
     /** 取整块内存（大小见 {@link MesenMemory#getMemorySize(int)}）。 */
