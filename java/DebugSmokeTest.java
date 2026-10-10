@@ -14,7 +14,16 @@ import mesen.debugger.EvalResult;
 import mesen.debugger.InstructionProgress;
 import mesen.debugger.NesCpuState;
 import mesen.debugger.NesPpuState;
+import mesen.debugger.PaletteInfo;
+import mesen.debugger.SpriteListResult;
+import mesen.debugger.SpriteOptions;
+import mesen.debugger.SpritePreviewInfo;
 import mesen.debugger.StackFrame;
+import mesen.debugger.TileView;
+import mesen.debugger.TileViewOptions;
+import mesen.debugger.TilemapOptions;
+import mesen.debugger.TilemapResult;
+import mesen.debugger.TilemapTileInfo;
 
 /** 调试 API（MesenDebugger）回归测试。 */
 public class DebugSmokeTest
@@ -35,6 +44,15 @@ public class DebugSmokeTest
         while(!MesenDebugger.isExecutionStopped() && System.currentTimeMillis() < deadline) {
             Thread.sleep(5);
         }
+    }
+
+    private static void writePng(int[] argb, int width, int height, String path) throws Exception
+    {
+        java.awt.image.BufferedImage image =
+            new java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        image.setRGB(0, 0, width, height, argb, 0, width);
+        javax.imageio.ImageIO.write(image, "png", new java.io.File(path));
+        System.out.println("      已导出 " + path + " (" + width + "x" + height + ")");
     }
 
     public static void main(String[] args) throws Exception
@@ -165,6 +183,75 @@ public class DebugSmokeTest
 
             ppu.videoRamAddr = originalVram;
             MesenDebugger.setNesPpuState(ppu);
+        }
+
+        // ---- PPU 工具 ----
+        System.out.println("== PPU 工具 ==");
+
+        PaletteInfo palette = MesenDebugger.getPaletteInfo(Mesen.TILE_FORMAT_NES_BPP2);
+        check(palette != null && palette.colorCount > 0, "getPaletteInfo() -> " + palette);
+        if(palette != null && palette.rgbPalette.length > 1) {
+            System.out.printf("      颜色 [0]=%08X [1]=%08X [2]=%08X%n",
+                palette.rgbPalette[0], palette.rgbPalette[1], palette.rgbPalette[2]);
+        }
+
+        TileViewOptions tvOptions = new TileViewOptions();
+        tvOptions.memoryType = Mesen.MEM_NES_CHR_ROM;
+        tvOptions.format = Mesen.TILE_FORMAT_NES_BPP2;
+        tvOptions.width = 16;
+        tvOptions.height = 8;
+        TileView view = MesenDebugger.getTileView(tvOptions);
+        check(view != null && view.width == 128 && view.height == 64, "getTileView() -> " + view);
+        if(view != null && view.pixels.length > 0) {
+            int nonBlack = 0;
+            for(int p : view.pixels) {
+                if((p & 0xFFFFFF) != 0) nonBlack++;
+            }
+            check(nonBlack > 0, "瓦片图非黑像素 = " + nonBlack + " / " + view.pixels.length);
+        }
+
+        TilemapOptions tmOptions = new TilemapOptions();
+        TilemapResult tilemap = MesenDebugger.getTilemap(tmOptions);
+        check(tilemap != null && tilemap.pixels.length > 0, "getTilemap() -> " + tilemap);
+        if(tilemap != null && tilemap.pixels.length > 0) {
+            int nonBlack = 0;
+            for(int p : tilemap.pixels) {
+                if((p & 0xFFFFFF) != 0) nonBlack++;
+            }
+            System.out.printf("      瓦片地图非黑像素 %d / %d%n", nonBlack, tilemap.pixels.length);
+        }
+
+        TilemapTileInfo tileInfo = MesenDebugger.getTilemapTileInfo(8, 8, tmOptions);
+        check(tileInfo != null, "getTilemapTileInfo(8,8) -> " + tileInfo);
+
+        // 导出 PNG 便于肉眼确认（temp/ 已 gitignore）
+        try {
+            new java.io.File("temp").mkdirs();
+            if(view != null && view.pixels.length > 0) {
+                writePng(view.pixels, view.width, view.height, "temp/tiles.png");
+            }
+            if(tilemap != null && tilemap.pixels.length > 0) {
+                writePng(tilemap.pixels, tilemap.width, tilemap.height, "temp/tilemap.png");
+            }
+        } catch(Exception e) {
+            System.out.println("      导出 PNG 失败: " + e);
+        }
+
+        int tilePixel = MesenDebugger.getTilePixel(
+            new AddressInfo(0, Mesen.MEM_NES_CHR_ROM), Mesen.TILE_FORMAT_NES_BPP2, 0, 0);
+        check(tilePixel >= 0, "getTilePixel($0, 0, 0) = " + tilePixel);
+
+        SpritePreviewInfo spritePreview = MesenDebugger.getSpritePreviewInfo(new SpriteOptions());
+        check(spritePreview != null && spritePreview.spriteCount > 0,
+            "getSpritePreviewInfo() -> " + spritePreview);
+
+        SpriteListResult sprites = MesenDebugger.getSpriteList(new SpriteOptions());
+        check(sprites != null && sprites.sprites.length > 0 && sprites.screenPreview.length > 0,
+            "getSpriteList() -> " + sprites);
+        if(sprites != null && sprites.sprites.length > 0) {
+            System.out.println("      精灵[0] " + sprites.sprites[0]);
+            System.out.printf("      预览图 %d ints, 整屏 %d ints%n",
+                sprites.spritePreviews.length, sprites.screenPreview.length);
         }
 
         // ---- 断点 ----

@@ -13,6 +13,7 @@
 #include "Core/Debugger/ExpressionEvaluator.h"
 #include "Core/Debugger/MemoryAccessCounter.h"
 #include "Core/NES/NesTypes.h"
+#include "Core/NES/Debugger/NesPpuTools.h"
 
 #include <jni.h>
 
@@ -128,6 +129,62 @@ namespace
 			npScanline, npCycle, npFrameCount, npNmiScanline, npScanlineCount, npSafeOamScanline,
 			npBusAddress, npMemoryReadBuffer, npVideoRamAddr, npTmpVideoRamAddr, npScrollX,
 			npWriteToggle, npSpriteRamAddr, npSecondaryOamAddr;
+
+		// PPU tools
+		jclass tileViewOptions;
+		jfieldID tvoMemType, tvoFormat, tvoLayout, tvoFilter, tvoBackground,
+			tvoWidth, tvoHeight, tvoStartAddress, tvoPalette, tvoGrayscale;
+
+		jclass tileView;
+		jmethodID tileViewCtor;
+		jfieldID tvWidth, tvHeight, tvPixels;
+
+		jclass tilemapOptions;
+		jfieldID tmoLayer, tmoMasterClock, tmoTileHighlight, tmoAttrHighlight, tmoDisplayMode, tmoBackground;
+
+		jclass tilemapInfo;
+		jmethodID tilemapInfoCtor;
+		jfieldID tiBpp, tiFormat, tiMirroring, tiTileWidth, tiTileHeight,
+			tiScrollX, tiScrollWidth, tiScrollY, tiScrollHeight,
+			tiRowCount, tiColumnCount, tiTilemapAddress, tiTilesetAddress, tiPriority;
+
+		jclass tilemapResult;
+		jmethodID tilemapResultCtor;
+		jfieldID trInfo, trWidth, trHeight, trPixels;
+
+		jclass tilemapTileInfo;
+		jmethodID tilemapTileInfoCtor;
+		jfieldID ttiRow, ttiColumn, ttiWidth, ttiHeight, ttiTileMapAddress, ttiTileIndex,
+			ttiTileAddresses, ttiPixelData, ttiPaletteIndex, ttiPaletteAddress,
+			ttiBasePaletteIndex, ttiAttributeAddress, ttiAttributeData,
+			ttiHorizontalMirroring, ttiVerticalMirroring, ttiHighPriority;
+
+		jclass spriteOptions;
+		jfieldID soBackground, soFilter;
+
+		jclass spritePreviewInfo;
+		jmethodID spritePreviewInfoCtor;
+		jfieldID spiWidth, spiHeight, spiSpriteCount, spiCoordOffsetX, spiCoordOffsetY,
+			spiVisibleX, spiVisibleY, spiVisibleWidth, spiVisibleHeight,
+			spiWrapBottomToTop, spiWrapRightToLeft;
+
+		jclass spriteInfo;
+		jmethodID spriteInfoCtor;
+		jfieldID siTileIndex, siTileAddress, siPaletteAddress, siFormat, siSpriteIndex,
+			siX, siY, siRawX, siRawY, siBpp, siPalette, siPriority, siMode,
+			siWidth, siHeight, siHorizontalMirror, siVerticalMirror, siMosaicEnabled,
+			siTransformEnabled, siDoubleSize, siUseSecondTable, siTransformParamIndex,
+			siVisibility, siUseExtendedVram, siTileAddresses;
+
+		jclass spriteListResult;
+		jmethodID spriteListResultCtor;
+		jfieldID slrInfo, slrSprites, slrSpritePreviews, slrScreenPreview;
+
+		jclass paletteInfo;
+		jmethodID paletteInfoCtor;
+		jfieldID piPaletteMemType, piPaletteMemOffset, piHasMemType, piColorCount,
+			piBgColorCount, piSpriteColorCount, piSpritePaletteOffset, piColorsPerPalette,
+			piRawFormat, piRawPalette, piRgbPalette;
 	};
 
 	JniCache g_cache;
@@ -165,11 +222,27 @@ namespace
 		g_cache.nesCpuState = findClass("mesen/debugger/NesCpuState");
 		g_cache.nesPpuState = findClass("mesen/debugger/NesPpuState");
 
+		g_cache.tileViewOptions = findClass("mesen/debugger/TileViewOptions");
+		g_cache.tileView = findClass("mesen/debugger/TileView");
+		g_cache.tilemapOptions = findClass("mesen/debugger/TilemapOptions");
+		g_cache.tilemapInfo = findClass("mesen/debugger/TilemapInfo");
+		g_cache.tilemapResult = findClass("mesen/debugger/TilemapResult");
+		g_cache.tilemapTileInfo = findClass("mesen/debugger/TilemapTileInfo");
+		g_cache.spriteOptions = findClass("mesen/debugger/SpriteOptions");
+		g_cache.spritePreviewInfo = findClass("mesen/debugger/SpritePreviewInfo");
+		g_cache.spriteInfo = findClass("mesen/debugger/SpriteInfo");
+		g_cache.spriteListResult = findClass("mesen/debugger/SpriteListResult");
+		g_cache.paletteInfo = findClass("mesen/debugger/PaletteInfo");
+
 		if(!g_cache.addressInfo || !g_cache.effectiveAddress || !g_cache.codeLine ||
 			!g_cache.breakpoint || !g_cache.stackFrame || !g_cache.cdlStatistics ||
 			!g_cache.cpuVector || !g_cache.debuggerFeatures || !g_cache.memoryOperation ||
 			!g_cache.instructionProgress || !g_cache.evalResult || !g_cache.addressCounters ||
-			!g_cache.nesCpuState || !g_cache.nesPpuState) {
+			!g_cache.nesCpuState || !g_cache.nesPpuState ||
+			!g_cache.tileViewOptions || !g_cache.tileView || !g_cache.tilemapOptions ||
+			!g_cache.tilemapInfo || !g_cache.tilemapResult || !g_cache.tilemapTileInfo ||
+			!g_cache.spriteOptions || !g_cache.spritePreviewInfo || !g_cache.spriteInfo ||
+			!g_cache.spriteListResult || !g_cache.paletteInfo) {
 			return false;
 		}
 
@@ -316,6 +389,131 @@ namespace
 		g_cache.npWriteToggle = field(g_cache.nesPpuState, "writeToggle", "Z");
 		g_cache.npSpriteRamAddr = field(g_cache.nesPpuState, "spriteRamAddr", "I");
 		g_cache.npSecondaryOamAddr = field(g_cache.nesPpuState, "secondaryOamAddr", "I");
+
+		g_cache.tvoMemType = field(g_cache.tileViewOptions, "memoryType", "I");
+		g_cache.tvoFormat = field(g_cache.tileViewOptions, "format", "I");
+		g_cache.tvoLayout = field(g_cache.tileViewOptions, "layout", "I");
+		g_cache.tvoFilter = field(g_cache.tileViewOptions, "filter", "I");
+		g_cache.tvoBackground = field(g_cache.tileViewOptions, "background", "I");
+		g_cache.tvoWidth = field(g_cache.tileViewOptions, "width", "I");
+		g_cache.tvoHeight = field(g_cache.tileViewOptions, "height", "I");
+		g_cache.tvoStartAddress = field(g_cache.tileViewOptions, "startAddress", "I");
+		g_cache.tvoPalette = field(g_cache.tileViewOptions, "palette", "I");
+		g_cache.tvoGrayscale = field(g_cache.tileViewOptions, "useGrayscalePalette", "Z");
+
+		g_cache.tileViewCtor = env->GetMethodID(g_cache.tileView, "<init>", "()V");
+		g_cache.tvWidth = field(g_cache.tileView, "width", "I");
+		g_cache.tvHeight = field(g_cache.tileView, "height", "I");
+		g_cache.tvPixels = field(g_cache.tileView, "pixels", "[I");
+
+		g_cache.tmoLayer = field(g_cache.tilemapOptions, "layer", "I");
+		g_cache.tmoMasterClock = field(g_cache.tilemapOptions, "masterClock", "J");
+		g_cache.tmoTileHighlight = field(g_cache.tilemapOptions, "tileHighlightMode", "I");
+		g_cache.tmoAttrHighlight = field(g_cache.tilemapOptions, "attributeHighlightMode", "I");
+		g_cache.tmoDisplayMode = field(g_cache.tilemapOptions, "displayMode", "I");
+		g_cache.tmoBackground = field(g_cache.tilemapOptions, "background", "I");
+
+		g_cache.tilemapInfoCtor = env->GetMethodID(g_cache.tilemapInfo, "<init>", "()V");
+		g_cache.tiBpp = field(g_cache.tilemapInfo, "bpp", "I");
+		g_cache.tiFormat = field(g_cache.tilemapInfo, "format", "I");
+		g_cache.tiMirroring = field(g_cache.tilemapInfo, "mirroring", "I");
+		g_cache.tiTileWidth = field(g_cache.tilemapInfo, "tileWidth", "I");
+		g_cache.tiTileHeight = field(g_cache.tilemapInfo, "tileHeight", "I");
+		g_cache.tiScrollX = field(g_cache.tilemapInfo, "scrollX", "I");
+		g_cache.tiScrollWidth = field(g_cache.tilemapInfo, "scrollWidth", "I");
+		g_cache.tiScrollY = field(g_cache.tilemapInfo, "scrollY", "I");
+		g_cache.tiScrollHeight = field(g_cache.tilemapInfo, "scrollHeight", "I");
+		g_cache.tiRowCount = field(g_cache.tilemapInfo, "rowCount", "I");
+		g_cache.tiColumnCount = field(g_cache.tilemapInfo, "columnCount", "I");
+		g_cache.tiTilemapAddress = field(g_cache.tilemapInfo, "tilemapAddress", "I");
+		g_cache.tiTilesetAddress = field(g_cache.tilemapInfo, "tilesetAddress", "I");
+		g_cache.tiPriority = field(g_cache.tilemapInfo, "priority", "I");
+
+		g_cache.tilemapResultCtor = env->GetMethodID(g_cache.tilemapResult, "<init>", "()V");
+		g_cache.trInfo = field(g_cache.tilemapResult, "info", "Lmesen/debugger/TilemapInfo;");
+		g_cache.trWidth = field(g_cache.tilemapResult, "width", "I");
+		g_cache.trHeight = field(g_cache.tilemapResult, "height", "I");
+		g_cache.trPixels = field(g_cache.tilemapResult, "pixels", "[I");
+
+		g_cache.tilemapTileInfoCtor = env->GetMethodID(g_cache.tilemapTileInfo, "<init>", "()V");
+		g_cache.ttiRow = field(g_cache.tilemapTileInfo, "row", "I");
+		g_cache.ttiColumn = field(g_cache.tilemapTileInfo, "column", "I");
+		g_cache.ttiWidth = field(g_cache.tilemapTileInfo, "width", "I");
+		g_cache.ttiHeight = field(g_cache.tilemapTileInfo, "height", "I");
+		g_cache.ttiTileMapAddress = field(g_cache.tilemapTileInfo, "tileMapAddress", "I");
+		g_cache.ttiTileIndex = field(g_cache.tilemapTileInfo, "tileIndex", "I");
+		g_cache.ttiTileAddresses = field(g_cache.tilemapTileInfo, "tileAddresses", "[I");
+		g_cache.ttiPixelData = field(g_cache.tilemapTileInfo, "pixelData", "I");
+		g_cache.ttiPaletteIndex = field(g_cache.tilemapTileInfo, "paletteIndex", "I");
+		g_cache.ttiPaletteAddress = field(g_cache.tilemapTileInfo, "paletteAddress", "I");
+		g_cache.ttiBasePaletteIndex = field(g_cache.tilemapTileInfo, "basePaletteIndex", "I");
+		g_cache.ttiAttributeAddress = field(g_cache.tilemapTileInfo, "attributeAddress", "I");
+		g_cache.ttiAttributeData = field(g_cache.tilemapTileInfo, "attributeData", "I");
+		g_cache.ttiHorizontalMirroring = field(g_cache.tilemapTileInfo, "horizontalMirroring", "I");
+		g_cache.ttiVerticalMirroring = field(g_cache.tilemapTileInfo, "verticalMirroring", "I");
+		g_cache.ttiHighPriority = field(g_cache.tilemapTileInfo, "highPriority", "I");
+
+		g_cache.soBackground = field(g_cache.spriteOptions, "background", "I");
+		g_cache.soFilter = field(g_cache.spriteOptions, "filter", "I");
+
+		g_cache.spritePreviewInfoCtor = env->GetMethodID(g_cache.spritePreviewInfo, "<init>", "()V");
+		g_cache.spiWidth = field(g_cache.spritePreviewInfo, "width", "I");
+		g_cache.spiHeight = field(g_cache.spritePreviewInfo, "height", "I");
+		g_cache.spiSpriteCount = field(g_cache.spritePreviewInfo, "spriteCount", "I");
+		g_cache.spiCoordOffsetX = field(g_cache.spritePreviewInfo, "coordOffsetX", "I");
+		g_cache.spiCoordOffsetY = field(g_cache.spritePreviewInfo, "coordOffsetY", "I");
+		g_cache.spiVisibleX = field(g_cache.spritePreviewInfo, "visibleX", "I");
+		g_cache.spiVisibleY = field(g_cache.spritePreviewInfo, "visibleY", "I");
+		g_cache.spiVisibleWidth = field(g_cache.spritePreviewInfo, "visibleWidth", "I");
+		g_cache.spiVisibleHeight = field(g_cache.spritePreviewInfo, "visibleHeight", "I");
+		g_cache.spiWrapBottomToTop = field(g_cache.spritePreviewInfo, "wrapBottomToTop", "Z");
+		g_cache.spiWrapRightToLeft = field(g_cache.spritePreviewInfo, "wrapRightToLeft", "Z");
+
+		g_cache.spriteInfoCtor = env->GetMethodID(g_cache.spriteInfo, "<init>", "()V");
+		g_cache.siTileIndex = field(g_cache.spriteInfo, "tileIndex", "I");
+		g_cache.siTileAddress = field(g_cache.spriteInfo, "tileAddress", "I");
+		g_cache.siPaletteAddress = field(g_cache.spriteInfo, "paletteAddress", "I");
+		g_cache.siFormat = field(g_cache.spriteInfo, "format", "I");
+		g_cache.siSpriteIndex = field(g_cache.spriteInfo, "spriteIndex", "I");
+		g_cache.siX = field(g_cache.spriteInfo, "x", "I");
+		g_cache.siY = field(g_cache.spriteInfo, "y", "I");
+		g_cache.siRawX = field(g_cache.spriteInfo, "rawX", "I");
+		g_cache.siRawY = field(g_cache.spriteInfo, "rawY", "I");
+		g_cache.siBpp = field(g_cache.spriteInfo, "bpp", "I");
+		g_cache.siPalette = field(g_cache.spriteInfo, "palette", "I");
+		g_cache.siPriority = field(g_cache.spriteInfo, "priority", "I");
+		g_cache.siMode = field(g_cache.spriteInfo, "mode", "I");
+		g_cache.siWidth = field(g_cache.spriteInfo, "width", "I");
+		g_cache.siHeight = field(g_cache.spriteInfo, "height", "I");
+		g_cache.siHorizontalMirror = field(g_cache.spriteInfo, "horizontalMirror", "I");
+		g_cache.siVerticalMirror = field(g_cache.spriteInfo, "verticalMirror", "I");
+		g_cache.siMosaicEnabled = field(g_cache.spriteInfo, "mosaicEnabled", "I");
+		g_cache.siTransformEnabled = field(g_cache.spriteInfo, "transformEnabled", "I");
+		g_cache.siDoubleSize = field(g_cache.spriteInfo, "doubleSize", "I");
+		g_cache.siUseSecondTable = field(g_cache.spriteInfo, "useSecondTable", "I");
+		g_cache.siTransformParamIndex = field(g_cache.spriteInfo, "transformParamIndex", "I");
+		g_cache.siVisibility = field(g_cache.spriteInfo, "visibility", "I");
+		g_cache.siUseExtendedVram = field(g_cache.spriteInfo, "useExtendedVram", "Z");
+		g_cache.siTileAddresses = field(g_cache.spriteInfo, "tileAddresses", "[I");
+
+		g_cache.spriteListResultCtor = env->GetMethodID(g_cache.spriteListResult, "<init>", "()V");
+		g_cache.slrInfo = field(g_cache.spriteListResult, "info", "Lmesen/debugger/SpritePreviewInfo;");
+		g_cache.slrSprites = field(g_cache.spriteListResult, "sprites", "[Lmesen/debugger/SpriteInfo;");
+		g_cache.slrSpritePreviews = field(g_cache.spriteListResult, "spritePreviews", "[I");
+		g_cache.slrScreenPreview = field(g_cache.spriteListResult, "screenPreview", "[I");
+
+		g_cache.paletteInfoCtor = env->GetMethodID(g_cache.paletteInfo, "<init>", "()V");
+		g_cache.piPaletteMemType = field(g_cache.paletteInfo, "paletteMemType", "I");
+		g_cache.piPaletteMemOffset = field(g_cache.paletteInfo, "paletteMemOffset", "I");
+		g_cache.piHasMemType = field(g_cache.paletteInfo, "hasMemType", "Z");
+		g_cache.piColorCount = field(g_cache.paletteInfo, "colorCount", "I");
+		g_cache.piBgColorCount = field(g_cache.paletteInfo, "bgColorCount", "I");
+		g_cache.piSpriteColorCount = field(g_cache.paletteInfo, "spriteColorCount", "I");
+		g_cache.piSpritePaletteOffset = field(g_cache.paletteInfo, "spritePaletteOffset", "I");
+		g_cache.piColorsPerPalette = field(g_cache.paletteInfo, "colorsPerPalette", "I");
+		g_cache.piRawFormat = field(g_cache.paletteInfo, "rawFormat", "I");
+		g_cache.piRawPalette = field(g_cache.paletteInfo, "rawPalette", "[I");
+		g_cache.piRgbPalette = field(g_cache.paletteInfo, "rgbPalette", "[I");
 
 		if(env->ExceptionCheck()) {
 			return false;
@@ -1006,6 +1204,434 @@ extern "C"
 		NesPpuState state = {};
 		ReadNesPpuState(env, obj, state);
 		SetPpuState(static_cast<BaseState&>(state), CpuType::Nes);
+	}
+
+	// -----------------------------------------------------------------------
+	// PPU tools (NES)
+	// -----------------------------------------------------------------------
+
+	// Snapshots everything the NES PPU tools need: register state, tool state,
+	// VRAM (MEM_NES_PPU) and the RGB palette. Callers stay free of that plumbing.
+	struct NesPpuContext
+	{
+		NesPpuState state = {};
+		NesPpuToolsState toolsState = {};
+		std::vector<uint8_t> vram;
+		std::vector<uint32_t> palette;
+
+		bool Load()
+		{
+			GetPpuState(static_cast<BaseState&>(state), CpuType::Nes);
+			GetPpuToolsState(CpuType::Nes, *reinterpret_cast<BaseState*>(&toolsState));
+
+			uint32_t vramSize = GetMemorySize(MemoryType::NesPpuMemory);
+			vram.assign(vramSize, 0);
+			if(vramSize > 0) {
+				GetMemoryState(MemoryType::NesPpuMemory, vram.data());
+			}
+
+			GetPaletteInfoOptions options = {};
+			options.Format = TileFormat::NesBpp2;
+			DebugPaletteInfo info = GetPaletteInfo(CpuType::Nes, options);
+			palette.assign(info.RgbPalette, info.RgbPalette + 512);
+			return true;
+		}
+
+		BaseState& State() { return static_cast<BaseState&>(state); }
+
+		// NesPpuToolsState does not derive from BaseState; the core casts it back
+		// internally (NesPpuTools::GetPpuToolsState does the same in reverse).
+		BaseState& ToolsState() { return *reinterpret_cast<BaseState*>(&toolsState); }
+	};
+
+	jintArray NewIntArrayFromUint32(JNIEnv* env, const std::vector<uint32_t>& values)
+	{
+		jintArray array = env->NewIntArray((jsize)values.size());
+		if(!values.empty()) {
+			env->SetIntArrayRegion(array, 0, (jsize)values.size(), (const jint*)values.data());
+		}
+		return array;
+	}
+
+	jobject NewTilemapInfo(JNIEnv* env, const DebugTilemapInfo& info)
+	{
+		jobject obj = env->NewObject(g_cache.tilemapInfo, g_cache.tilemapInfoCtor);
+		env->SetIntField(obj, g_cache.tiBpp, (jint)info.Bpp);
+		env->SetIntField(obj, g_cache.tiFormat, (jint)info.Format);
+		env->SetIntField(obj, g_cache.tiMirroring, (jint)info.Mirroring);
+		env->SetIntField(obj, g_cache.tiTileWidth, (jint)info.TileWidth);
+		env->SetIntField(obj, g_cache.tiTileHeight, (jint)info.TileHeight);
+		env->SetIntField(obj, g_cache.tiScrollX, (jint)info.ScrollX);
+		env->SetIntField(obj, g_cache.tiScrollWidth, (jint)info.ScrollWidth);
+		env->SetIntField(obj, g_cache.tiScrollY, (jint)info.ScrollY);
+		env->SetIntField(obj, g_cache.tiScrollHeight, (jint)info.ScrollHeight);
+		env->SetIntField(obj, g_cache.tiRowCount, (jint)info.RowCount);
+		env->SetIntField(obj, g_cache.tiColumnCount, (jint)info.ColumnCount);
+		env->SetIntField(obj, g_cache.tiTilemapAddress, (jint)info.TilemapAddress);
+		env->SetIntField(obj, g_cache.tiTilesetAddress, (jint)info.TilesetAddress);
+		env->SetIntField(obj, g_cache.tiPriority, (jint)info.Priority);
+		return obj;
+	}
+
+	jobject NewSpritePreviewInfo(JNIEnv* env, const DebugSpritePreviewInfo& info)
+	{
+		jobject obj = env->NewObject(g_cache.spritePreviewInfo, g_cache.spritePreviewInfoCtor);
+		env->SetIntField(obj, g_cache.spiWidth, (jint)info.Width);
+		env->SetIntField(obj, g_cache.spiHeight, (jint)info.Height);
+		env->SetIntField(obj, g_cache.spiSpriteCount, (jint)info.SpriteCount);
+		env->SetIntField(obj, g_cache.spiCoordOffsetX, (jint)info.CoordOffsetX);
+		env->SetIntField(obj, g_cache.spiCoordOffsetY, (jint)info.CoordOffsetY);
+		env->SetIntField(obj, g_cache.spiVisibleX, (jint)info.VisibleX);
+		env->SetIntField(obj, g_cache.spiVisibleY, (jint)info.VisibleY);
+		env->SetIntField(obj, g_cache.spiVisibleWidth, (jint)info.VisibleWidth);
+		env->SetIntField(obj, g_cache.spiVisibleHeight, (jint)info.VisibleHeight);
+		env->SetBooleanField(obj, g_cache.spiWrapBottomToTop, info.WrapBottomToTop ? JNI_TRUE : JNI_FALSE);
+		env->SetBooleanField(obj, g_cache.spiWrapRightToLeft, info.WrapRightToLeft ? JNI_TRUE : JNI_FALSE);
+		return obj;
+	}
+
+	jobject NewSpriteInfo(JNIEnv* env, const DebugSpriteInfo& sprite)
+	{
+		jobject obj = env->NewObject(g_cache.spriteInfo, g_cache.spriteInfoCtor);
+		env->SetIntField(obj, g_cache.siTileIndex, (jint)sprite.TileIndex);
+		env->SetIntField(obj, g_cache.siTileAddress, (jint)sprite.TileAddress);
+		env->SetIntField(obj, g_cache.siPaletteAddress, (jint)sprite.PaletteAddress);
+		env->SetIntField(obj, g_cache.siFormat, (jint)sprite.Format);
+		env->SetIntField(obj, g_cache.siSpriteIndex, (jint)sprite.SpriteIndex);
+		env->SetIntField(obj, g_cache.siX, (jint)sprite.X);
+		env->SetIntField(obj, g_cache.siY, (jint)sprite.Y);
+		env->SetIntField(obj, g_cache.siRawX, (jint)sprite.RawX);
+		env->SetIntField(obj, g_cache.siRawY, (jint)sprite.RawY);
+		env->SetIntField(obj, g_cache.siBpp, (jint)sprite.Bpp);
+		env->SetIntField(obj, g_cache.siPalette, (jint)sprite.Palette);
+		env->SetIntField(obj, g_cache.siPriority, (jint)sprite.Priority);
+		env->SetIntField(obj, g_cache.siMode, (jint)sprite.Mode);
+		env->SetIntField(obj, g_cache.siWidth, (jint)sprite.Width);
+		env->SetIntField(obj, g_cache.siHeight, (jint)sprite.Height);
+		env->SetIntField(obj, g_cache.siHorizontalMirror, (jint)sprite.HorizontalMirror);
+		env->SetIntField(obj, g_cache.siVerticalMirror, (jint)sprite.VerticalMirror);
+		env->SetIntField(obj, g_cache.siMosaicEnabled, (jint)sprite.MosaicEnabled);
+		env->SetIntField(obj, g_cache.siTransformEnabled, (jint)sprite.TransformEnabled);
+		env->SetIntField(obj, g_cache.siDoubleSize, (jint)sprite.DoubleSize);
+		env->SetIntField(obj, g_cache.siUseSecondTable, (jint)sprite.UseSecondTable);
+		env->SetIntField(obj, g_cache.siTransformParamIndex, (jint)sprite.TransformParamIndex);
+		env->SetIntField(obj, g_cache.siVisibility, (jint)sprite.Visibility);
+		env->SetBooleanField(obj, g_cache.siUseExtendedVram, sprite.UseExtendedVram ? JNI_TRUE : JNI_FALSE);
+
+		uint32_t tileCount = sprite.TileCount;
+		if(tileCount > 8 * 8) {
+			tileCount = 8 * 8;
+		}
+		jintArray addresses = env->NewIntArray((jsize)tileCount);
+		if(tileCount > 0) {
+			std::vector<jint> converted(tileCount);
+			for(uint32_t i = 0; i < tileCount; i++) {
+				converted[i] = (jint)sprite.TileAddresses[i];
+			}
+			env->SetIntArrayRegion(addresses, 0, (jsize)tileCount, converted.data());
+		}
+		env->SetObjectField(obj, g_cache.siTileAddresses, addresses);
+		env->DeleteLocalRef(addresses);
+		return obj;
+	}
+
+	GetTilemapOptions ReadTilemapOptions(JNIEnv* env, jobject obj)
+	{
+		GetTilemapOptions options = {};
+		if(!obj) {
+			return options;
+		}
+		options.Layer = (uint8_t)env->GetIntField(obj, g_cache.tmoLayer);
+		options.MasterClock = (uint64_t)env->GetLongField(obj, g_cache.tmoMasterClock);
+		options.TileHighlightMode = (TilemapHighlightMode)env->GetIntField(obj, g_cache.tmoTileHighlight);
+		options.AttributeHighlightMode = (TilemapHighlightMode)env->GetIntField(obj, g_cache.tmoAttrHighlight);
+		options.DisplayMode = (TilemapDisplayMode)env->GetIntField(obj, g_cache.tmoDisplayMode);
+		options.Background = (TilemapBackground)env->GetIntField(obj, g_cache.tmoBackground);
+		return options;
+	}
+
+	GetSpritePreviewOptions ReadSpriteOptions(JNIEnv* env, jobject obj)
+	{
+		GetSpritePreviewOptions options = {};
+		if(!obj) {
+			return options;
+		}
+		options.Background = (SpriteBackground)env->GetIntField(obj, g_cache.soBackground);
+		options.Filter = (SpriteViewerFilter)env->GetIntField(obj, g_cache.soFilter);
+		return options;
+	}
+
+	// -----------------------------------------------------------------------
+	// PPU tools: JNI entry points
+	// -----------------------------------------------------------------------
+
+	JNIEXPORT jobject JNICALL Java_mesen_MesenDebugger_getTileView(JNIEnv* env, jclass, jobject optionsObj)
+	{
+		if(!InitCache(env) || !optionsObj) {
+			return nullptr;
+		}
+
+		GetTileViewOptions options = {};
+		options.MemType = (MemoryType)env->GetIntField(optionsObj, g_cache.tvoMemType);
+		options.Format = (TileFormat)env->GetIntField(optionsObj, g_cache.tvoFormat);
+		options.Layout = (TileLayout)env->GetIntField(optionsObj, g_cache.tvoLayout);
+		options.Filter = (TileFilter)env->GetIntField(optionsObj, g_cache.tvoFilter);
+		options.Background = (TileBackground)env->GetIntField(optionsObj, g_cache.tvoBackground);
+		options.Width = env->GetIntField(optionsObj, g_cache.tvoWidth);
+		options.Height = env->GetIntField(optionsObj, g_cache.tvoHeight);
+		options.StartAddress = env->GetIntField(optionsObj, g_cache.tvoStartAddress);
+		options.Palette = env->GetIntField(optionsObj, g_cache.tvoPalette);
+		options.UseGrayscalePalette = env->GetBooleanField(optionsObj, g_cache.tvoGrayscale) == JNI_TRUE;
+
+		if(options.Width <= 0 || options.Height <= 0) {
+			return nullptr;
+		}
+
+		uint32_t srcSize = GetMemorySize(options.MemType);
+		std::vector<uint8_t> source(srcSize ? srcSize : 1, 0);
+		if(srcSize > 0) {
+			GetMemoryState(options.MemType, source.data());
+		}
+
+		GetPaletteInfoOptions paletteOptions = {};
+		paletteOptions.Format = options.Format;
+		DebugPaletteInfo palette = GetPaletteInfo(CpuType::Nes, paletteOptions);
+
+		// Every tile is 8x8 for the formats bound here.
+		int pixelWidth = options.Width * 8;
+		int pixelHeight = options.Height * 8;
+		std::vector<uint32_t> buffer((size_t)pixelWidth * pixelHeight, 0);
+
+		GetTileView(CpuType::Nes, options, source.data(), srcSize, palette.RgbPalette, buffer.data());
+
+		jobject result = env->NewObject(g_cache.tileView, g_cache.tileViewCtor);
+		env->SetIntField(result, g_cache.tvWidth, pixelWidth);
+		env->SetIntField(result, g_cache.tvHeight, pixelHeight);
+		jintArray pixels = NewIntArrayFromUint32(env, buffer);
+		env->SetObjectField(result, g_cache.tvPixels, pixels);
+		env->DeleteLocalRef(pixels);
+		return result;
+	}
+
+	JNIEXPORT jobject JNICALL Java_mesen_MesenDebugger_getTilemap(JNIEnv* env, jclass, jobject optionsObj)
+	{
+		if(!InitCache(env)) {
+			return nullptr;
+		}
+
+		GetTilemapOptions options = ReadTilemapOptions(env, optionsObj);
+
+		NesPpuContext context;
+		context.Load();
+
+		FrameInfo size = GetTilemapSize(CpuType::Nes, options, context.State());
+		if(size.Width == 0 || size.Height == 0) {
+			return nullptr;
+		}
+
+		std::vector<uint32_t> buffer((size_t)size.Width * size.Height, 0);
+		DebugTilemapInfo info = GetTilemap(CpuType::Nes, options, context.State(), context.ToolsState(),
+			context.vram.data(), context.palette.data(), buffer.data());
+
+		jobject result = env->NewObject(g_cache.tilemapResult, g_cache.tilemapResultCtor);
+		jobject infoObj = NewTilemapInfo(env, info);
+		env->SetObjectField(result, g_cache.trInfo, infoObj);
+		env->DeleteLocalRef(infoObj);
+		env->SetIntField(result, g_cache.trWidth, (jint)size.Width);
+		env->SetIntField(result, g_cache.trHeight, (jint)size.Height);
+		jintArray pixels = NewIntArrayFromUint32(env, buffer);
+		env->SetObjectField(result, g_cache.trPixels, pixels);
+		env->DeleteLocalRef(pixels);
+		return result;
+	}
+
+	JNIEXPORT jobject JNICALL Java_mesen_MesenDebugger_getTilemapTileInfo(
+		JNIEnv* env, jclass, jint x, jint y, jobject optionsObj)
+	{
+		if(!InitCache(env)) {
+			return nullptr;
+		}
+
+		GetTilemapOptions options = ReadTilemapOptions(env, optionsObj);
+
+		NesPpuContext context;
+		context.Load();
+
+		DebugTilemapTileInfo info = GetTilemapTileInfo((uint32_t)x, (uint32_t)y, CpuType::Nes,
+			options, context.vram.data(), context.State(), context.ToolsState());
+
+		jobject obj = env->NewObject(g_cache.tilemapTileInfo, g_cache.tilemapTileInfoCtor);
+		env->SetIntField(obj, g_cache.ttiRow, (jint)info.Row);
+		env->SetIntField(obj, g_cache.ttiColumn, (jint)info.Column);
+		env->SetIntField(obj, g_cache.ttiWidth, (jint)info.Width);
+		env->SetIntField(obj, g_cache.ttiHeight, (jint)info.Height);
+		env->SetIntField(obj, g_cache.ttiTileMapAddress, (jint)info.TileMapAddress);
+		env->SetIntField(obj, g_cache.ttiTileIndex, (jint)info.TileIndex);
+		env->SetIntField(obj, g_cache.ttiPixelData, (jint)info.PixelData);
+		env->SetIntField(obj, g_cache.ttiPaletteIndex, (jint)info.PaletteIndex);
+		env->SetIntField(obj, g_cache.ttiPaletteAddress, (jint)info.PaletteAddress);
+		env->SetIntField(obj, g_cache.ttiBasePaletteIndex, (jint)info.BasePaletteIndex);
+		env->SetIntField(obj, g_cache.ttiAttributeAddress, (jint)info.AttributeAddress);
+		env->SetIntField(obj, g_cache.ttiAttributeData, (jint)info.AttributeData);
+		env->SetIntField(obj, g_cache.ttiHorizontalMirroring, (jint)info.HorizontalMirroring);
+		env->SetIntField(obj, g_cache.ttiVerticalMirroring, (jint)info.VerticalMirroring);
+		env->SetIntField(obj, g_cache.ttiHighPriority, (jint)info.HighPriority);
+
+		uint32_t tileCount = info.TileCount;
+		if(tileCount > 4) {
+			tileCount = 4;
+		}
+		jintArray addresses = env->NewIntArray((jsize)tileCount);
+		if(tileCount > 0) {
+			std::vector<jint> converted(tileCount);
+			for(uint32_t i = 0; i < tileCount; i++) {
+				converted[i] = (jint)info.TileAddresses[i];
+			}
+			env->SetIntArrayRegion(addresses, 0, (jsize)tileCount, converted.data());
+		}
+		env->SetObjectField(obj, g_cache.ttiTileAddresses, addresses);
+		env->DeleteLocalRef(addresses);
+		return obj;
+	}
+
+	JNIEXPORT jobject JNICALL Java_mesen_MesenDebugger_getSpritePreviewInfo(JNIEnv* env, jclass, jobject optionsObj)
+	{
+		if(!InitCache(env)) {
+			return nullptr;
+		}
+
+		GetSpritePreviewOptions options = ReadSpriteOptions(env, optionsObj);
+
+		NesPpuContext context;
+		context.Load();
+
+		DebugSpritePreviewInfo info = GetSpritePreviewInfo(CpuType::Nes, options,
+			context.State(), context.ToolsState());
+		return NewSpritePreviewInfo(env, info);
+	}
+
+	JNIEXPORT jobject JNICALL Java_mesen_MesenDebugger_getSpriteList(JNIEnv* env, jclass, jobject optionsObj)
+	{
+		if(!InitCache(env)) {
+			return nullptr;
+		}
+
+		GetSpritePreviewOptions options = ReadSpriteOptions(env, optionsObj);
+
+		NesPpuContext context;
+		context.Load();
+
+		DebugSpritePreviewInfo info = GetSpritePreviewInfo(CpuType::Nes, options,
+			context.State(), context.ToolsState());
+
+		uint32_t spriteCount = info.SpriteCount;
+		uint32_t previewSize = (uint32_t)info.Width * info.Height;
+
+		std::vector<DebugSpriteInfo> sprites(spriteCount ? spriteCount : 1);
+		std::vector<uint32_t> previews((size_t)(spriteCount ? spriteCount : 1) * previewSize, 0);
+		std::vector<uint32_t> screen(previewSize ? previewSize : 1, 0);
+
+		uint32_t spriteRamSize = GetMemorySize(MemoryType::NesSpriteRam);
+		std::vector<uint8_t> spriteRam(spriteRamSize ? spriteRamSize : 1, 0);
+		if(spriteRamSize > 0) {
+			GetMemoryState(MemoryType::NesSpriteRam, spriteRam.data());
+		}
+
+		GetSpriteList(CpuType::Nes, options, context.State(), context.ToolsState(),
+			context.vram.data(), spriteRam.data(), context.palette.data(),
+			sprites.data(), previews.data(), screen.data());
+
+		jobject result = env->NewObject(g_cache.spriteListResult, g_cache.spriteListResultCtor);
+
+		jobject infoObj = NewSpritePreviewInfo(env, info);
+		env->SetObjectField(result, g_cache.slrInfo, infoObj);
+		env->DeleteLocalRef(infoObj);
+
+		jobjectArray spriteArray = env->NewObjectArray((jsize)spriteCount, g_cache.spriteInfo, nullptr);
+		for(uint32_t i = 0; i < spriteCount; i++) {
+			jobject sprite = NewSpriteInfo(env, sprites[i]);
+			env->SetObjectArrayElement(spriteArray, (jsize)i, sprite);
+			env->DeleteLocalRef(sprite);
+		}
+		env->SetObjectField(result, g_cache.slrSprites, spriteArray);
+		env->DeleteLocalRef(spriteArray);
+
+		std::vector<uint32_t> previewSlice(previews.begin(), previews.begin() + (size_t)spriteCount * previewSize);
+		jintArray previewArray = NewIntArrayFromUint32(env, previewSlice);
+		env->SetObjectField(result, g_cache.slrSpritePreviews, previewArray);
+		env->DeleteLocalRef(previewArray);
+
+		jintArray screenArray = NewIntArrayFromUint32(env, screen);
+		env->SetObjectField(result, g_cache.slrScreenPreview, screenArray);
+		env->DeleteLocalRef(screenArray);
+
+		return result;
+	}
+
+	JNIEXPORT jobject JNICALL Java_mesen_MesenDebugger_getPaletteInfo(JNIEnv* env, jclass, jint tileFormat)
+	{
+		if(!InitCache(env)) {
+			return nullptr;
+		}
+
+		GetPaletteInfoOptions options = {};
+		options.Format = (TileFormat)tileFormat;
+		DebugPaletteInfo info = GetPaletteInfo(CpuType::Nes, options);
+
+		uint32_t count = info.ColorCount;
+		if(count > 512) {
+			count = 512;
+		}
+
+		jobject obj = env->NewObject(g_cache.paletteInfo, g_cache.paletteInfoCtor);
+		env->SetIntField(obj, g_cache.piPaletteMemType, (jint)info.PaletteMemType);
+		env->SetIntField(obj, g_cache.piPaletteMemOffset, (jint)info.PaletteMemOffset);
+		env->SetBooleanField(obj, g_cache.piHasMemType, info.HasMemType ? JNI_TRUE : JNI_FALSE);
+		env->SetIntField(obj, g_cache.piColorCount, (jint)info.ColorCount);
+		env->SetIntField(obj, g_cache.piBgColorCount, (jint)info.BgColorCount);
+		env->SetIntField(obj, g_cache.piSpriteColorCount, (jint)info.SpriteColorCount);
+		env->SetIntField(obj, g_cache.piSpritePaletteOffset, (jint)info.SpritePaletteOffset);
+		env->SetIntField(obj, g_cache.piColorsPerPalette, (jint)info.ColorsPerPalette);
+		env->SetIntField(obj, g_cache.piRawFormat, (jint)info.RawFormat);
+
+		std::vector<uint32_t> raw(info.RawPalette, info.RawPalette + count);
+		std::vector<uint32_t> rgb(info.RgbPalette, info.RgbPalette + count);
+
+		jintArray rawArray = NewIntArrayFromUint32(env, raw);
+		env->SetObjectField(obj, g_cache.piRawPalette, rawArray);
+		env->DeleteLocalRef(rawArray);
+
+		jintArray rgbArray = NewIntArrayFromUint32(env, rgb);
+		env->SetObjectField(obj, g_cache.piRgbPalette, rgbArray);
+		env->DeleteLocalRef(rgbArray);
+
+		return obj;
+	}
+
+	JNIEXPORT void JNICALL Java_mesen_MesenDebugger_setPaletteColor(
+		JNIEnv*, jclass, jint cpuType, jint colorIndex, jint color)
+	{
+		SetPaletteColor((CpuType)cpuType, (int32_t)colorIndex, (uint32_t)color);
+	}
+
+	JNIEXPORT jint JNICALL Java_mesen_MesenDebugger_getTilePixel(
+		JNIEnv* env, jclass, jobject addressObj, jint tileFormat, jint x, jint y)
+	{
+		if(!InitCache(env)) {
+			return -1;
+		}
+		AddressInfo address = ReadAddressInfo(env, addressObj);
+		return (jint)GetTilePixel(address, (TileFormat)tileFormat, (int32_t)x, (int32_t)y);
+	}
+
+	JNIEXPORT void JNICALL Java_mesen_MesenDebugger_setTilePixel(
+		JNIEnv* env, jclass, jobject addressObj, jint tileFormat, jint x, jint y, jint color)
+	{
+		if(!InitCache(env)) {
+			return;
+		}
+		AddressInfo address = ReadAddressInfo(env, addressObj);
+		SetTilePixel(address, (TileFormat)tileFormat, (int32_t)x, (int32_t)y, (int32_t)color);
 	}
 
 	// -----------------------------------------------------------------------

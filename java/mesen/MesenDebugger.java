@@ -10,7 +10,18 @@ import mesen.debugger.EvalResult;
 import mesen.debugger.InstructionProgress;
 import mesen.debugger.NesCpuState;
 import mesen.debugger.NesPpuState;
+import mesen.debugger.PaletteInfo;
+import mesen.debugger.SpriteInfo;
+import mesen.debugger.SpriteListResult;
+import mesen.debugger.SpriteOptions;
+import mesen.debugger.SpritePreviewInfo;
 import mesen.debugger.StackFrame;
+import mesen.debugger.TileView;
+import mesen.debugger.TileViewOptions;
+import mesen.debugger.TilemapInfo;
+import mesen.debugger.TilemapOptions;
+import mesen.debugger.TilemapResult;
+import mesen.debugger.TilemapTileInfo;
 
 /**
  * 调试器 API（Core/Debugger 的核心子集）。
@@ -201,6 +212,47 @@ public final class MesenDebugger
 
     /** 写回 NES PPU 状态。 */
     public static native void setNesPpuState(NesPpuState state);
+
+    // ---- PPU 工具（NES 优先）---------------------------------------------
+
+    /**
+     * 渲染瓦片视图（瓦片表 → ARGB 图）。
+     *
+     * <p>数据来源由 {@link TileViewOptions#memoryType} 指定（例如
+     * {@code Mesen.MEM_NES_CHR_ROM} 或 {@code MEM_NES_CHR_RAM}），
+     * 调色板内部取。NES 的格式用 {@code Mesen.TILE_FORMAT_NES_BPP2}。</p>
+     */
+    public static native TileView getTileView(TileViewOptions options);
+
+    /**
+     * 渲染瓦片地图（nametable → ARGB 图）。
+     *
+     * <p>VRAM 与调色板由内部按机种取（NES 用 {@code MEM_NES_PPU}）。
+     * 建议先 {@link MesenCore#pause()} 并等 {@link #isExecutionStopped()}，
+     * 否则渲染出来的可能是撕裂的中间态。</p>
+     */
+    public static native TilemapResult getTilemap(TilemapOptions options);
+
+    /** 取瓦片地图里屏幕坐标 (x,y) 处瓦片的详细信息。 */
+    public static native TilemapTileInfo getTilemapTileInfo(int x, int y, TilemapOptions options);
+
+    /** 取精灵预览区信息（尺寸 + 精灵数）。 */
+    public static native SpritePreviewInfo getSpritePreviewInfo(SpriteOptions options);
+
+    /** 取精灵列表 + 每个精灵的预览图 + 整屏合成预览。 */
+    public static native SpriteListResult getSpriteList(SpriteOptions options);
+
+    /** 取调色板（原始值 + 转好的 ARGB）。 */
+    public static native PaletteInfo getPaletteInfo(int tileFormat);
+
+    /** 改调色板里的某个颜色（{@code color} 为 ARGB）。 */
+    public static native void setPaletteColor(int cpuType, int colorIndex, int color);
+
+    /** 读某个瓦片内 (x,y) 像素的颜色索引（-1 = 越界/不可用）。 */
+    public static native int getTilePixel(AddressInfo tileAddress, int tileFormat, int x, int y);
+
+    /** 写某个瓦片内 (x,y) 像素的颜色索引。 */
+    public static native void setTilePixel(AddressInfo tileAddress, int tileFormat, int x, int y, int color);
 
     // ---- 内存快照 --------------------------------------------------------
 

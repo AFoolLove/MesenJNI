@@ -20,6 +20,7 @@
 #include "Core/Debugger/DebugTypes.h"         // CodeLineData, StackFrameInfo, CdlStatistics, CpuInstructionProgress, StepType
 #include "Core/Debugger/DebuggerFeatures.h"   // DebuggerFeatures
 #include "Core/Debugger/DisassemblySearch.h"  // DisassemblySearchOptions
+#include "Core/Debugger/PpuTools.h"           // DebugTilemapInfo, DebugSpriteInfo, ...
 
 class Breakpoint;
 struct AddressCounters;
@@ -162,6 +163,19 @@ MESEN_EXTERN
 	void MESEN_CALL SetCpuState(BaseState& state, CpuType cpuType);
 	void MESEN_CALL GetPpuState(BaseState& state, CpuType cpuType);
 	void MESEN_CALL SetPpuState(BaseState& state, CpuType cpuType);
+
+	// --- DebugApiWrapper (PPU tools) ---
+	void MESEN_CALL GetTileView(CpuType cpuType, GetTileViewOptions options, uint8_t* source, uint32_t srcSize, uint32_t* colors, uint32_t* buffer);
+	void MESEN_CALL GetPpuToolsState(CpuType cpuType, BaseState& state);
+	DebugTilemapInfo MESEN_CALL GetTilemap(CpuType cpuType, GetTilemapOptions options, BaseState& state, BaseState& ppuToolsState, uint8_t* vram, uint32_t* palette, uint32_t* outputBuffer);
+	FrameInfo MESEN_CALL GetTilemapSize(CpuType cpuType, GetTilemapOptions options, BaseState& state);
+	DebugTilemapTileInfo MESEN_CALL GetTilemapTileInfo(uint32_t x, uint32_t y, CpuType cpuType, GetTilemapOptions options, uint8_t* vram, BaseState& state, BaseState& ppuToolsState);
+	DebugSpritePreviewInfo MESEN_CALL GetSpritePreviewInfo(CpuType cpuType, GetSpritePreviewOptions options, BaseState& state, BaseState& ppuToolsState);
+	void MESEN_CALL GetSpriteList(CpuType cpuType, GetSpritePreviewOptions options, BaseState& state, BaseState& ppuToolsState, uint8_t* vram, uint8_t* oamRam, uint32_t* palette, DebugSpriteInfo sprites[], uint32_t* spritePreviews, uint32_t* screenPreview);
+	DebugPaletteInfo MESEN_CALL GetPaletteInfo(CpuType cpuType, GetPaletteInfoOptions options);
+	void MESEN_CALL SetPaletteColor(CpuType cpuType, int32_t colorIndex, uint32_t color);
+	int32_t MESEN_CALL GetTilePixel(AddressInfo tileAddress, TileFormat format, int32_t x, int32_t y);
+	void MESEN_CALL SetTilePixel(AddressInfo tileAddress, TileFormat format, int32_t x, int32_t y, int32_t color);
 
 	// --- DebugApiWrapper (labels / undo / address conversion) ---
 	void MESEN_CALL SetLabel(uint32_t address, MemoryType memType, char* label, char* comment);

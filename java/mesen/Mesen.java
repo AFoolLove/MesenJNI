@@ -57,6 +57,117 @@ public final class Mesen
     public static final int STACK_FRAME_IRQ = 2;
     public static final int STACK_FRAME_HALT = 4;
 
+    // --- TileFormat (Core/Debugger/DebugTypes.h) ---------------------------
+    public static final int TILE_FORMAT_BPP2 = 0;
+    public static final int TILE_FORMAT_BPP4 = 1;
+    public static final int TILE_FORMAT_BPP8 = 2;
+    public static final int TILE_FORMAT_DIRECT_COLOR = 3;
+    public static final int TILE_FORMAT_MODE7 = 4;
+    public static final int TILE_FORMAT_MODE7_DIRECT_COLOR = 5;
+    public static final int TILE_FORMAT_MODE7_EXT_BG = 6;
+    public static final int TILE_FORMAT_NES_BPP2 = 7;
+    public static final int TILE_FORMAT_PCE_SPRITE_BPP4 = 8;
+    public static final int TILE_FORMAT_PCE_BACKGROUND_BPP2_CG0 = 9;
+    public static final int TILE_FORMAT_PCE_BACKGROUND_BPP2_CG1 = 10;
+    public static final int TILE_FORMAT_PCE_SPRITE_BPP2_SP01 = 11;
+    public static final int TILE_FORMAT_PCE_SPRITE_BPP2_SP23 = 12;
+    public static final int TILE_FORMAT_SMS_BPP4 = 13;
+    public static final int TILE_FORMAT_SMS_SG_BPP1 = 14;
+    public static final int TILE_FORMAT_GBA_BPP4 = 15;
+    public static final int TILE_FORMAT_GBA_BPP8 = 16;
+    public static final int TILE_FORMAT_WS_BPP4_PACKED = 17;
+
+    // --- TileLayout --------------------------------------------------------
+    public static final int TILE_LAYOUT_NORMAL = 0;
+    public static final int TILE_LAYOUT_SINGLE_LINE_8X16 = 1;
+    public static final int TILE_LAYOUT_SINGLE_LINE_16X16 = 2;
+    public static final int TILE_LAYOUT_VERTICAL = 3;
+
+    // --- TileBackground ----------------------------------------------------
+    public static final int TILE_BG_DEFAULT = 0;
+    public static final int TILE_BG_TRANSPARENT = 1;
+    public static final int TILE_BG_PALETTE_COLOR = 2;
+    public static final int TILE_BG_BLACK = 3;
+    public static final int TILE_BG_WHITE = 4;
+    public static final int TILE_BG_MAGENTA = 5;
+
+    // --- TileFilter --------------------------------------------------------
+    public static final int TILE_FILTER_NONE = 0;
+    public static final int TILE_FILTER_HIDE_UNUSED = 1;
+    public static final int TILE_FILTER_HIDE_USED = 2;
+
+    // --- TilemapDisplayMode ------------------------------------------------
+    public static final int TILEMAP_DISPLAY_DEFAULT = 0;
+    public static final int TILEMAP_DISPLAY_GRAYSCALE = 1;
+    public static final int TILEMAP_DISPLAY_ATTRIBUTE_VIEW = 2;
+
+    // --- TilemapHighlightMode ----------------------------------------------
+    public static final int TILEMAP_HIGHLIGHT_NONE = 0;
+    public static final int TILEMAP_HIGHLIGHT_CHANGES = 1;
+    public static final int TILEMAP_HIGHLIGHT_WRITES = 2;
+
+    // --- TilemapBackground -------------------------------------------------
+    public static final int TILEMAP_BG_DEFAULT = 0;
+    public static final int TILEMAP_BG_TRANSPARENT = 1;
+    public static final int TILEMAP_BG_BLACK = 2;
+    public static final int TILEMAP_BG_WHITE = 3;
+    public static final int TILEMAP_BG_MAGENTA = 4;
+
+    // --- TilemapMirroring --------------------------------------------------
+    public static final int TILEMAP_MIRRORING_NONE = 0;
+    public static final int TILEMAP_MIRRORING_HORIZONTAL = 1;
+    public static final int TILEMAP_MIRRORING_VERTICAL = 2;
+    public static final int TILEMAP_MIRRORING_SINGLE_SCREEN_A = 3;
+    public static final int TILEMAP_MIRRORING_SINGLE_SCREEN_B = 4;
+    public static final int TILEMAP_MIRRORING_FOUR_SCREENS = 5;
+
+    // --- SpriteBackground --------------------------------------------------
+    public static final int SPRITE_BG_GRAY = 0;
+    public static final int SPRITE_BG_BACKGROUND = 1;
+    public static final int SPRITE_BG_TRANSPARENT = 2;
+    public static final int SPRITE_BG_BLACK = 3;
+    public static final int SPRITE_BG_WHITE = 4;
+    public static final int SPRITE_BG_MAGENTA = 5;
+
+    // --- SpriteViewerFilter ------------------------------------------------
+    public static final int SPRITE_FILTER_BOTH = 0;
+    public static final int SPRITE_FILTER_DEFAULT_ONLY = 1;
+    public static final int SPRITE_FILTER_EXTENDED_ONLY = 2;
+
+    // --- RawPaletteFormat --------------------------------------------------
+    public static final int RAW_PALETTE_INDEXED = 0;
+    public static final int RAW_PALETTE_RGB555 = 1;
+    public static final int RAW_PALETTE_RGB333 = 2;
+    public static final int RAW_PALETTE_RGB222 = 3;
+    public static final int RAW_PALETTE_RGB444 = 4;
+    public static final int RAW_PALETTE_BGR444 = 5;
+
+    // --- NullableBoolean ---------------------------------------------------
+    public static final int NULLABLE_UNDEFINED = -1;
+    public static final int NULLABLE_FALSE = 0;
+    public static final int NULLABLE_TRUE = 1;
+
+    // --- SpriteVisibility --------------------------------------------------
+    public static final int SPRITE_VISIBILITY_VISIBLE = 0;
+    public static final int SPRITE_VISIBILITY_OFFSCREEN = 1;
+    public static final int SPRITE_VISIBILITY_DISABLED = 2;
+
+    // --- DebugSpritePriority -----------------------------------------------
+    public static final int SPRITE_PRIORITY_UNDEFINED = -1;
+    public static final int SPRITE_PRIORITY_0 = 0;
+    public static final int SPRITE_PRIORITY_1 = 1;
+    public static final int SPRITE_PRIORITY_2 = 2;
+    public static final int SPRITE_PRIORITY_3 = 3;
+    public static final int SPRITE_PRIORITY_FOREGROUND = 4;
+    public static final int SPRITE_PRIORITY_BACKGROUND = 5;
+
+    // --- DebugSpriteMode ---------------------------------------------------
+    public static final int SPRITE_MODE_UNDEFINED = -1;
+    public static final int SPRITE_MODE_NORMAL = 0;
+    public static final int SPRITE_MODE_BLENDING = 1;
+    public static final int SPRITE_MODE_WINDOW = 2;
+    public static final int SPRITE_MODE_STEREOSCOPIC = 3;
+
     // --- ConsoleType (Core/Shared/SettingTypes.h) --------------------------
     public static final int CONSOLE_SNES = 0;
     public static final int CONSOLE_GAMEBOY = 1;
