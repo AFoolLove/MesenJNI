@@ -13,6 +13,7 @@ private:
 	VideoConfig _videoConfig = {};
 	NesConfig _nesConfig = {};
 	PpuModel _ppuModel = PpuModel::Ppu2C02;
+	bool _paletteInitialized = false;
 
 	void InitLookupTable();
 

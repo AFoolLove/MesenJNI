@@ -101,7 +101,24 @@ void NesDefaultVideoFilter::GenerateFullColorPalette(uint32_t paletteBuffer[512]
 void NesDefaultVideoFilter::GetFullPalette(uint32_t palette[512], NesConfig& nesCfg, PpuModel model)
 {
 	if(model == PpuModel::Ppu2C02) {
-		memcpy(palette, nesCfg.UserPalette, sizeof(nesCfg.UserPalette));
+		// UserPalette holds the 64 base colors. The .NET UI used to seed it with
+		// the default NES palette; when it is left unset (headless), fall back to
+		// the built-in palette so the output is not all-zero.
+		bool hasUserPalette = false;
+		for(int i = 0; i < 64; i++) {
+			if(nesCfg.UserPalette[i] != 0) {
+				hasUserPalette = true;
+				break;
+			}
+		}
+
+		if(hasUserPalette) {
+			memcpy(palette, nesCfg.UserPalette, sizeof(nesCfg.UserPalette));
+		} else {
+			memcpy(palette, _ppuPaletteArgb[0], 64 * sizeof(uint32_t));
+			memset(palette + 64, 0, (512 - 64) * sizeof(uint32_t));
+		}
+
 		if(!nesCfg.IsFullColorPalette) {
 			//Generate emphasis palette colors
 			GenerateFullColorPalette(palette, model);
@@ -161,7 +178,8 @@ void NesDefaultVideoFilter::OnBeforeApplyFilter()
 	shared_ptr<IConsole> console = _emu->GetConsole();
 	PpuModel model = ((NesConsole*)console.get())->GetPpu()->GetPpuModel();
 
-	bool optionsChanged = (_ppuModel != model ||
+	bool optionsChanged = (!_paletteInitialized ||
+		_ppuModel != model ||
 		_videoConfig.Hue != config.Hue ||
 		_videoConfig.Saturation != config.Saturation ||
 		_videoConfig.Contrast != config.Contrast ||
@@ -173,6 +191,7 @@ void NesDefaultVideoFilter::OnBeforeApplyFilter()
 	if(optionsChanged) {
 		_ppuModel = model;
 		InitLookupTable();
+		_paletteInitialized = true;
 	}
 	_videoConfig = config;
 	_nesConfig = nesConfig;
