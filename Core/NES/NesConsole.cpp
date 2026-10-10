@@ -175,9 +175,16 @@ LoadRomResult NesConsole::LoadRom(VirtualFile& romFile)
 			}
 		}
 
-		if(GetNesConfig().AutoConfigureInput && romData.Info.InputType != GameInputType::Unspecified) {
-			//Auto-configure the inputs (if option is enabled)
-			InitializeInputDevices(romData.Info.InputType, romData.Info.System);
+		if(GetNesConfig().AutoConfigureInput) {
+			if(romData.Info.InputType != GameInputType::Unspecified) {
+				//Auto-configure the inputs (if option is enabled)
+				InitializeInputDevices(romData.Info.InputType, romData.Info.System);
+			} else if(GetNesConfig().Port1.Type == ControllerType::None && GetNesConfig().Port2.Type == ControllerType::None) {
+				//Game isn't in the database and no controller was configured: fall back
+				//to standard NES controllers (the desktop UI used to seed this default).
+				//Without it no control device is created and input is ignored entirely.
+				InitializeInputDevices(GameInputType::StandardControllers, romData.Info.System);
+			}
 		}
 
 		_mapper.swap(mapper);

@@ -66,7 +66,7 @@ public final class MesenEmulator
             MesenCore.registerAudioDevice(audio);
         }
 
-        mapControllerKeys();
+        configureInput();
 
         if(!MesenCore.loadRom(romPath, null)) {
             return false;
@@ -116,8 +116,18 @@ public final class MesenEmulator
         { Mesen.BUTTON_LEFT, 7 }, { Mesen.BUTTON_RIGHT, 8 },
     };
 
-    private static void mapControllerKeys()
+    /**
+     * 配置手柄：先指定控制器类型，再建立「按键 -> 键码」映射。
+     *
+     * <p>只设映射是不够的——游戏不在内置数据库里时核不会自动装配手柄，
+     * {@code Port1.Type} 会保持 {@code None}，此时核根本不会创建手柄设备，
+     * 也就永远不会去问 {@link IKeyManager}。</p>
+     */
+    private static void configureInput()
     {
+        MesenConfig.setControllerType(Mesen.CONSOLE_NES, 0, Mesen.CONTROLLER_NES);
+        MesenConfig.setControllerType(Mesen.CONSOLE_NES, 1, Mesen.CONTROLLER_NES);
+
         for(int[] m : KEY_MAP) {
             MesenConfig.setControllerKey(Mesen.CONSOLE_NES, 0, m[0], m[1]);
         }

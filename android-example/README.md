@@ -59,8 +59,9 @@ MesenCore.registerAudioDevice(IAudioDevice);
 MesenCore.registerKeyManager(IKeyManager);
 MesenCore.registerMouseManager(IMouseManager);
 
-// 输入
-MesenConfig.setControllerKey(Mesen.CONSOLE_NES, port, Mesen.BUTTON_A, keyCode);
+// 输入（两步都要：先指定手柄类型，再建立映射）
+MesenConfig.setControllerType(Mesen.CONSOLE_NES, 0, Mesen.CONTROLLER_NES);
+MesenConfig.setControllerKey(Mesen.CONSOLE_NES, 0, Mesen.BUTTON_A, keyCode);
 keyManager.setKeyState(keyCode, true);
 
 // 其它分类
@@ -74,7 +75,10 @@ MesenScript.loadScript(...);          // Lua
 
 - **`IRenderingDevice`**：`updateFrame` 的 `int[] argb` 是 **32-bit ARGB** 且 **复用缓冲**，必须当场拷走（`Bitmap.setPixels`）。回调跑在 core 的渲染线程，切 UI 用 `View.post` / `postInvalidateOnAnimation`。
 - **`IAudioDevice`**：`playBuffer` 给的是**交错 int16 PCM**（复用缓冲），写 `AudioTrack` 即可；采样率变了要重建 `AudioTrack`。
-- **`IKeyManager`**：`mesen.KeyManager` 是纯 Java 实现，Android 直接可用；按键要先 `MesenConfig.setControllerKey` 建立映射。
+- **`IKeyManager`**：`mesen.KeyManager` 是纯 Java 实现，Android 直接可用。**必须先用
+  `setControllerType` 指定手柄类型**，再 `setControllerKey` 建立映射——只设映射的话，
+  游戏不在内置数据库里时核不会装配手柄，`Port1.Type` 保持 `None`，核根本不会创建
+  手柄设备，也就永远不会去问 `IKeyManager`（表现为按键完全没反应）。
 
 > `mesen.AudioDevice` / `mesen.RenderingDevice` 这两个自带实现类依赖 Java SE 的
 > `javax.sound.sampled` / `java.awt.image`，**Android 上没有**，所以在 Android 上要像
