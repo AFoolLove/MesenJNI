@@ -278,6 +278,12 @@ public class DebugSmokeTest
             evConfig.visible[1] = true;
             evConfig.colors[0] = 0xFFFF0000;
             evConfig.colors[1] = 0xFF00FF00;
+            // 实验：把全部类别都打开（寄存器读写事件最频繁）
+            for(int i = 0; i < evConfig.visible.length; i++) {
+                evConfig.visible[i] = true;
+                evConfig.colors[i] = 0xFF808080 + (i * 0x00070707);
+            }
+            evConfig.showPreviousFrameEvents = true;
             MesenDebugger.setEventViewerConfig(Mesen.CPU_NES, evConfig);
             check(true, "setEventViewerConfig() 无异常");
         }
@@ -297,9 +303,7 @@ public class DebugSmokeTest
         MesenCore.pause();
         waitStopped(5000);
         System.out.println("      运行中观察到的最多事件数: " + maxObservedEvents);
-        // 接口本身已验证（配置/尺寸/缓冲/快照/单点查询都能调通），但 headless 场景下
-        // core 没有往事件表里记东西，所以这里只报告不判定失败。
-        check(true, "事件查看器接口调用完成");
+        check(maxObservedEvents > 0, "运行中能记录到事件 -> " + maxObservedEvents);
 
         int snapshot = MesenDebugger.takeEventSnapshot(Mesen.CPU_NES, false);
         check(snapshot >= 0, "takeEventSnapshot() -> " + snapshot);
@@ -324,11 +328,16 @@ public class DebugSmokeTest
                     + (viewerOutput == null ? "null" : viewerOutput.length + " 像素"));
 
             if(viewerOutput != null && viewerOutput.length > 0) {
-                int nonWhite = 0;
+                // 无内容时整个缓冲是全 0（GetDisplayBuffer 提前返回）；有内容时会先填
+                // 背景色 0xFF555555，再叠加屏幕画面和事件点。
+                boolean hasContent = false;
                 for(int p : viewerOutput) {
-                    if((p & 0xFFFFFF) != 0xFFFFFF) nonWhite++;
+                    if(p != 0) {
+                        hasContent = true;
+                        break;
+                    }
                 }
-                System.out.println("      非白像素 " + nonWhite + " / " + viewerOutput.length);
+                check(hasContent, "事件查看器有渲染内容");
                 try {
                     writePng(viewerOutput, viewerSize.width, viewerSize.height, "temp/eventviewer.png");
                 } catch(Exception e) {

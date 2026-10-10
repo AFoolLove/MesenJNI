@@ -2278,7 +2278,10 @@ extern "C"
 		}
 
 		std::vector<uint32_t> buffer(pixelCount, 0);
-		GetEventViewerOutput((CpuType)cpuType, buffer.data(), pixelCount);
+		// GetDisplayBuffer compares bufferSize against width*height*sizeof(uint32_t),
+		// i.e. it wants BYTES, not pixels - passing the pixel count made it bail out
+		// and return an all-zero buffer.
+		GetEventViewerOutput((CpuType)cpuType, buffer.data(), pixelCount * (uint32_t)sizeof(uint32_t));
 		env->SetIntArrayRegion(result, 0, (jsize)pixelCount, (const jint*)buffer.data());
 		return result;
 	}
