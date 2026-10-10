@@ -1,9 +1,9 @@
 import mesen.*;
-import mesen.NotificationListener;
-import mesen.AudioDevice;
-import mesen.KeyManager;
-import mesen.MouseManager;
-import mesen.RenderingDevice;
+import mesen.interfaces.INotificationListener;
+import mesen.interfaces.IAudioDevice;
+import mesen.interfaces.IKeyManager;
+import mesen.interfaces.IMouseManager;
+import mesen.interfaces.IRenderingDevice;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,13 +47,13 @@ public class CallbackSmokeTest
         MesenCore.initDll();
         MesenCore.initializeEmu("./home", true, false, false, true);
 
-        MesenCore.registerNotificationListener(new NotificationListener() {
+        MesenCore.registerNotificationListener(new INotificationListener() {
             public void processNotification(int type) {
                 notifications.incrementAndGet();
             }
         });
 
-        MesenCore.registerAudioDevice(new AudioDevice() {
+        MesenCore.registerAudioDevice(new IAudioDevice() {
             public void playBuffer(short[] samples, int sampleCount, int sampleRate, boolean stereo) { audioFrames.incrementAndGet(); }
             public void stop() {}
             public void pause() {}
@@ -62,7 +62,7 @@ public class CallbackSmokeTest
             public void setAudioDevice(String name) {}
         });
 
-        MesenCore.registerRenderingDevice(new RenderingDevice() {
+        MesenCore.registerRenderingDevice(new IRenderingDevice() {
             public void updateFrame(int width, int height, int[] argb, int frameNumber) { frames.incrementAndGet(); }
             public void clearFrame() {}
             public void render(int[] e, int ew, int eh, boolean ed, int[] s, int sw, int sh, boolean sd) {}
@@ -70,7 +70,7 @@ public class CallbackSmokeTest
             public void setFullscreenMode(int mode, int width, int height) {}
         });
 
-        MesenCore.registerKeyManager(new KeyManager() {
+        MesenCore.registerKeyManager(new IKeyManager() {
             public void refreshState() {}
             public void updateDevices() { keyUpdates.incrementAndGet(); }
             public boolean isMouseButtonPressed(int button) { return false; }
@@ -83,7 +83,7 @@ public class CallbackSmokeTest
             public void setDisabled(boolean disabled) {}
         });
 
-        MesenCore.registerMouseManager(new MouseManager() {
+        MesenCore.registerMouseManager(new IMouseManager() {
             public int[] getSystemMouseState() { return new int[] {0, 0, 0, 0, 0, 0, 0}; }
             public boolean captureMouse(int x, int y, int w, int h) { return false; }
             public void releaseMouse() {}
@@ -97,7 +97,7 @@ public class CallbackSmokeTest
         Thread.sleep(2000);
         MesenCore.pause();
 
-        // 触发 KeyManager.updateDevices
+        // 触发 IKeyManager.updateDevices
         for(int i = 0; i < 3; i++) {
             MesenInput.updateInputDevices();
         }

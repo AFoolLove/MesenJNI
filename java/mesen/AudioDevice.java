@@ -1,47 +1,117 @@
 package mesen;
 
+import mesen.interfaces.IAudioDevice;
+
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.DataLine;
+import javax.sound.sampled.SourceDataLine;
+
 /**
- * 音频设备，对应 Core 的 {@code IAudioDevice}。
- *
- * <p>通过 {@link MesenCore#registerAudioDevice(AudioDevice)} 注册后，模拟器会把混音后的
- * PCM 数据推送到这里，而不是播放到声卡。可用于把音频写入文件、走网络、或交给自定义播放器。</p>
- *
- * <p>除 {@link #playBuffer(short[], int, int, boolean)} 外，其余方法都有默认的空实现，
- * 只需覆盖你关心的方法即可。</p>
- *
- * <p><b>格式</b>：交错 int16 PCM。双声道时按 {@code L,R,L,R,…} 排列；采样率由
- * {@link MesenCore#getAudioSampleRate()} 决定（默认 48000，可用配置改）。</p>
- *
- * <p><b>缓冲复用</b>：{@link #playBuffer(short[], int, int, boolean)} 传入的
- * {@code samples} 是复用的缓冲池数组，其长度可能大于本次有效样本数 {@code sampleCount}，
- * 且<b>回调返回后内容会被覆盖</b>。必须在方法内消费（拷贝/处理）完毕，不要持有引用。</p>
- *
- * <p><b>线程</b>：回调运行在 Core 的模拟线程（非 EDT）。</p>
+ * {@link IAudioDevice} 的默认实现：把 PCM 播放到系统的 {@link SourceDataLine}。
  */
-public interface AudioDevice
+public class AudioDevice implements IAudioDevice
 {
-    /**
-     * 收到一帧混音后的音频。
-     *
-     * @param samples     交错 int16 PCM（复用缓冲，只保证前 sampleCount 个元素有效）
-     * @param sampleCount 本次有效的 int16 样本个数（双声道时为帧数×2）
-     * @param sampleRate  采样率，如 48000
-     * @param stereo      是否双声道
-     */
-    void playBuffer(short[] samples, int sampleCount, int sampleRate, boolean stereo);
+    private SourceDataLine line;
+    private volatile boolean stopped = false;
 
-    /** 停止播放（清空缓冲）。 */
-    default void stop() {}
+    @Override
+    public void playBuffer(short[] samples, int sampleCount, int sampleRate, boolean stereo)
+    {
+        if(sampleCount <= 0) {
+            return;
+        }
+        int channels = stereo ? 2 : 1;
 
-    /** 暂停播放。 */
-    default void pause() {}
+        if(line == null || !line.isOpen()
+            || (int)line.getFormat().getSampleRate() != sampleRate
+            || line.getFormat().getChannels() != channels) {
+            close();
+            open(sampleRate, channels);
+        }
 
-    /** 一帧处理结束。 */
-    default void processEndOfFrame() {}
+        if(line == null || !line.isOpen()) {
+            return; // 无可用音频设备，静默丢弃
+        }
 
-    /** 返回可用音频设备列表（可返回空字符串）。 */
-    default String getAvailableDevices() { return ""; }
+        byte[] bytes = new byte[sampleCount * 2];
+        for(int i = 0; i < sampleCount; i++) {
+            int v = samples[i];
+            bytes[i * 2] = (byte)(v & 0xFF);
+            bytes[i * 2 + 1] = (byte)((v >> 8) & 0xFF);
+        }
+        line.write(bytes, 0, bytes.length);
+    }
 
-    /** 切换到指定音频设备。 */
-    default void setAudioDevice(String name) {}
+    @Override
+    public void stop()
+    {
+        stopped = true;
+        close();
+    }
+
+    @Override
+    public void pause()
+    {
+        if(line != null && line.isOpen()) {
+            line.stop();
+        }
+    }
+
+    @Override
+    public void processEndOfFrame()
+    {
+        if(line != null && line.isOpen() && !stopped) {
+            line.drain();
+        }
+    }
+
+    @Override
+    public String getAvailableDevices()
+    {
+        StringBuilder sb = new StringBuilder();
+        for(javax.sound.sampled.Mixer.Info info : AudioSystem.getMixerInfo()) {
+            if(sb.length() > 0) {
+                sb.append('\n');
+            }
+            sb.append(info.getName());
+        }
+        return sb.toString();
+    }
+
+    @Override
+    public void setAudioDevice(String name)
+    {
+        // 默认实现不按名字切换设备；重开当前默认设备即可
+        close();
+        line = null;
+    }
+
+    private void open(int sampleRate, int channels)
+    {
+        int[] rates = { sampleRate, 44100, 22050, 16000 };
+        for(int rate : rates) {
+            try {
+                AudioFormat fmt = new AudioFormat(rate, 16, channels, true, false);
+                DataLine.Info info = new DataLine.Info(SourceDataLine.class, fmt);
+                line = (SourceDataLine)AudioSystem.getLine(info);
+                line.open(fmt, rate * 4);
+                line.start();
+                stopped = false;
+                return;
+            } catch(Exception e) {
+                line = null;
+            }
+        }
+    }
+
+    /** 关闭并释放音频线路。 */
+    public void close()
+    {
+        if(line != null) {
+            line.stop();
+            line.close();
+            line = null;
+        }
+    }
 }
