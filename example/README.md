@@ -35,6 +35,11 @@
 3. **帧缓冲是复用的**：`updateFrame` 的 `int[] argb`、`playBuffer` 的 `short[]`
    都是核里反复使用的同一块内存，**必须当场拷走**，不能存引用。
 
+4. **音频回调是同步调用，别在里面 drain**：核在模拟线程上依次调
+   `playBuffer()` + `processEndOfFrame()`。实现里如果 `processEndOfFrame()`
+   去 `line.drain()`（等缓冲区排队的音频全部播完），就等于按音频缓冲深度硬节流——
+   实测 60fps 直接掉到 ~7fps。`write()` 满了自然会阻塞，这就足够把速度钉在实时上了。
+
 ## 回调 vs 轮询
 
 两条路都能拿帧，各有取舍：

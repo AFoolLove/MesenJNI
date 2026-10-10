@@ -75,6 +75,16 @@ keys.setKeyState(KeyEvent.VK_X, true);   // ③ 按下
 `RenderingDevice` 内部已经当场拷进 `BufferedImage` 了；如果你自己实现 `IRenderingDevice`，
 `updateFrame` 的 `argb` 是核里复用的缓冲，必须在回调里马上 `System.arraycopy` 走。
 
+**4. 音频别阻塞模拟线程**
+
+`SoundMixer` 是在**模拟线程**上同步调 `playBuffer()` + `processEndOfFrame()` 的，
+所以 `IAudioDevice` 的实现必须快速返回：
+
+- **不要在 `processEndOfFrame()` 里 `line.drain()`**：那会等缓冲区里排队的音频全部播完，
+  等于按音频缓冲深度节流模拟器（实测 60fps → 7fps）。
+- `SourceDataLine.write()` 满了会自然阻塞，这本身就够把速度钉在实时上了。
+- 缓冲区默认 500ms，可用 `-Dmesen.audioBufferMs=N` 调整（太小反而掉帧，太大增加延迟）。
+
 ## 相关文件
 
 - 回调接口定义：`java/mesen/interfaces/`
