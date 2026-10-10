@@ -200,3 +200,6 @@ home/
 
 # Test ROMs (do not track)
 roms/
+
+# Scratch / temp files (do not track)
+temp/

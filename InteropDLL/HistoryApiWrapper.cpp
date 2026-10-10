@@ -13,6 +13,8 @@
 	#include "Windows/SoundManager.h"
 #elif __APPLE__
 	#include "Sdl/SdlSoundManager.h"
+#elif defined(__ANDROID__)
+	// Android headless: no native window/audio platform layer.
 #else
 	#include "Linux/LinuxOglRenderer.h"
 	#include "Sdl/SdlSoundManager.h"
@@ -62,9 +64,9 @@ extern "C"
 		if(_softwareRenderer) {
 			_historyRenderer.reset(new SoftwareRenderer(_historyPlayer.get()));
 		} else {
-#ifdef _WIN32
+#if defined(_WIN32)
 			_historyRenderer.reset(new Renderer(_historyPlayer.get(), (HWND)viewerHandle));
-#elif __APPLE__
+#elif defined(__ANDROID__) || defined(__APPLE__)
 			_historyRenderer.reset(new SoftwareRenderer(_historyPlayer.get()));
 #else
 			_historyRenderer.reset(new LinuxOglRenderer(_historyPlayer.get(), viewerHandle));
@@ -73,6 +75,8 @@ extern "C"
 
 #ifdef _WIN32
 		_historySoundManager.reset(SoundManager::Create(_historyPlayer.get(), (HWND)windowHandle));
+#elif defined(__ANDROID__)
+		// Android: no native sound manager for the history viewer.
 #else
 		_historySoundManager.reset(SdlSoundManager::Create(_historyPlayer.get()));
 #endif

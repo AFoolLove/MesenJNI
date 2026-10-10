@@ -183,6 +183,12 @@ if(MSVC)
         MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # MesenApi.h declares the C API with C linkage, but several config getters
+    # return C++ structs by value; clang warns (-Wreturn-type-c-linkage).
+    target_compile_options(MesenCore PRIVATE -Wno-return-type-c-linkage)
+endif()
+
 # ---------------------------------------------------------------------------
 # Link libraries per platform
 # ---------------------------------------------------------------------------

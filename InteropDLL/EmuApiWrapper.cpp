@@ -28,6 +28,8 @@
 	#include "Sdl/SdlSoundManager.h"
 	#include "MacOS/MacOSKeyManager.h"
 	#include "MacOS/MacOSMouseManager.h"
+#elif defined(__ANDROID__)
+	// Android headless: no native window/input/audio platform layer.
 #else
 	#include "Linux/LinuxOglRenderer.h"
 	#include "Sdl/SdlSoundManager.h"
@@ -74,7 +76,8 @@ IRenderingDevice* InitRenderer()
 	} else {
 #ifdef _WIN32
 		return new Renderer(_emu.get(), (HWND)_viewerHandle);
-#elif __APPLE__
+#elif defined(__ANDROID__) || defined(__APPLE__)
+		// Android/macOS headless: only the software renderer is available.
 		return new SoftwareRenderer(_emu.get());
 #else
 		return new LinuxOglRenderer(_emu.get(), _viewerHandle);
@@ -92,6 +95,9 @@ IAudioDevice* InitSoundManager()
 	}
 #ifdef _WIN32
 	return SoundManager::Create(_emu.get(), (HWND)_windowHandle);
+#elif defined(__ANDROID__)
+	// Android: headless capture is handled above; no native sound manager here.
+	return nullptr;
 #else
 	return SdlSoundManager::Create(_emu.get());
 #endif
@@ -134,18 +140,21 @@ extern "C"
 		_emu->SetAudioVideoInitCallback(noAudio ? nullptr : InitSoundManager, noVideo ? nullptr : InitRenderer);
 
 		if(!noInput && windowHandle != nullptr) {
-#ifdef _WIN32
+#if defined(_WIN32)
 			_keyManager.reset(new WindowsKeyManager(_emu.get(), (HWND)_windowHandle));
 			_mouseManager.reset(new WindowsMouseManager());
-#elif __APPLE__
+#elif defined(__APPLE__)
 			_keyManager.reset(new MacOSKeyManager(_emu.get()));
 			_mouseManager.reset(new MacOSMouseManager());
-#else
+#elif !defined(__ANDROID__)
 			_keyManager.reset(new LinuxKeyManager(_emu.get()));
 			_mouseManager.reset(new LinuxMouseManager(_windowHandle));
 #endif
-
-			KeyManager::RegisterKeyManager(_keyManager.get());
+			// Android headless has no OS input manager; input comes from Java
+			// via the JNI callbacks (registerKeyManager/registerMouseManager).
+			if(_keyManager) {
+				KeyManager::RegisterKeyManager(_keyManager.get());
+			}
 		}
 	}
 
