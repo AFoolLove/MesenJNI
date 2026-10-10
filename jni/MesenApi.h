@@ -15,6 +15,7 @@
 #include "Core/Shared/MemoryType.h"    // MemoryType
 #include "Core/Shared/Emulator.h"      // HashType
 
+#include "Core/Shared/BaseState.h"     // BaseState (register-state calls)
 #include "Core/Debugger/AddressInfo.h"        // AddressInfo
 #include "Core/Debugger/DebugTypes.h"         // CodeLineData, StackFrameInfo, CdlStatistics, CpuInstructionProgress, StepType
 #include "Core/Debugger/DebuggerFeatures.h"   // DebuggerFeatures
@@ -153,6 +154,14 @@ MESEN_EXTERN
 	// --- DebugApiWrapper (frozen addresses) ---
 	void MESEN_CALL UpdateFrozenAddresses(CpuType cpuType, uint32_t start, uint32_t end, bool freeze);
 	void MESEN_CALL GetFrozenState(CpuType cpuType, uint32_t start, uint32_t end, bool* outState);
+
+	// --- DebugApiWrapper (CPU / PPU register state) ---
+	// The caller must pass the concrete state type for the requested CPU
+	// (e.g. NesCpuState for CpuType::Nes); the core memcpy's into/out of it.
+	void MESEN_CALL GetCpuState(BaseState& state, CpuType cpuType);
+	void MESEN_CALL SetCpuState(BaseState& state, CpuType cpuType);
+	void MESEN_CALL GetPpuState(BaseState& state, CpuType cpuType);
+	void MESEN_CALL SetPpuState(BaseState& state, CpuType cpuType);
 
 	// --- DebugApiWrapper (labels / undo / address conversion) ---
 	void MESEN_CALL SetLabel(uint32_t address, MemoryType memType, char* label, char* comment);

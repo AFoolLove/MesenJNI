@@ -12,6 +12,7 @@
 #include "Core/Debugger/Breakpoint.h"
 #include "Core/Debugger/ExpressionEvaluator.h"
 #include "Core/Debugger/MemoryAccessCounter.h"
+#include "Core/NES/NesTypes.h"
 
 #include <jni.h>
 
@@ -111,6 +112,22 @@ namespace
 		jmethodID addressCountersCtor;
 		jfieldID acReadStamp, acWriteStamp, acExecStamp,
 			acReadCounter, acWriteCounter, acExecCounter;
+
+		// NES register state (the only console bound so far)
+		jclass nesCpuState;
+		jmethodID nesCpuStateCtor;
+		jfieldID ncCycleCount, ncPc, ncSp, ncA, ncX, ncY, ncPs, ncIrqFlag, ncNmiFlag;
+
+		jclass nesPpuState;
+		jmethodID nesPpuStateCtor;
+		jfieldID npSpriteOverflow, npSprite0Hit, npVerticalBlank,
+			npGrayscale, npBackgroundMask, npSpriteMask, npBackgroundEnabled, npSpritesEnabled,
+			npIntensifyRed, npIntensifyGreen, npIntensifyBlue,
+			npBackgroundPatternAddr, npSpritePatternAddr, npVerticalWrite, npLargeSprites,
+			npSecondaryPpu, npNmiOnVerticalBlank,
+			npScanline, npCycle, npFrameCount, npNmiScanline, npScanlineCount, npSafeOamScanline,
+			npBusAddress, npMemoryReadBuffer, npVideoRamAddr, npTmpVideoRamAddr, npScrollX,
+			npWriteToggle, npSpriteRamAddr, npSecondaryOamAddr;
 	};
 
 	JniCache g_cache;
@@ -145,10 +162,14 @@ namespace
 		g_cache.evalResult = findClass("mesen/debugger/EvalResult");
 		g_cache.addressCounters = findClass("mesen/debugger/AddressCounters");
 
+		g_cache.nesCpuState = findClass("mesen/debugger/NesCpuState");
+		g_cache.nesPpuState = findClass("mesen/debugger/NesPpuState");
+
 		if(!g_cache.addressInfo || !g_cache.effectiveAddress || !g_cache.codeLine ||
 			!g_cache.breakpoint || !g_cache.stackFrame || !g_cache.cdlStatistics ||
 			!g_cache.cpuVector || !g_cache.debuggerFeatures || !g_cache.memoryOperation ||
-			!g_cache.instructionProgress || !g_cache.evalResult || !g_cache.addressCounters) {
+			!g_cache.instructionProgress || !g_cache.evalResult || !g_cache.addressCounters ||
+			!g_cache.nesCpuState || !g_cache.nesPpuState) {
 			return false;
 		}
 
@@ -251,6 +272,50 @@ namespace
 		g_cache.acReadCounter = field(g_cache.addressCounters, "readCounter", "I");
 		g_cache.acWriteCounter = field(g_cache.addressCounters, "writeCounter", "I");
 		g_cache.acExecCounter = field(g_cache.addressCounters, "execCounter", "I");
+
+		g_cache.nesCpuStateCtor = env->GetMethodID(g_cache.nesCpuState, "<init>", "()V");
+		g_cache.ncCycleCount = field(g_cache.nesCpuState, "cycleCount", "J");
+		g_cache.ncPc = field(g_cache.nesCpuState, "pc", "I");
+		g_cache.ncSp = field(g_cache.nesCpuState, "sp", "I");
+		g_cache.ncA = field(g_cache.nesCpuState, "a", "I");
+		g_cache.ncX = field(g_cache.nesCpuState, "x", "I");
+		g_cache.ncY = field(g_cache.nesCpuState, "y", "I");
+		g_cache.ncPs = field(g_cache.nesCpuState, "ps", "I");
+		g_cache.ncIrqFlag = field(g_cache.nesCpuState, "irqFlag", "I");
+		g_cache.ncNmiFlag = field(g_cache.nesCpuState, "nmiFlag", "Z");
+
+		g_cache.nesPpuStateCtor = env->GetMethodID(g_cache.nesPpuState, "<init>", "()V");
+		g_cache.npSpriteOverflow = field(g_cache.nesPpuState, "spriteOverflow", "Z");
+		g_cache.npSprite0Hit = field(g_cache.nesPpuState, "sprite0Hit", "Z");
+		g_cache.npVerticalBlank = field(g_cache.nesPpuState, "verticalBlank", "Z");
+		g_cache.npGrayscale = field(g_cache.nesPpuState, "grayscale", "Z");
+		g_cache.npBackgroundMask = field(g_cache.nesPpuState, "backgroundMask", "Z");
+		g_cache.npSpriteMask = field(g_cache.nesPpuState, "spriteMask", "Z");
+		g_cache.npBackgroundEnabled = field(g_cache.nesPpuState, "backgroundEnabled", "Z");
+		g_cache.npSpritesEnabled = field(g_cache.nesPpuState, "spritesEnabled", "Z");
+		g_cache.npIntensifyRed = field(g_cache.nesPpuState, "intensifyRed", "Z");
+		g_cache.npIntensifyGreen = field(g_cache.nesPpuState, "intensifyGreen", "Z");
+		g_cache.npIntensifyBlue = field(g_cache.nesPpuState, "intensifyBlue", "Z");
+		g_cache.npBackgroundPatternAddr = field(g_cache.nesPpuState, "backgroundPatternAddr", "I");
+		g_cache.npSpritePatternAddr = field(g_cache.nesPpuState, "spritePatternAddr", "I");
+		g_cache.npVerticalWrite = field(g_cache.nesPpuState, "verticalWrite", "Z");
+		g_cache.npLargeSprites = field(g_cache.nesPpuState, "largeSprites", "Z");
+		g_cache.npSecondaryPpu = field(g_cache.nesPpuState, "secondaryPpu", "Z");
+		g_cache.npNmiOnVerticalBlank = field(g_cache.nesPpuState, "nmiOnVerticalBlank", "Z");
+		g_cache.npScanline = field(g_cache.nesPpuState, "scanline", "I");
+		g_cache.npCycle = field(g_cache.nesPpuState, "cycle", "I");
+		g_cache.npFrameCount = field(g_cache.nesPpuState, "frameCount", "I");
+		g_cache.npNmiScanline = field(g_cache.nesPpuState, "nmiScanline", "I");
+		g_cache.npScanlineCount = field(g_cache.nesPpuState, "scanlineCount", "I");
+		g_cache.npSafeOamScanline = field(g_cache.nesPpuState, "safeOamScanline", "I");
+		g_cache.npBusAddress = field(g_cache.nesPpuState, "busAddress", "I");
+		g_cache.npMemoryReadBuffer = field(g_cache.nesPpuState, "memoryReadBuffer", "I");
+		g_cache.npVideoRamAddr = field(g_cache.nesPpuState, "videoRamAddr", "I");
+		g_cache.npTmpVideoRamAddr = field(g_cache.nesPpuState, "tmpVideoRamAddr", "I");
+		g_cache.npScrollX = field(g_cache.nesPpuState, "scrollX", "I");
+		g_cache.npWriteToggle = field(g_cache.nesPpuState, "writeToggle", "Z");
+		g_cache.npSpriteRamAddr = field(g_cache.nesPpuState, "spriteRamAddr", "I");
+		g_cache.npSecondaryOamAddr = field(g_cache.nesPpuState, "secondaryOamAddr", "I");
 
 		if(env->ExceptionCheck()) {
 			return false;
@@ -364,6 +429,115 @@ namespace
 		options.SearchBackwards = searchBackwards;
 		options.SkipFirstLine = false;
 		return options;
+	}
+
+	// --- NES register state ------------------------------------------------
+
+	jobject NewNesCpuState(JNIEnv* env, const NesCpuState& state)
+	{
+		jobject obj = env->NewObject(g_cache.nesCpuState, g_cache.nesCpuStateCtor);
+		env->SetLongField(obj, g_cache.ncCycleCount, (jlong)state.CycleCount);
+		env->SetIntField(obj, g_cache.ncPc, (jint)state.PC);
+		env->SetIntField(obj, g_cache.ncSp, (jint)state.SP);
+		env->SetIntField(obj, g_cache.ncA, (jint)state.A);
+		env->SetIntField(obj, g_cache.ncX, (jint)state.X);
+		env->SetIntField(obj, g_cache.ncY, (jint)state.Y);
+		env->SetIntField(obj, g_cache.ncPs, (jint)state.PS);
+		env->SetIntField(obj, g_cache.ncIrqFlag, (jint)state.IrqFlag);
+		env->SetBooleanField(obj, g_cache.ncNmiFlag, state.NmiFlag ? JNI_TRUE : JNI_FALSE);
+		return obj;
+	}
+
+	void ReadNesCpuState(JNIEnv* env, jobject obj, NesCpuState& state)
+	{
+		state.CycleCount = (uint64_t)env->GetLongField(obj, g_cache.ncCycleCount);
+		state.PC = (uint16_t)env->GetIntField(obj, g_cache.ncPc);
+		state.SP = (uint8_t)env->GetIntField(obj, g_cache.ncSp);
+		state.A = (uint8_t)env->GetIntField(obj, g_cache.ncA);
+		state.X = (uint8_t)env->GetIntField(obj, g_cache.ncX);
+		state.Y = (uint8_t)env->GetIntField(obj, g_cache.ncY);
+		state.PS = (uint8_t)env->GetIntField(obj, g_cache.ncPs);
+		state.IrqFlag = (uint8_t)env->GetIntField(obj, g_cache.ncIrqFlag);
+		state.NmiFlag = env->GetBooleanField(obj, g_cache.ncNmiFlag) == JNI_TRUE;
+	}
+
+	jobject NewNesPpuState(JNIEnv* env, const NesPpuState& state)
+	{
+		jobject obj = env->NewObject(g_cache.nesPpuState, g_cache.nesPpuStateCtor);
+
+		env->SetBooleanField(obj, g_cache.npSpriteOverflow, state.StatusFlags.SpriteOverflow ? JNI_TRUE : JNI_FALSE);
+		env->SetBooleanField(obj, g_cache.npSprite0Hit, state.StatusFlags.Sprite0Hit ? JNI_TRUE : JNI_FALSE);
+		env->SetBooleanField(obj, g_cache.npVerticalBlank, state.StatusFlags.VerticalBlank ? JNI_TRUE : JNI_FALSE);
+
+		env->SetBooleanField(obj, g_cache.npGrayscale, state.Mask.Grayscale ? JNI_TRUE : JNI_FALSE);
+		env->SetBooleanField(obj, g_cache.npBackgroundMask, state.Mask.BackgroundMask ? JNI_TRUE : JNI_FALSE);
+		env->SetBooleanField(obj, g_cache.npSpriteMask, state.Mask.SpriteMask ? JNI_TRUE : JNI_FALSE);
+		env->SetBooleanField(obj, g_cache.npBackgroundEnabled, state.Mask.BackgroundEnabled ? JNI_TRUE : JNI_FALSE);
+		env->SetBooleanField(obj, g_cache.npSpritesEnabled, state.Mask.SpritesEnabled ? JNI_TRUE : JNI_FALSE);
+		env->SetBooleanField(obj, g_cache.npIntensifyRed, state.Mask.IntensifyRed ? JNI_TRUE : JNI_FALSE);
+		env->SetBooleanField(obj, g_cache.npIntensifyGreen, state.Mask.IntensifyGreen ? JNI_TRUE : JNI_FALSE);
+		env->SetBooleanField(obj, g_cache.npIntensifyBlue, state.Mask.IntensifyBlue ? JNI_TRUE : JNI_FALSE);
+
+		env->SetIntField(obj, g_cache.npBackgroundPatternAddr, (jint)state.Control.BackgroundPatternAddr);
+		env->SetIntField(obj, g_cache.npSpritePatternAddr, (jint)state.Control.SpritePatternAddr);
+		env->SetBooleanField(obj, g_cache.npVerticalWrite, state.Control.VerticalWrite ? JNI_TRUE : JNI_FALSE);
+		env->SetBooleanField(obj, g_cache.npLargeSprites, state.Control.LargeSprites ? JNI_TRUE : JNI_FALSE);
+		env->SetBooleanField(obj, g_cache.npSecondaryPpu, state.Control.SecondaryPpu ? JNI_TRUE : JNI_FALSE);
+		env->SetBooleanField(obj, g_cache.npNmiOnVerticalBlank, state.Control.NmiOnVerticalBlank ? JNI_TRUE : JNI_FALSE);
+
+		env->SetIntField(obj, g_cache.npScanline, (jint)state.Scanline);
+		env->SetIntField(obj, g_cache.npCycle, (jint)state.Cycle);
+		env->SetIntField(obj, g_cache.npFrameCount, (jint)state.FrameCount);
+		env->SetIntField(obj, g_cache.npNmiScanline, (jint)state.NmiScanline);
+		env->SetIntField(obj, g_cache.npScanlineCount, (jint)state.ScanlineCount);
+		env->SetIntField(obj, g_cache.npSafeOamScanline, (jint)state.SafeOamScanline);
+		env->SetIntField(obj, g_cache.npBusAddress, (jint)state.BusAddress);
+		env->SetIntField(obj, g_cache.npMemoryReadBuffer, (jint)state.MemoryReadBuffer);
+		env->SetIntField(obj, g_cache.npVideoRamAddr, (jint)state.VideoRamAddr);
+		env->SetIntField(obj, g_cache.npTmpVideoRamAddr, (jint)state.TmpVideoRamAddr);
+		env->SetIntField(obj, g_cache.npScrollX, (jint)state.ScrollX);
+		env->SetBooleanField(obj, g_cache.npWriteToggle, state.WriteToggle ? JNI_TRUE : JNI_FALSE);
+		env->SetIntField(obj, g_cache.npSpriteRamAddr, (jint)state.SpriteRamAddr);
+		env->SetIntField(obj, g_cache.npSecondaryOamAddr, (jint)state.SecondaryOamAddr);
+		return obj;
+	}
+
+	void ReadNesPpuState(JNIEnv* env, jobject obj, NesPpuState& state)
+	{
+		state.StatusFlags.SpriteOverflow = env->GetBooleanField(obj, g_cache.npSpriteOverflow) == JNI_TRUE;
+		state.StatusFlags.Sprite0Hit = env->GetBooleanField(obj, g_cache.npSprite0Hit) == JNI_TRUE;
+		state.StatusFlags.VerticalBlank = env->GetBooleanField(obj, g_cache.npVerticalBlank) == JNI_TRUE;
+
+		state.Mask.Grayscale = env->GetBooleanField(obj, g_cache.npGrayscale) == JNI_TRUE;
+		state.Mask.BackgroundMask = env->GetBooleanField(obj, g_cache.npBackgroundMask) == JNI_TRUE;
+		state.Mask.SpriteMask = env->GetBooleanField(obj, g_cache.npSpriteMask) == JNI_TRUE;
+		state.Mask.BackgroundEnabled = env->GetBooleanField(obj, g_cache.npBackgroundEnabled) == JNI_TRUE;
+		state.Mask.SpritesEnabled = env->GetBooleanField(obj, g_cache.npSpritesEnabled) == JNI_TRUE;
+		state.Mask.IntensifyRed = env->GetBooleanField(obj, g_cache.npIntensifyRed) == JNI_TRUE;
+		state.Mask.IntensifyGreen = env->GetBooleanField(obj, g_cache.npIntensifyGreen) == JNI_TRUE;
+		state.Mask.IntensifyBlue = env->GetBooleanField(obj, g_cache.npIntensifyBlue) == JNI_TRUE;
+
+		state.Control.BackgroundPatternAddr = (uint16_t)env->GetIntField(obj, g_cache.npBackgroundPatternAddr);
+		state.Control.SpritePatternAddr = (uint16_t)env->GetIntField(obj, g_cache.npSpritePatternAddr);
+		state.Control.VerticalWrite = env->GetBooleanField(obj, g_cache.npVerticalWrite) == JNI_TRUE;
+		state.Control.LargeSprites = env->GetBooleanField(obj, g_cache.npLargeSprites) == JNI_TRUE;
+		state.Control.SecondaryPpu = env->GetBooleanField(obj, g_cache.npSecondaryPpu) == JNI_TRUE;
+		state.Control.NmiOnVerticalBlank = env->GetBooleanField(obj, g_cache.npNmiOnVerticalBlank) == JNI_TRUE;
+
+		state.Scanline = (int32_t)env->GetIntField(obj, g_cache.npScanline);
+		state.Cycle = (uint32_t)env->GetIntField(obj, g_cache.npCycle);
+		state.FrameCount = (uint32_t)env->GetIntField(obj, g_cache.npFrameCount);
+		state.NmiScanline = (uint32_t)env->GetIntField(obj, g_cache.npNmiScanline);
+		state.ScanlineCount = (uint32_t)env->GetIntField(obj, g_cache.npScanlineCount);
+		state.SafeOamScanline = (uint32_t)env->GetIntField(obj, g_cache.npSafeOamScanline);
+		state.BusAddress = (uint16_t)env->GetIntField(obj, g_cache.npBusAddress);
+		state.MemoryReadBuffer = (uint8_t)env->GetIntField(obj, g_cache.npMemoryReadBuffer);
+		state.VideoRamAddr = (uint16_t)env->GetIntField(obj, g_cache.npVideoRamAddr);
+		state.TmpVideoRamAddr = (uint16_t)env->GetIntField(obj, g_cache.npTmpVideoRamAddr);
+		state.ScrollX = (uint8_t)env->GetIntField(obj, g_cache.npScrollX);
+		state.WriteToggle = env->GetBooleanField(obj, g_cache.npWriteToggle) == JNI_TRUE;
+		state.SpriteRamAddr = (uint8_t)env->GetIntField(obj, g_cache.npSpriteRamAddr);
+		state.SecondaryOamAddr = (uint8_t)env->GetIntField(obj, g_cache.npSecondaryOamAddr);
 	}
 }
 
@@ -784,6 +958,54 @@ extern "C"
 
 		AddressInfo result = GetRelativeAddress(ReadAddressInfo(env, absolute), (CpuType)cpuType);
 		return NewAddressInfo(env, result);
+	}
+
+	// -----------------------------------------------------------------------
+	// NES register state
+	// -----------------------------------------------------------------------
+
+	JNIEXPORT jobject JNICALL Java_mesen_MesenDebugger_getNesCpuState(JNIEnv* env, jclass)
+	{
+		if(!InitCache(env)) {
+			return nullptr;
+		}
+
+		NesCpuState state = {};
+		GetCpuState(static_cast<BaseState&>(state), CpuType::Nes);
+		return NewNesCpuState(env, state);
+	}
+
+	JNIEXPORT void JNICALL Java_mesen_MesenDebugger_setNesCpuState(JNIEnv* env, jclass, jobject obj)
+	{
+		if(!InitCache(env) || !obj) {
+			return;
+		}
+
+		NesCpuState state = {};
+		ReadNesCpuState(env, obj, state);
+		SetCpuState(static_cast<BaseState&>(state), CpuType::Nes);
+	}
+
+	JNIEXPORT jobject JNICALL Java_mesen_MesenDebugger_getNesPpuState(JNIEnv* env, jclass)
+	{
+		if(!InitCache(env)) {
+			return nullptr;
+		}
+
+		NesPpuState state = {};
+		GetPpuState(static_cast<BaseState&>(state), CpuType::Nes);
+		return NewNesPpuState(env, state);
+	}
+
+	JNIEXPORT void JNICALL Java_mesen_MesenDebugger_setNesPpuState(JNIEnv* env, jclass, jobject obj)
+	{
+		if(!InitCache(env) || !obj) {
+			return;
+		}
+
+		NesPpuState state = {};
+		ReadNesPpuState(env, obj, state);
+		SetPpuState(static_cast<BaseState&>(state), CpuType::Nes);
 	}
 
 	// -----------------------------------------------------------------------

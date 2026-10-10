@@ -8,6 +8,8 @@ import mesen.debugger.CodeLine;
 import mesen.debugger.DebuggerFeatures;
 import mesen.debugger.EvalResult;
 import mesen.debugger.InstructionProgress;
+import mesen.debugger.NesCpuState;
+import mesen.debugger.NesPpuState;
 import mesen.debugger.StackFrame;
 
 /**
@@ -180,6 +182,25 @@ public final class MesenDebugger
 
     /** 绝对地址换算成某个 CPU 的相对地址。 */
     public static native AddressInfo getRelativeAddress(AddressInfo absoluteAddress, int cpuType);
+
+    // ---- CPU / PPU 寄存器状态（目前只做了 NES）----------------------------
+
+    /**
+     * 读 NES CPU 寄存器（PC/A/X/Y/SP/PS…）。
+     *
+     * <p>要先把模拟停下来（{@link MesenCore#pause()} 并等
+     * {@link #isExecutionStopped()}），否则读到的值可能正在变化。</p>
+     */
+    public static native NesCpuState getNesCpuState();
+
+    /** 写回 NES CPU 寄存器。 */
+    public static native void setNesCpuState(NesCpuState state);
+
+    /** 读 NES PPU 状态（扫描线/周期/VRAM 地址/遮罩/控制…）。 */
+    public static native NesPpuState getNesPpuState();
+
+    /** 写回 NES PPU 状态。 */
+    public static native void setNesPpuState(NesPpuState state);
 
     // ---- 内存快照 --------------------------------------------------------
 

@@ -12,6 +12,8 @@ import mesen.debugger.CpuVector;
 import mesen.debugger.DebuggerFeatures;
 import mesen.debugger.EvalResult;
 import mesen.debugger.InstructionProgress;
+import mesen.debugger.NesCpuState;
+import mesen.debugger.NesPpuState;
 import mesen.debugger.StackFrame;
 
 /** 调试 API（MesenDebugger）回归测试。 */
@@ -119,6 +121,51 @@ public class DebugSmokeTest
 
         InstructionProgress progress = MesenDebugger.getInstructionProgress(Mesen.CPU_NES);
         check(progress != null, "getInstructionProgress() -> " + progress);
+
+        // ---- NES 寄存器状态 ----
+        System.out.println("== NES 寄存器状态 ==");
+        NesCpuState cpu = MesenDebugger.getNesCpuState();
+        check(cpu != null, "getNesCpuState() -> " + cpu);
+        if(cpu != null) {
+            check(cpu.pc == pc, String.format("CPU PC $%04X == getProgramCounter() $%04X", cpu.pc, pc));
+        }
+
+        NesPpuState ppu = MesenDebugger.getNesPpuState();
+        check(ppu != null, "getNesPpuState() -> " + ppu);
+        if(ppu != null) {
+            check(ppu.scanlineCount > 0, "scanlineCount = " + ppu.scanlineCount);
+            check(ppu.nmiScanline > 0, "nmiScanline = " + ppu.nmiScanline);
+            System.out.printf("      VRAM=$%04X TMP=$%04X X=%d pattern bg=$%04X sp=$%04X%n",
+                ppu.videoRamAddr, ppu.tmpVideoRamAddr, ppu.scrollX,
+                ppu.backgroundPatternAddr, ppu.spritePatternAddr);
+        }
+
+        // 写回回环：改 A / VRAM 地址，再读回来
+        if(cpu != null) {
+            int originalA = cpu.a;
+            cpu.a = (originalA + 1) & 0xFF;
+            MesenDebugger.setNesCpuState(cpu);
+
+            NesCpuState readBack = MesenDebugger.getNesCpuState();
+            check(readBack != null && readBack.a == cpu.a,
+                String.format("setNesCpuState 回环: A $%02X -> $%02X", originalA, cpu.a));
+
+            cpu.a = originalA;
+            MesenDebugger.setNesCpuState(cpu);
+        }
+
+        if(ppu != null) {
+            int originalVram = ppu.videoRamAddr;
+            ppu.videoRamAddr = (originalVram ^ 0x10) & 0x3FFF;
+            MesenDebugger.setNesPpuState(ppu);
+
+            NesPpuState ppuBack = MesenDebugger.getNesPpuState();
+            check(ppuBack != null && ppuBack.videoRamAddr == ppu.videoRamAddr,
+                String.format("setNesPpuState 回环: VRAM $%04X -> $%04X", originalVram, ppu.videoRamAddr));
+
+            ppu.videoRamAddr = originalVram;
+            MesenDebugger.setNesPpuState(ppu);
+        }
 
         // ---- 断点 ----
         System.out.println("== 断点 ==");
