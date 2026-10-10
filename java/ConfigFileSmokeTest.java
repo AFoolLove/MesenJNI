@@ -1,11 +1,11 @@
-import mesen.MesenConfig;
-import mesen.MesenCore;
+import mesen.*;
+import mesen.*;
 import mesen.NesSettings;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-/** Smoke test for the Java-side MesenConfig (global + NES section + file reference). */
+/** Smoke test for the Java-side MesenSettings (global + NES section + file reference). */
 public class ConfigFileSmokeTest
 {
     public static void main(String[] args) throws Exception
@@ -14,12 +14,12 @@ public class ConfigFileSmokeTest
         Path file = dir.resolve("mesen.json");
 
         // 1) 生成默认配置文件
-        MesenConfig.createDefaultFile(file);
+        MesenSettings.createDefaultFile(file);
         System.out.println("--- 默认配置 JSON ---");
         System.out.println(Files.readString(file));
 
         // 2) 读回并校验默认值
-        MesenConfig cfg = MesenConfig.load(file);
+        MesenSettings cfg = MesenSettings.load(file);
         if(cfg.masterVolume != 100) {
             throw new AssertionError("默认音量应为 100");
         }
@@ -37,7 +37,7 @@ public class ConfigFileSmokeTest
         System.out.println(Files.readString(file));
 
         // 重新加载，跟随文件引用解析
-        MesenConfig cfg2 = MesenConfig.load(file);
+        MesenSettings cfg2 = MesenSettings.load(file);
         NesSettings nes2 = cfg2.getNesSettings();
         if(nes2.region != 0 || nes2.controllerType != 10) {
             throw new AssertionError("文件引用解析失败");

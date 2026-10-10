@@ -1,4 +1,4 @@
-import mesen.MesenCore;
+import mesen.*;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,14 +30,14 @@ public class LuaSmokeTest
         MesenCore.loadRom(rom.toString(), null);
 
         String src = "emu.log('hello from lua')";
-        int id = MesenCore.loadScript("test.lua", "./", src, -1);
+        int id = MesenScript.loadScript("test.lua", "./", src, -1);
         System.out.println("scriptId = " + id);
 
         Thread.sleep(300);
-        String log = MesenCore.getScriptLog(id);
+        String log = MesenScript.getScriptLog(id);
         System.out.println("log = [" + log + "]");
 
-        MesenCore.removeScript(id);
+        MesenScript.removeScript(id);
 
         boolean ok = id >= 0 && log.contains("hello from lua");
         System.out.println(ok ? "LUA TEST PASSED" : "LUA TEST PARTIAL");

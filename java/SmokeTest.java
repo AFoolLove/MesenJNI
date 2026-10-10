@@ -1,4 +1,4 @@
-import mesen.MesenCore;
+import mesen.*;
 import mesen.Mesen;
 
 /** Minimal smoke test: loads the native library and calls a few bindings. */
@@ -13,11 +13,11 @@ public class SmokeTest
         System.out.println("buildDate = " + MesenCore.getMesenBuildDate());
 
         MesenCore.initializeEmu("./home", true, true, false, true);
-        int w = MesenCore.getFrameWidth();
-        int h = MesenCore.getFrameHeight();
+        int w = MesenVideo.getFrameWidth();
+        int h = MesenVideo.getFrameHeight();
         System.out.println("frame " + w + "x" + h);
         int[] frame = new int[w * h];
-        MesenCore.copyFrameBuffer(frame);
+        MesenVideo.copyFrameBuffer(frame);
         System.out.println("copied " + frame.length + " ARGB pixels");
         MesenCore.release();
 

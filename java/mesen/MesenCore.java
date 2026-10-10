@@ -3,21 +3,28 @@ package mesen;
 /**
  * JNI bindings for the Mesen core (MesenCore native library).
  *
- * The native implementation lives in the MesenJNI shared library
- * (MesenJNI.dll / libMesenJNI.so), which links against MesenCore.
+ * <p>生命周期、ROM、存档、日志、回调注册。其它能力已拆到分类类：</p>
+ * <ul>
+ *   <li>{@link MesenMemory} 内存读写</li>
+ *   <li>{@link MesenConfig} 配置/调色板/手柄</li>
+ *   <li>{@link MesenInput} 键盘/鼠标输入</li>
+ *   <li>{@link MesenVideo} 软件渲染帧</li>
+ *   <li>{@link MesenAudio} 采集音频</li>
+ *   <li>{@link MesenScript} Lua 脚本</li>
+ *   <li>{@link MesenSettings} Java 侧 JSON 配置持久化</li>
+ * </ul>
  *
- * Headless usage example:
+ * <p>Headless usage example:</p>
  * <pre>
  *   MesenCore.initDll();
  *   MesenCore.initializeEmu("/path/to/home", true, true, false, true);
- *   MesenCore.setEmulationFlag(Mesen.FLAG_MAXIMUM_SPEED, true);
  *   if(MesenCore.loadRom("/path/to/game.nes", null)) {
  *       MesenCore.resume();
  *       while(MesenCore.isRunning()) {
- *           int w = MesenCore.getFrameWidth();
- *           int h = MesenCore.getFrameHeight();
+ *           int w = MesenVideo.getFrameWidth();
+ *           int h = MesenVideo.getFrameHeight();
  *           int[] frame = new int[w * h];
- *           MesenCore.copyFrameBuffer(frame);
+ *           MesenVideo.copyFrameBuffer(frame);
  *           // ... process frame ...
  *       }
  *       int stopCode = MesenCore.getStopCode();
@@ -103,132 +110,9 @@ public final class MesenCore
     public static native void loadStateFile(String filepath);
     public static native void takeScreenshot();
 
-    // --- Memory ------------------------------------------------------------
-
-    public static native long getMemorySize(int memoryType);
-    public static native int getMemoryValue(int memoryType, long address);
-    public static native byte[] getMemoryValues(int memoryType, long start, long end);
-    public static native void setMemoryValue(int memoryType, long address, int value);
-    public static native void setMemoryValues(int memoryType, long address, byte[] data);
-
-    // --- Lua scripting -----------------------------------------------------
-
-    /**
-     * 加载并执行一段 Mesen Lua 脚本（源码全文）。
-     *
-     * @param name     脚本名（一般传文件名）
-     * @param path     脚本所在目录（脚本内相对路径访问用）
-     * @param content  Lua 源码全文
-     * @param scriptId -1 表示新建脚本；传已有 id 则替换该脚本
-     * @return 脚本 id（失败返回负数）
-     */
-    public static native int loadScript(String name, String path, String content, int scriptId);
-
-    /** 卸载指定 id 的 Lua 脚本。 */
-    public static native void removeScript(int scriptId);
-
-    /** 取指定脚本的日志输出（print 等）。 */
-    public static native String getScriptLog(int scriptId);
-
-    // --- Config ------------------------------------------------------------
-
-    public static native void setEmulationFlag(int flag, boolean enabled);
-    public static native void setDebuggerFlag(int flag, boolean enabled);
-
-    /** Sets the emulation config (speed / run-ahead). */
-    public static native void setEmulationConfig(int emulationSpeed, int turboSpeed, int rewindSpeed, int runAheadFrames);
-
-    /** Sets key video options; pass a value you don't want to change as-is. */
-    public static native void setVideoConfig(int videoFilter, int aspectRatio, double customAspectRatio, int screenRotation);
-
-    /** Sets key audio options. */
-    public static native void setAudioConfig(boolean enableAudio, int masterVolume, int sampleRate, int audioLatency);
-
-    /** Sets the controller type for a console port (see Mesen.CONTROLLER_*). */
-    public static native void setControllerType(int consoleType, int port, int controllerType);
-
-    /** Maps a controller button to a key scan code (see Mesen.BUTTON_*). */
-    public static native void setControllerKey(int consoleType, int port, int button, int keyCode);
-
-    // --- Palette config ----------------------------------------------------
-
-    /** Sets the NES custom palette; array of up to 512 entries (0xRRGGBB). */
-    public static native void setNesCustomPalette(int[] palette);
-
-    /** Enables the NES full 512-color palette (instead of the classic 64 colors). */
-    public static native void setNesFullColorPalette(boolean enabled);
-
-    /** Enables the custom VS System palette. */
-    public static native void setNesUseCustomVsPalette(boolean enabled);
-
-    /** Sets the NES console region (see Mesen.REGION_*). */
-    public static native void setNesRegion(int region);
-
-    /** Enables/disables the NES sprite limit (8 sprites per scanline). */
-    public static native void setNesRemoveSpriteLimit(boolean enabled);
-
-    /** Sets the PCE custom palette; array of up to 512 entries (0xRRGGBB). */
-    public static native void setPceCustomPalette(int[] palette);
-
-    /** Sets the GB (DMG) 4-color palettes; each array has 4 entries (0xRRGGBB). */
-    public static native void setGameboyPalette(int[] background, int[] obj0, int[] obj1);
-
-    /** Enables the SMS SG palette. */
-    public static native void setSmsUseSgPalette(boolean enabled);
-
-    /** Enables GBA color correction. */
-    public static native void setGbaAdjustColors(boolean enabled);
-
-    /** Enables WonderSwan LCD color adjustment. */
-    public static native void setWsLcdAdjustColors(boolean enabled);
-
-    public static native void setRendererSize(int width, int height);
-    public static native double getAspectRatio();
-    public static native FrameInfo getBaseScreenSize();
-    public static native TimingInfo getTimingInfo(int cpuType);
-
-    // --- Input -------------------------------------------------------------
-
-    public static native void setKeyState(int scanCode, boolean state);
-    public static native void resetKeyState();
-    public static native void disableAllKeys(boolean disabled);
-    public static native void updateInputDevices();
-    public static native int getKeyCode(String keyName);
-    public static native String getKeyName(int keyCode);
-    public static native void setMousePosition(double x, double y);
-    public static native void setMouseMovement(int x, int y);
-    public static native boolean hasControlDevice(int controllerType);
-
     // --- Log / messages ----------------------------------------------------
 
     public static native String getLog();
     public static native void writeLogEntry(String message);
     public static native void displayMessage(String title, String message, String param);
-
-    // --- Software-rendered frame ------------------------------------------
-
-    /** Width of the current software-rendered frame (ARGB). */
-    public static native int getFrameWidth();
-
-    /** Height of the current software-rendered frame (ARGB). */
-    public static native int getFrameHeight();
-
-    /**
-     * Copies the current software-rendered frame (32-bit ARGB, one int per
-     * pixel) into {@code argb}. The array must be at least
-     * {@code width * height} ints long.
-     */
-    public static native void copyFrameBuffer(int[] argb);
-
-    // --- Captured audio ----------------------------------------------------
-
-    /** Sample rate of the captured audio (e.g. 48000). */
-    public static native int getAudioSampleRate();
-
-    /**
-     * Reads captured audio samples (interleaved stereo int16 PCM) into
-     * {@code out}. Returns the number of int16 values written (0 if none).
-     * Requires headless audio: initializeEmu(..., noAudio=false, ...).
-     */
-    public static native int readAudioSamples(short[] out);
 }

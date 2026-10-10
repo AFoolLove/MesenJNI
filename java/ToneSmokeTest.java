@@ -1,4 +1,4 @@
-import mesen.MesenCore;
+import mesen.*;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,7 +43,7 @@ public class ToneSmokeTest
         Thread.sleep(2000);
 
         short[] buf = new short[48000];
-        int n = MesenCore.readAudioSamples(buf);
+        int n = MesenAudio.readAudioSamples(buf);
         int peak = 0;
         for(int i = 0; i < n; i++) {
             int s = buf[i] < 0 ? -buf[i] : buf[i];

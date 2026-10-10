@@ -1,4 +1,4 @@
-import mesen.MesenCore;
+import mesen.*;
 import mesen.NotificationListener;
 import mesen.AudioDevice;
 import mesen.KeyManager;
@@ -99,7 +99,7 @@ public class CallbackSmokeTest
 
         // 触发 KeyManager.updateDevices
         for(int i = 0; i < 3; i++) {
-            MesenCore.updateInputDevices();
+            MesenInput.updateInputDevices();
         }
 
         System.out.println("notifications=" + notifications.get()

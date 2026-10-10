@@ -48,22 +48,22 @@ public class NesSettings
     /** 应用到 MesenCore（通过 JNI）。 */
     public void apply()
     {
-        MesenCore.setNesRegion(region);
-        MesenCore.setControllerType(Mesen.CONSOLE_NES, 0, controllerType);
+        MesenConfig.setNesRegion(region);
+        MesenConfig.setControllerType(Mesen.CONSOLE_NES, 0, controllerType);
 
         for(Map.Entry<String, Integer> e : controllerKeys.entrySet()) {
             int button = Mesen.buttonId(e.getKey());
             if(button >= 0 && e.getValue() != null) {
-                MesenCore.setControllerKey(Mesen.CONSOLE_NES, 0, button, e.getValue());
+                MesenConfig.setControllerKey(Mesen.CONSOLE_NES, 0, button, e.getValue());
             }
         }
 
         if(palette != null && palette.length > 0) {
-            MesenCore.setNesCustomPalette(palette);
+            MesenConfig.setNesCustomPalette(palette);
         }
-        MesenCore.setNesFullColorPalette(fullColorPalette);
-        MesenCore.setNesUseCustomVsPalette(useCustomVsPalette);
-        MesenCore.setNesRemoveSpriteLimit(removeSpriteLimit);
+        MesenConfig.setNesFullColorPalette(fullColorPalette);
+        MesenConfig.setNesUseCustomVsPalette(useCustomVsPalette);
+        MesenConfig.setNesRemoveSpriteLimit(removeSpriteLimit);
     }
 
     /** 转成 JsonObject（用于内联写入主配置文件）。 */

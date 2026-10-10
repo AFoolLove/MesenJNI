@@ -1,4 +1,4 @@
-import mesen.MesenCore;
+import mesen.*;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,9 +46,9 @@ public class AudioSmokeTest
         // Let it run a bit so audio frames are produced.
         Thread.sleep(2000);
 
-        int rate = MesenCore.getAudioSampleRate();
+        int rate = MesenAudio.getAudioSampleRate();
         short[] buf = new short[48000];
-        int count = MesenCore.readAudioSamples(buf);
+        int count = MesenAudio.readAudioSamples(buf);
 
         System.out.println("sampleRate = " + rate);
         System.out.println("samplesRead = " + count);

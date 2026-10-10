@@ -1,6 +1,6 @@
-import mesen.MesenCore;
+import mesen.*;
 import mesen.Mesen;
-import mesen.MesenConfig;
+import mesen.*;
 import mesen.RomInfo;
 
 import javax.swing.JButton;
@@ -33,7 +33,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 /**
- * 实时预览 MesenCore.copyFrameBuffer() 生成帧画面的 Swing 示例。
+ * 实时预览 MesenVideo.copyFrameBuffer() 生成帧画面的 Swing 示例。
  *
  * 用法:
  *   javac -encoding UTF-8 -cp build/classes -d build/classes java/SwingPreview.java
@@ -66,7 +66,7 @@ public class SwingPreview
     private int audioPeak = 0;
     private boolean audioDebugPrinted = false;
 
-    private MesenConfig config;
+    private MesenSettings config;
     private Path configFile;
 
     public static void main(String[] args)
@@ -84,7 +84,7 @@ public class SwingPreview
 
         // 加载并应用配置（不存在则用默认值，含默认音量 100）
         configFile = Path.of(homeFolder, "mesen.json");
-        config = MesenConfig.load(configFile);
+        config = MesenSettings.load(configFile);
         config.apply();
 
         startAudio();
@@ -127,7 +127,7 @@ public class SwingPreview
 
         JCheckBox fastForward = new JCheckBox("加速 (MaximumSpeed)");
         fastForward.addActionListener(e ->
-            MesenCore.setEmulationFlag(Mesen.FLAG_MAXIMUM_SPEED, fastForward.isSelected()));
+            MesenConfig.setEmulationFlag(Mesen.FLAG_MAXIMUM_SPEED, fastForward.isSelected()));
 
         JCheckBox audioToggle = new JCheckBox("音频", true);
         audioToggle.addActionListener(e -> audioEnabled = audioToggle.isSelected());
@@ -184,8 +184,8 @@ public class SwingPreview
 
     private void renderFrame()
     {
-        int w = MesenCore.getFrameWidth();
-        int h = MesenCore.getFrameHeight();
+        int w = MesenVideo.getFrameWidth();
+        int h = MesenVideo.getFrameHeight();
         if(w <= 0 || h <= 0) {
             return;
         }
@@ -199,7 +199,7 @@ public class SwingPreview
         }
 
         // 零拷贝：直接写入 BufferedImage 底层数组
-        MesenCore.copyFrameBuffer(pixels);
+        MesenVideo.copyFrameBuffer(pixels);
         videoPanel.repaint();
         pumpAudio();
 
@@ -283,7 +283,7 @@ public class SwingPreview
         }
 
         short[] samples = new short[4096];
-        int n = MesenCore.readAudioSamples(samples);
+        int n = MesenAudio.readAudioSamples(samples);
         if(n <= 0) {
             return;
         }
