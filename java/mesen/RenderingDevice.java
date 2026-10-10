@@ -6,6 +6,9 @@ package mesen;
  * <p>通过 {@link MesenCore#registerRenderingDevice(RenderingDevice)} 注册后，模拟器把
  * 渲染好的帧推送到这里，而不是内部软件渲染器。可用于把帧画到 Swing/JavaFX/OpenGL 等。</p>
  *
+ * <p>除 {@link #updateFrame(int, int, int[], int)} 外，其余方法都有默认的空实现，
+ * 只需覆盖你关心的方法即可。</p>
+ *
  * <p><b>格式</b>：帧为 32-bit ARGB（每像素一个 int，顺序 {@code 0xAARRGGBB}）。</p>
  *
  * <p><b>缓冲复用</b>：{@link #updateFrame(int, int, int[], int)} 传入的 {@code argb}
@@ -27,7 +30,7 @@ public interface RenderingDevice
     void updateFrame(int width, int height, int[] argb, int frameNumber);
 
     /** 清空当前帧（显示黑屏）。 */
-    void clearFrame();
+    default void clearFrame() {}
 
     /**
      * 渲染 HUD 叠加层。
@@ -40,11 +43,11 @@ public interface RenderingDevice
      * @param scriptHudWidth / scriptHudHeight 脚本 HUD 尺寸
      * @param scriptHudDirty 脚本 HUD 是否有更新
      */
-    void render(int[] emuHud, int emuHudWidth, int emuHudHeight, boolean emuHudDirty,
-                int[] scriptHud, int scriptHudWidth, int scriptHudHeight, boolean scriptHudDirty);
+    default void render(int[] emuHud, int emuHudWidth, int emuHudHeight, boolean emuHudDirty,
+                        int[] scriptHud, int scriptHudWidth, int scriptHudHeight, boolean scriptHudDirty) {}
 
     /** 重置渲染设备。 */
-    void reset();
+    default void reset() {}
 
     /**
      * 设置全屏模式。
@@ -53,5 +56,5 @@ public interface RenderingDevice
      * @param width  宽
      * @param height 高
      */
-    void setFullscreenMode(int mode, int width, int height);
+    default void setFullscreenMode(int mode, int width, int height) {}
 }
