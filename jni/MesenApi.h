@@ -259,6 +259,11 @@ MESEN_EXTERN
 	void MESEN_CALL SetPreferences(PreferencesConfig config);
 	void MESEN_CALL SetAudioPlayerConfig(AudioPlayerConfig config);
 
+	// --- EmuApiWrapper / ConfigApiWrapper (shortcuts) ---
+	void MESEN_CALL ExecuteShortcut(ExecuteShortcutParams params);
+	bool MESEN_CALL IsShortcutAllowed(EmulatorShortcut shortcut, uint32_t shortcutParam);
+	void MESEN_CALL SetShortcutKeys(ShortcutKeyInfo shortcuts[], uint32_t count);
+
 	// --- DebugApiWrapper (labels / undo / address conversion) ---
 	void MESEN_CALL SetLabel(uint32_t address, MemoryType memType, char* label, char* comment);
 	void MESEN_CALL ClearLabels();

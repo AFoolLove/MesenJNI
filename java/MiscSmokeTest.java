@@ -5,6 +5,7 @@ import mesen.InternalCheatCode;
 import mesen.Mesen;
 import mesen.MesenCore;
 import mesen.PreferencesConfig;
+import mesen.ShortcutKeyInfo;
 
 /** 作弊码 / 存档预览 / 压缩包列表 / 杂项接口回归测试。 */
 public class MiscSmokeTest
@@ -124,6 +125,28 @@ public class MiscSmokeTest
             if((pixel & 0xFFFFFF) != 0) nonBlack++;
         }
         check(nonBlack > 0, "改完配置后仍在正常渲染 -> " + nonBlack + " 个非黑像素");
+
+        // ---- 快捷键 ----
+        System.out.println("== 快捷键 ==");
+        MesenCore.setShortcutKeys(new ShortcutKeyInfo[] {
+            new ShortcutKeyInfo(Mesen.SHORTCUT_PAUSE, 0x20),
+            new ShortcutKeyInfo(Mesen.SHORTCUT_FAST_FORWARD, 0x09)
+        });
+        check(true, "setShortcutKeys() 无异常");
+
+        boolean allowed = MesenCore.isShortcutAllowed(Mesen.SHORTCUT_RESET, 0);
+        check(true, "isShortcutAllowed(SHORTCUT_RESET) -> " + allowed);
+
+        // executeShortcut 走完整通知链路：用 PAUSE 验证真的生效
+        MesenCore.resume();
+        Thread.sleep(250);
+        check(!MesenCore.isPaused(), "执行前正在运行");
+        MesenCore.executeShortcut(Mesen.SHORTCUT_PAUSE, 0);
+        Thread.sleep(250);
+        check(MesenCore.isPaused(), "executeShortcut(SHORTCUT_PAUSE) 真的暂停了");
+        MesenCore.executeShortcut(Mesen.SHORTCUT_PAUSE, 0);
+        Thread.sleep(250);
+        check(!MesenCore.isPaused(), "再执行一次恢复运行");
 
         MesenCore.stop();
         MesenCore.release();

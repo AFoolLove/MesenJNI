@@ -1109,4 +1109,50 @@ JNIEXPORT void JNICALL Java_mesen_MesenCore_setAudioPlayerConfig(JNIEnv* env, jc
 	SetAudioPlayerConfig(config);
 	env->DeleteLocalRef(cls);
 }
+// ---------------------------------------------------------------------------
+// Shortcuts
+// ---------------------------------------------------------------------------
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_executeShortcut(JNIEnv*, jclass, jint shortcut, jint param)
+{
+	ExecuteShortcutParams params = {};
+	params.Shortcut = (EmulatorShortcut)shortcut;
+	params.Param = (uint32_t)param;
+	params.ParamPtr = nullptr;
+	ExecuteShortcut(params);
+}
+
+JNIEXPORT jboolean JNICALL Java_mesen_MesenCore_isShortcutAllowed(JNIEnv*, jclass, jint shortcut, jint param)
+{
+	return IsShortcutAllowed((EmulatorShortcut)shortcut, (uint32_t)param) ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setShortcutKeys(JNIEnv* env, jclass, jobjectArray shortcuts)
+{
+	jsize count = shortcuts ? env->GetArrayLength(shortcuts) : 0;
+	if(count <= 0) {
+		return;
+	}
+
+	jclass cls = env->FindClass("mesen/ShortcutKeyInfo");
+	jfieldID shortcutField = env->GetFieldID(cls, "shortcut", "I");
+	jfieldID key1Field = env->GetFieldID(cls, "key1", "I");
+	jfieldID key2Field = env->GetFieldID(cls, "key2", "I");
+	jfieldID key3Field = env->GetFieldID(cls, "key3", "I");
+
+	std::vector<ShortcutKeyInfo> infos((size_t)count);
+	for(jsize i = 0; i < count; i++) {
+		jobject item = env->GetObjectArrayElement(shortcuts, i);
+		if(item) {
+			infos[i].Shortcut = (EmulatorShortcut)env->GetIntField(item, shortcutField);
+			infos[i].Keys.Key1 = (uint32_t)env->GetIntField(item, key1Field);
+			infos[i].Keys.Key2 = (uint32_t)env->GetIntField(item, key2Field);
+			infos[i].Keys.Key3 = (uint32_t)env->GetIntField(item, key3Field);
+			env->DeleteLocalRef(item);
+		}
+	}
+
+	SetShortcutKeys(infos.data(), (uint32_t)count);
+	env->DeleteLocalRef(cls);
+}
 } // extern "C"

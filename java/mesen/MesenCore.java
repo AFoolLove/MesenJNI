@@ -229,4 +229,20 @@ public final class MesenCore
 
     /** 应用音频播放器配置（音量/循环/随机）。 */
     public static native void setAudioPlayerConfig(AudioPlayerConfig config);
+
+    // --- 快捷键 -------------------------------------------------------------
+
+    /**
+     * 触发一个快捷键（等价于用户按下它）。
+     *
+     * @param shortcut {@code Mesen.SHORTCUT_*}
+     * @param param    部分快捷键需要的参数（如存档槽号），不需要时传 0
+     */
+    public static native void executeShortcut(int shortcut, int param);
+
+    /** 该快捷键当前是否可用（例如没在录像时「停止录像」就不可用）。 */
+    public static native boolean isShortcutAllowed(int shortcut, int param);
+
+    /** 设置快捷键绑定表（会替换掉之前的）。 */
+    public static native void setShortcutKeys(ShortcutKeyInfo[] shortcuts);
 }
