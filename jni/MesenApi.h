@@ -69,6 +69,7 @@ MESEN_EXTERN
 	void MESEN_CALL InitDll();
 	void MESEN_CALL InitializeEmu(const char* homeFolder, void* windowHandle, void* viewerHandle, bool softwareRenderer, bool noAudio, bool noVideo, bool noInput);
 	bool MESEN_CALL LoadRom(char* filename, char* patchFile);
+	bool MESEN_CALL LoadRomFromBytes(uint8_t* data, uint32_t size, char* filename, char* patchFile);
 	void MESEN_CALL AddKnownGameFolder(char* folder);
 	void MESEN_CALL GetRomInfo(InteropRomInfo& info);
 	TimingInfo MESEN_CALL GetTimingInfo(CpuType cpuType);

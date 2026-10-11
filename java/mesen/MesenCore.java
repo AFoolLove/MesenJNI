@@ -99,6 +99,23 @@ public final class MesenCore
     // --- ROM ---------------------------------------------------------------
 
     public static native boolean loadRom(String filename, String patchFile);
+
+    /**
+     * 从内存字节加载 ROM，不需要先写到磁盘。
+     *
+     * <p>适合从 {@code InputStream}/{@code AssetManager}/网络下载拿到数据后直接开跑。</p>
+     *
+     * <p><b>{@code romName} 必须带真实扩展名</b>（{@code "game.nes"}、{@code "game.sfc"}…）：
+     * core 是按扩展名挑机种和加载器的，这个参数<b>不会</b>去磁盘读文件，只是个名字。
+     * core 内部会<b>拷贝</b>这份数据，所以本方法返回后可以直接丢掉数组。</p>
+     *
+     * @param romData   ROM 内容
+     * @param romName   ROM 文件名（带扩展名，用来判断格式）
+     * @param patchFile IPS 补丁的文件路径（没有就传 null）
+     * @return 是否加载成功
+     */
+    public static native boolean loadRomFromBytes(byte[] romData, String romName, String patchFile);
+
     public static native void loadRecentGame(String filepath, boolean resetGame);
     public static native void addKnownGameFolder(String folder);
     public static native RomInfo getRomInfo();

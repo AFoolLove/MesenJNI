@@ -256,6 +256,33 @@ JNIEXPORT jboolean JNICALL Java_mesen_MesenCore_loadRom(JNIEnv* env, jclass, jst
 	return LoadRom(fn.empty() ? nullptr : fn.data(), pf.empty() ? nullptr : pf.data()) ? JNI_TRUE : JNI_FALSE;
 }
 
+JNIEXPORT jboolean JNICALL Java_mesen_MesenCore_loadRomFromBytes(JNIEnv* env, jclass, jbyteArray romData, jstring romName, jstring patchFile)
+{
+	if(!romData) {
+		return JNI_FALSE;
+	}
+
+	jsize size = env->GetArrayLength(romData);
+	if(size <= 0) {
+		return JNI_FALSE;
+	}
+
+	std::vector<uint8_t> buffer((size_t)size);
+	env->GetByteArrayRegion(romData, 0, size, (jbyte*)buffer.data());
+
+	// romName only supplies the extension the core keys the loader off, so a
+	// caller that passes nothing gets a neutral name rather than a crash.
+	string name = JStringToUtf8(env, romName);
+	string patch = JStringToUtf8(env, patchFile);
+	if(name.empty()) {
+		name = "noname";
+	}
+
+	bool result = LoadRomFromBytes(buffer.data(), (uint32_t)size,
+		name.data(), patch.empty() ? nullptr : patch.data());
+	return result ? JNI_TRUE : JNI_FALSE;
+}
+
 JNIEXPORT void JNICALL Java_mesen_MesenCore_loadRecentGame(JNIEnv* env, jclass, jstring filepath, jboolean resetGame)
 {
 	string fp = JStringToUtf8(env, filepath);

@@ -188,6 +188,24 @@ extern "C"
 		return _emu->LoadRom((VirtualFile)filename, patchFile ? (VirtualFile)patchFile : VirtualFile());
 	}
 
+	// Loads a ROM straight from memory, so a host that already has the bytes
+	// (downloaded, read from an Android asset/InputStream, ...) does not have to
+	// write a temporary file first. VirtualFile's buffer constructor copies the
+	// data, so the caller may free its buffer as soon as this returns.
+	// `filename` is not read from disk: it only supplies the extension the core
+	// uses to pick a console/loader, so it must look like a ROM (e.g. "game.nes").
+	DllExport bool __stdcall LoadRomFromBytes(uint8_t* data, uint32_t size, char* filename, char* patchFile)
+	{
+		if(!data || size == 0) {
+			return false;
+		}
+
+		_emu->GetGameClient()->Disconnect();
+		return _emu->LoadRom(
+			VirtualFile(data, (size_t)size, filename ? filename : "noname"),
+			patchFile ? (VirtualFile)patchFile : VirtualFile());
+	}
+
 	DllExport void __stdcall AddKnownGameFolder(char* folder)
 	{
 		FolderUtilities::AddKnownGameFolder(folder);
