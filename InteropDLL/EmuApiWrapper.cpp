@@ -48,6 +48,11 @@ unique_ptr<IKeyManager> _keyManager;
 unique_ptr<IMouseManager> _mouseManager;
 unique_ptr<Emulator> _emu(new Emulator());
 bool _softwareRenderer = false;
+
+// Mirrors the noAudio argument of InitializeEmu. The history viewer builds its
+// own Emulator and used to create a native audio device unconditionally, which
+// crashed (null read) when the core had been initialized headless.
+bool _noAudio = false;
 SoftwareRenderer* _softwareRendererInstance = nullptr;
 HeadlessAudioDevice* _headlessAudioDevice = nullptr;
 
@@ -142,6 +147,7 @@ extern "C"
 		_windowHandle = windowHandle;
 		_viewerHandle = viewerHandle;
 		_softwareRenderer = softwareRenderer;
+		_noAudio = noAudio;
 
 		// Always set up audio/video callbacks: the software renderer (and
 		// headless audio) are the only devices that work without a window, so

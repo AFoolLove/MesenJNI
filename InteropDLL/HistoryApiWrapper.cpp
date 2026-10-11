@@ -22,6 +22,7 @@
 
 extern unique_ptr<Emulator> _emu;
 extern bool _softwareRenderer;
+extern bool _noAudio;
 
 unique_ptr<Emulator> _historyPlayer;
 unique_ptr<IRenderingDevice> _historyRenderer;
@@ -73,6 +74,10 @@ extern "C"
 #endif
 		}
 
+		// Mirror the core's own noAudio handling: do not build the history viewer's
+		// audio device when audio is disabled - its Emulator never gets the audio init
+		// callback, and creating a native device here crashed (null read).
+		if(!_noAudio) {
 #ifdef _WIN32
 		_historySoundManager.reset(SoundManager::Create(_historyPlayer.get(), (HWND)windowHandle));
 #elif defined(__ANDROID__)
@@ -80,6 +85,7 @@ extern "C"
 #else
 		_historySoundManager.reset(SdlSoundManager::Create(_historyPlayer.get()));
 #endif
+		}
 	}
 
 	DllExport HistoryViewerState __stdcall HistoryViewerGetState()
