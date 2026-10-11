@@ -218,4 +218,15 @@ public final class MesenCore
 
     /** 延迟计数器归零。 */
     public static native void resetLagCounter();
+
+    // --- 配置 ---------------------------------------------------------------
+
+    /** 应用单游戏配置（DIP 开关、过扫描覆盖）。 */
+    public static native void setGameConfig(GameConfig config);
+
+    /** 应用偏好设置。 */
+    public static native void setPreferences(PreferencesConfig config);
+
+    /** 应用音频播放器配置（音量/循环/随机）。 */
+    public static native void setAudioPlayerConfig(AudioPlayerConfig config);
 }

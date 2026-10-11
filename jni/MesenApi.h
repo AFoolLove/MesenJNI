@@ -254,6 +254,11 @@ MESEN_EXTERN
 	// --- InputApiWrapper ---
 	void MESEN_CALL ResetLagCounter();
 
+	// --- ConfigApiWrapper (game / preferences / audio player) ---
+	void MESEN_CALL SetGameConfig(GameConfig config);
+	void MESEN_CALL SetPreferences(PreferencesConfig config);
+	void MESEN_CALL SetAudioPlayerConfig(AudioPlayerConfig config);
+
 	// --- DebugApiWrapper (labels / undo / address conversion) ---
 	void MESEN_CALL SetLabel(uint32_t address, MemoryType memType, char* label, char* comment);
 	void MESEN_CALL ClearLabels();

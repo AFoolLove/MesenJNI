@@ -1038,4 +1038,75 @@ JNIEXPORT void JNICALL Java_mesen_MesenCore_resetLagCounter(JNIEnv*, jclass)
 {
 	ResetLagCounter();
 }
+// ---------------------------------------------------------------------------
+// Game / preferences / audio player config
+// ---------------------------------------------------------------------------
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setGameConfig(JNIEnv* env, jclass, jobject obj)
+{
+	if(!obj) {
+		return;
+	}
+
+	jclass cls = env->FindClass("mesen/GameConfig");
+	GameConfig config = {};
+	config.DipSwitches = (uint32_t)env->GetIntField(obj, env->GetFieldID(cls, "dipSwitches", "I"));
+	config.OverrideOverscan = env->GetBooleanField(obj, env->GetFieldID(cls, "overrideOverscan", "Z")) == JNI_TRUE;
+	config.Overscan.Left = (uint32_t)env->GetIntField(obj, env->GetFieldID(cls, "overscanLeft", "I"));
+	config.Overscan.Right = (uint32_t)env->GetIntField(obj, env->GetFieldID(cls, "overscanRight", "I"));
+	config.Overscan.Top = (uint32_t)env->GetIntField(obj, env->GetFieldID(cls, "overscanTop", "I"));
+	config.Overscan.Bottom = (uint32_t)env->GetIntField(obj, env->GetFieldID(cls, "overscanBottom", "I"));
+	SetGameConfig(config);
+	env->DeleteLocalRef(cls);
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setPreferences(JNIEnv* env, jclass, jobject obj)
+{
+	if(!obj) {
+		return;
+	}
+
+	jclass cls = env->FindClass("mesen/PreferencesConfig");
+	PreferencesConfig config = {};
+
+	config.ShowFps = env->GetBooleanField(obj, env->GetFieldID(cls, "ShowFps", "Z")) == JNI_TRUE;
+	config.ShowFrameCounter = env->GetBooleanField(obj, env->GetFieldID(cls, "ShowFrameCounter", "Z")) == JNI_TRUE;
+	config.ShowGameTimer = env->GetBooleanField(obj, env->GetFieldID(cls, "ShowGameTimer", "Z")) == JNI_TRUE;
+	config.ShowLagCounter = env->GetBooleanField(obj, env->GetFieldID(cls, "ShowLagCounter", "Z")) == JNI_TRUE;
+	config.ShowDebugInfo = env->GetBooleanField(obj, env->GetFieldID(cls, "ShowDebugInfo", "Z")) == JNI_TRUE;
+	config.DisableOsd = env->GetBooleanField(obj, env->GetFieldID(cls, "DisableOsd", "Z")) == JNI_TRUE;
+	config.AllowBackgroundInput = env->GetBooleanField(obj, env->GetFieldID(cls, "AllowBackgroundInput", "Z")) == JNI_TRUE;
+	config.PauseOnMovieEnd = env->GetBooleanField(obj, env->GetFieldID(cls, "PauseOnMovieEnd", "Z")) == JNI_TRUE;
+	config.ShowMovieIcons = env->GetBooleanField(obj, env->GetFieldID(cls, "ShowMovieIcons", "Z")) == JNI_TRUE;
+	config.ShowTurboRewindIcons = env->GetBooleanField(obj, env->GetFieldID(cls, "ShowTurboRewindIcons", "Z")) == JNI_TRUE;
+	config.DisableGameSelectionScreen = env->GetBooleanField(obj, env->GetFieldID(cls, "DisableGameSelectionScreen", "Z")) == JNI_TRUE;
+
+	config.HudSize = (HudDisplaySize)env->GetIntField(obj, env->GetFieldID(cls, "HudSize", "I"));
+	config.AutoSaveStateDelay = (uint32_t)env->GetIntField(obj, env->GetFieldID(cls, "AutoSaveStateDelay", "I"));
+	config.RewindBufferSize = (uint32_t)env->GetIntField(obj, env->GetFieldID(cls, "RewindBufferSize", "I"));
+
+	// The three folder-override fields are const char* and SetPreferences only
+	// assigns the struct without copying, so they stay null (= defaults).
+	config.SaveFolderOverride = nullptr;
+	config.SaveStateFolderOverride = nullptr;
+	config.ScreenshotFolderOverride = nullptr;
+
+	SetPreferences(config);
+	env->DeleteLocalRef(cls);
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setAudioPlayerConfig(JNIEnv* env, jclass, jobject obj)
+{
+	if(!obj) {
+		return;
+	}
+
+	jclass cls = env->FindClass("mesen/AudioPlayerConfig");
+	AudioPlayerConfig config = {};
+	config.Volume = (uint32_t)env->GetIntField(obj, env->GetFieldID(cls, "volume", "I"));
+	config.Repeat = env->GetBooleanField(obj, env->GetFieldID(cls, "repeat", "Z")) == JNI_TRUE;
+	config.Shuffle = env->GetBooleanField(obj, env->GetFieldID(cls, "shuffle", "Z")) == JNI_TRUE;
+	SetAudioPlayerConfig(config);
+	env->DeleteLocalRef(cls);
+}
 } // extern "C"

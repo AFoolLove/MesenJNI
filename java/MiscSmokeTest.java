@@ -1,7 +1,10 @@
+import mesen.AudioPlayerConfig;
 import mesen.CheatCode;
+import mesen.GameConfig;
 import mesen.InternalCheatCode;
 import mesen.Mesen;
 import mesen.MesenCore;
+import mesen.PreferencesConfig;
 
 /** 作弊码 / 存档预览 / 压缩包列表 / 杂项接口回归测试。 */
 public class MiscSmokeTest
@@ -85,6 +88,42 @@ public class MiscSmokeTest
 
         MesenCore.resetLagCounter();
         check(true, "resetLagCounter() 无异常");
+
+        // ---- 配置 ----
+        System.out.println("== 配置 ==");
+        GameConfig gameConfig = new GameConfig();
+        gameConfig.dipSwitches = 3;
+        gameConfig.overrideOverscan = true;
+        gameConfig.overscanLeft = 8;
+        MesenCore.setGameConfig(gameConfig);
+        check(true, "setGameConfig() 无异常");
+
+        PreferencesConfig preferences = new PreferencesConfig();
+        preferences.ShowFps = true;
+        preferences.AllowBackgroundInput = true;
+        preferences.RewindBufferSize = 600;
+        MesenCore.setPreferences(preferences);
+        check(true, "setPreferences() 无异常");
+
+        AudioPlayerConfig audioPlayerConfig = new AudioPlayerConfig();
+        audioPlayerConfig.volume = 50;
+        audioPlayerConfig.repeat = true;
+        MesenCore.setAudioPlayerConfig(audioPlayerConfig);
+        check(true, "setAudioPlayerConfig() 无异常");
+
+        // 复位，并确认改完配置后游戏还能正常跑
+        MesenCore.setPreferences(new PreferencesConfig());
+        MesenCore.setGameConfig(new GameConfig());
+        MesenCore.setAudioPlayerConfig(new AudioPlayerConfig());
+        MesenCore.resume();
+        Thread.sleep(300);
+        int[] frame = new int[mesen.MesenVideo.getFrameWidth() * mesen.MesenVideo.getFrameHeight()];
+        mesen.MesenVideo.copyFrameBuffer(frame);
+        int nonBlack = 0;
+        for(int pixel : frame) {
+            if((pixel & 0xFFFFFF) != 0) nonBlack++;
+        }
+        check(nonBlack > 0, "改完配置后仍在正常渲染 -> " + nonBlack + " 个非黑像素");
 
         MesenCore.stop();
         MesenCore.release();

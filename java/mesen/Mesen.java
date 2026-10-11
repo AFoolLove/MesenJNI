@@ -237,6 +237,10 @@ public final class Mesen
     public static final int FULLSCREEN_BORDERLESS = 1;
     public static final int FULLSCREEN_EXCLUSIVE = 2;
 
+    // --- HudDisplaySize (Core/Shared/SettingTypes.h) -----------------------
+    public static final int HUD_SIZE_FIXED = 0;
+    public static final int HUD_SIZE_SCALED = 1;
+
     // --- ConsoleType (Core/Shared/SettingTypes.h) --------------------------
     public static final int CONSOLE_SNES = 0;
     public static final int CONSOLE_GAMEBOY = 1;
