@@ -245,4 +245,15 @@ public final class MesenCore
 
     /** 设置快捷键绑定表（会替换掉之前的）。 */
     public static native void setShortcutKeys(ShortcutKeyInfo[] shortcuts);
+
+    // --- 着色器 -------------------------------------------------------------
+
+    /** 应用着色器配置（空 shaderFile = 关闭着色器）。 */
+    public static native void setShaderConfig(ShaderConfig config);
+
+    /** 当前渲染设备是否支持 librashader 着色器。 */
+    public static native boolean checkShaderSupport();
+
+    /** 读取着色器文件定义的参数（文件不存在或解析失败时返回空数组）。 */
+    public static native ShaderParamDefinition[] getShaderParams(String shaderFile);
 }

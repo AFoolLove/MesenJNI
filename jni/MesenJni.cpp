@@ -1155,4 +1155,124 @@ JNIEXPORT void JNICALL Java_mesen_MesenCore_setShortcutKeys(JNIEnv* env, jclass,
 	SetShortcutKeys(infos.data(), (uint32_t)count);
 	env->DeleteLocalRef(cls);
 }
+// ---------------------------------------------------------------------------
+// Shaders
+// ---------------------------------------------------------------------------
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setShaderConfig(JNIEnv* env, jclass, jobject obj)
+{
+	if(!obj) {
+		return;
+	}
+
+	jclass cls = env->FindClass("mesen/ShaderConfig");
+	InteropShaderConfig config = {};
+	config.ConfigVersion = (uint32_t)env->GetIntField(obj, env->GetFieldID(cls, "configVersion", "I"));
+
+	// SetShaderConfig copies the string, so a local buffer is fine here.
+	std::string shaderFile;
+	jstring fileStr = (jstring)env->GetObjectField(obj, env->GetFieldID(cls, "shaderFile", "Ljava/lang/String;"));
+	if(fileStr) {
+		const char* chars = env->GetStringUTFChars(fileStr, nullptr);
+		if(chars) {
+			shaderFile = chars;
+			env->ReleaseStringUTFChars(fileStr, chars);
+		}
+		env->DeleteLocalRef(fileStr);
+	}
+	config.ShaderFile = shaderFile.c_str();
+
+	std::vector<ShaderParam> paramList;
+	jobjectArray params = (jobjectArray)env->GetObjectField(obj, env->GetFieldID(cls, "params", "[Lmesen/ShaderParam;"));
+	if(params) {
+		jsize count = env->GetArrayLength(params);
+		jclass paramCls = env->FindClass("mesen/ShaderParam");
+		jfieldID nameField = env->GetFieldID(paramCls, "name", "Ljava/lang/String;");
+		jfieldID valueField = env->GetFieldID(paramCls, "value", "D");
+
+		for(jsize i = 0; i < count; i++) {
+			jobject item = env->GetObjectArrayElement(params, i);
+			if(item) {
+				ShaderParam param = {};
+				jstring name = (jstring)env->GetObjectField(item, nameField);
+				if(name) {
+					const char* chars = env->GetStringUTFChars(name, nullptr);
+					if(chars) {
+						strncpy(param.Name, chars, sizeof(param.Name) - 1);
+						env->ReleaseStringUTFChars(name, chars);
+					}
+					env->DeleteLocalRef(name);
+				}
+				param.Value = env->GetDoubleField(item, valueField);
+				paramList.push_back(param);
+				env->DeleteLocalRef(item);
+			}
+		}
+
+		env->DeleteLocalRef(paramCls);
+		env->DeleteLocalRef(params);
+	}
+
+	config.Params = paramList.empty() ? nullptr : paramList.data();
+	config.ParamCount = (uint32_t)paramList.size();
+
+	SetShaderConfig(config);
+	env->DeleteLocalRef(cls);
+}
+
+JNIEXPORT jboolean JNICALL Java_mesen_MesenCore_checkShaderSupport(JNIEnv*, jclass)
+{
+	return CheckShaderSupport() ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jobjectArray JNICALL Java_mesen_MesenCore_getShaderParams(JNIEnv* env, jclass, jstring shaderFile)
+{
+	if(!shaderFile) {
+		return nullptr;
+	}
+
+	const char* chars = env->GetStringUTFChars(shaderFile, nullptr);
+	if(!chars) {
+		return nullptr;
+	}
+
+	// Two-call pattern: passing nullptr asks for the parameter count.
+	uint32_t count = GetShaderParams(chars, nullptr);
+	std::vector<ShaderParamDefinition> definitions(count ? count : 1, ShaderParamDefinition{});
+	if(count > 0) {
+		uint32_t written = GetShaderParams(chars, definitions.data());
+		if(written < count) {
+			count = written;
+		}
+	}
+	env->ReleaseStringUTFChars(shaderFile, chars);
+
+	jclass cls = env->FindClass("mesen/ShaderParamDefinition");
+	jmethodID ctor = env->GetMethodID(cls, "<init>", "()V");
+	jobjectArray result = env->NewObjectArray((jsize)count, cls, nullptr);
+
+	for(uint32_t i = 0; i < count; i++) {
+		const ShaderParamDefinition& def = definitions[i];
+		jobject obj = env->NewObject(cls, ctor);
+
+		jstring name = env->NewStringUTF(def.Name);
+		env->SetObjectField(obj, env->GetFieldID(cls, "name", "Ljava/lang/String;"), name);
+		env->DeleteLocalRef(name);
+
+		jstring description = env->NewStringUTF(def.Description);
+		env->SetObjectField(obj, env->GetFieldID(cls, "description", "Ljava/lang/String;"), description);
+		env->DeleteLocalRef(description);
+
+		env->SetDoubleField(obj, env->GetFieldID(cls, "min", "D"), (jdouble)def.Min);
+		env->SetDoubleField(obj, env->GetFieldID(cls, "max", "D"), (jdouble)def.Max);
+		env->SetDoubleField(obj, env->GetFieldID(cls, "initial", "D"), (jdouble)def.Initial);
+		env->SetDoubleField(obj, env->GetFieldID(cls, "step", "D"), (jdouble)def.Step);
+
+		env->SetObjectArrayElement(result, (jsize)i, obj);
+		env->DeleteLocalRef(obj);
+	}
+
+	env->DeleteLocalRef(cls);
+	return result;
+}
 } // extern "C"

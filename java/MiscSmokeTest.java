@@ -6,6 +6,9 @@ import mesen.Mesen;
 import mesen.MesenCore;
 import mesen.PreferencesConfig;
 import mesen.ShortcutKeyInfo;
+import mesen.ShaderConfig;
+import mesen.ShaderParam;
+import mesen.ShaderParamDefinition;
 
 /** 作弊码 / 存档预览 / 压缩包列表 / 杂项接口回归测试。 */
 public class MiscSmokeTest
@@ -147,6 +150,28 @@ public class MiscSmokeTest
         MesenCore.executeShortcut(Mesen.SHORTCUT_PAUSE, 0);
         Thread.sleep(250);
         check(!MesenCore.isPaused(), "再执行一次恢复运行");
+
+        // ---- 着色器 ----
+        System.out.println("== 着色器 ==");
+        boolean shaderSupport = MesenCore.checkShaderSupport();
+        check(true, "checkShaderSupport() -> " + shaderSupport);
+
+        MesenCore.setShaderConfig(new ShaderConfig());
+        check(true, "setShaderConfig(空配置) 无异常");
+
+        ShaderConfig withParams = new ShaderConfig();
+        withParams.configVersion = 1;
+        withParams.shaderFile = "temp/none.slangp";
+        withParams.params = new ShaderParam[] { new ShaderParam("SCALE", 2.0) };
+        MesenCore.setShaderConfig(withParams);
+        check(true, "setShaderConfig(带参数) 无异常");
+
+        ShaderParamDefinition[] definitions = MesenCore.getShaderParams("temp/none.slangp");
+        check(definitions != null, "getShaderParams(不存在的文件) -> "
+            + (definitions == null ? "null" : definitions.length + " 个参数"));
+
+        MesenCore.setShaderConfig(new ShaderConfig());
+        check(true, "setShaderConfig() 已复位");
 
         MesenCore.stop();
         MesenCore.release();

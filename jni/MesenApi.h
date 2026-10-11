@@ -31,6 +31,7 @@
 #include "Core/Shared/Interfaces/IRenderingDevice.h"  // FullscreenSettings
 #include "Core/Shared/Interfaces/ITapeRecorder.h"     // TapeRecorderAction
 #include "Core/Shared/Audio/AudioPlayerTypes.h"       // AudioPlayerActionParams
+#include "Utilities/Video/LibrashaderUtilities.h"     // ShaderParamDefinition
 
 class Breakpoint;
 struct AddressCounters;
@@ -263,6 +264,11 @@ MESEN_EXTERN
 	void MESEN_CALL ExecuteShortcut(ExecuteShortcutParams params);
 	bool MESEN_CALL IsShortcutAllowed(EmulatorShortcut shortcut, uint32_t shortcutParam);
 	void MESEN_CALL SetShortcutKeys(ShortcutKeyInfo shortcuts[], uint32_t count);
+
+	// --- ConfigApiWrapper (shaders) ---
+	void MESEN_CALL SetShaderConfig(InteropShaderConfig config);
+	bool MESEN_CALL CheckShaderSupport();
+	uint32_t MESEN_CALL GetShaderParams(const char* shaderFile, ShaderParamDefinition* params);
 
 	// --- DebugApiWrapper (labels / undo / address conversion) ---
 	void MESEN_CALL SetLabel(uint32_t address, MemoryType memType, char* label, char* comment);
