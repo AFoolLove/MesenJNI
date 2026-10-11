@@ -205,6 +205,11 @@ MESEN_EXTERN
 	void MESEN_CALL SetViewerUpdateTiming(uint32_t viewerId, uint16_t scanline, uint16_t cycle, CpuType cpuType);
 	void MESEN_CALL RemoveViewerId(uint32_t viewerId, CpuType cpuType);
 
+	// --- DebugApiWrapper (whole-console state) ---
+	// Note the parameter order and that this takes a ConsoleType, unlike
+	// GetPpuState/GetCpuState which take a CpuType.
+	void MESEN_CALL GetConsoleState(BaseState& state, ConsoleType consoleType);
+
 	// --- DebugApiWrapper (execution trace) ---
 	void MESEN_CALL SetTraceOptions(CpuType cpuType, TraceLoggerOptions options);
 	uint32_t MESEN_CALL GetExecutionTrace(TraceRow output[], uint32_t startOffset, uint32_t lineCount);

@@ -15,6 +15,7 @@ import mesen.debugger.InstructionProgress;
 import mesen.debugger.ProfiledFunction;
 import mesen.debugger.TraceLoggerOptions;
 import mesen.debugger.TraceRow;
+import mesen.debugger.NesConsoleState;
 import mesen.debugger.NesCpuState;
 import mesen.debugger.NesPpuState;
 import mesen.debugger.PaletteInfo;
@@ -336,6 +337,16 @@ public final class MesenDebugger
     /** 移除某个查看器的刷新时机。 */
     public static native void removeViewerId(int viewerId, int cpuType);
 
+    // ---- 整机状态 ---------------------------------------------------------
+
+    /**
+     * 取 NES 整机状态（CPU + PPU + 卡带/mapper + APU + 主频）。
+     *
+     * <p>比 {@link #getNesCpuState()} / {@link #getNesPpuState()} 全得多：
+     * 卡带部分含 PRG/CHR 页映射表（各 256/64 项）和 200 项 mapper 自定义状态。
+     * 该机种没在跑时返回 null。</p>
+     */
+    public static native NesConsoleState getNesConsoleState();
     // ---- 执行跟踪 ---------------------------------------------------------
 
     /** 设置跟踪选项（结构体自带 Enabled 开关）。 */

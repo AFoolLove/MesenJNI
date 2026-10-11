@@ -15,6 +15,7 @@ import mesen.debugger.EvalResult;
 import mesen.debugger.EventViewerConfig;
 import mesen.debugger.InstructionProgress;
 import mesen.debugger.NesCpuState;
+import mesen.debugger.NesConsoleState;
 import mesen.debugger.NesPpuState;
 import mesen.debugger.PaletteInfo;
 import mesen.debugger.SpriteListResult;
@@ -485,6 +486,32 @@ public class DebugSmokeTest
         CodeLine[] normalLines = MesenDebugger.getDisassemblyOutput(Mesen.CPU_NES, pc, 1);
         check(normalLines != null && normalLines.length > 0, "setDebugConfig() 已复位 -> "
             + normalLines[0].text.trim());
+
+        // ---- NES 整机状态 ----
+        System.out.println("== NES 整机状态 ==");
+        NesConsoleState consoleState = MesenDebugger.getNesConsoleState();
+        check(consoleState != null, "getNesConsoleState() -> " + consoleState);
+        if(consoleState != null && consoleState.clockRate > 0) {
+            System.out.println("      主频: " + consoleState.clockRate + " Hz");
+            System.out.println("      PRG " + consoleState.cartridge.PrgPageCount + " 页 × "
+                + consoleState.cartridge.PrgPageSize + " 字节, CHR "
+                + consoleState.cartridge.ChrPageCount + " 页 × "
+                + consoleState.cartridge.ChrPageSize + " 字节, 镜像="
+                + consoleState.cartridge.Mirroring);
+
+            int mapped = 0;
+            for(int offset : consoleState.cartridge.PrgMemoryOffset) {
+                if(offset >= 0) mapped++;
+            }
+            check(mapped > 0, "PRG 页映射 -> " + mapped + " / 256 项有映射");
+
+            System.out.println("      CPU: PC=$" + String.format("%04X", consoleState.cpu.pc)
+                + " A=$" + String.format("%02X", consoleState.cpu.a & 0xFF)
+                + "  PPU: scanline=" + consoleState.ppu.scanline);
+            System.out.println("      APU: " + consoleState.apu);
+            System.out.println("      APU 方波1: " + consoleState.apu.Square1);
+            System.out.println("      APU 三角: " + consoleState.apu.Triangle);
+        }
 
         // ---- 汇编 / ROM 导出 ----
         System.out.println("== 汇编 / ROM 导出 ==");

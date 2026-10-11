@@ -2928,4 +2928,284 @@ extern "C"
 	{
 		ResetMemoryAccessCounts();
 	}
-}
+	// -----------------------------------------------------------------------
+	// Whole-console state (GetConsoleState)
+	//
+	// Field lookups are local rather than going through g_cache: this state is
+	// huge (NES alone is ~20KB) and is queried for diagnostics, not per frame.
+	// -----------------------------------------------------------------------
+
+	jobject NewApuLengthCounterState(JNIEnv* env, const ApuLengthCounterState& s)
+	{
+		jclass cls = env->FindClass("mesen/debugger/ApuLengthCounterState");
+		jobject obj = env->NewObject(cls, env->GetMethodID(cls, "<init>", "()V"));
+		env->SetBooleanField(obj, env->GetFieldID(cls, "Halt", "Z"), s.Halt ? JNI_TRUE : JNI_FALSE);
+		env->SetIntField(obj, env->GetFieldID(cls, "Counter", "I"), (jint)s.Counter);
+		env->SetIntField(obj, env->GetFieldID(cls, "ReloadValue", "I"), (jint)s.ReloadValue);
+		env->DeleteLocalRef(cls);
+		return obj;
+	}
+
+	jobject NewApuEnvelopeState(JNIEnv* env, const ApuEnvelopeState& s)
+	{
+		jclass cls = env->FindClass("mesen/debugger/ApuEnvelopeState");
+		jobject obj = env->NewObject(cls, env->GetMethodID(cls, "<init>", "()V"));
+		env->SetBooleanField(obj, env->GetFieldID(cls, "StartFlag", "Z"), s.StartFlag ? JNI_TRUE : JNI_FALSE);
+		env->SetBooleanField(obj, env->GetFieldID(cls, "Loop", "Z"), s.Loop ? JNI_TRUE : JNI_FALSE);
+		env->SetBooleanField(obj, env->GetFieldID(cls, "ConstantVolume", "Z"), s.ConstantVolume ? JNI_TRUE : JNI_FALSE);
+		env->SetIntField(obj, env->GetFieldID(cls, "Divider", "I"), (jint)s.Divider);
+		env->SetIntField(obj, env->GetFieldID(cls, "Counter", "I"), (jint)s.Counter);
+		env->SetIntField(obj, env->GetFieldID(cls, "Volume", "I"), (jint)s.Volume);
+		env->DeleteLocalRef(cls);
+		return obj;
+	}
+
+	jobject NewApuSquareState(JNIEnv* env, const ApuSquareState& s)
+	{
+		jclass cls = env->FindClass("mesen/debugger/ApuSquareState");
+		jobject obj = env->NewObject(cls, env->GetMethodID(cls, "<init>", "()V"));
+		env->SetIntField(obj, env->GetFieldID(cls, "Duty", "I"), (jint)s.Duty);
+		env->SetIntField(obj, env->GetFieldID(cls, "DutyPosition", "I"), (jint)s.DutyPosition);
+		env->SetIntField(obj, env->GetFieldID(cls, "Period", "I"), (jint)s.Period);
+		env->SetIntField(obj, env->GetFieldID(cls, "Timer", "I"), (jint)s.Timer);
+		env->SetBooleanField(obj, env->GetFieldID(cls, "SweepEnabled", "Z"), s.SweepEnabled ? JNI_TRUE : JNI_FALSE);
+		env->SetBooleanField(obj, env->GetFieldID(cls, "SweepNegate", "Z"), s.SweepNegate ? JNI_TRUE : JNI_FALSE);
+		env->SetIntField(obj, env->GetFieldID(cls, "SweepPeriod", "I"), (jint)s.SweepPeriod);
+		env->SetIntField(obj, env->GetFieldID(cls, "SweepShift", "I"), (jint)s.SweepShift);
+		env->SetBooleanField(obj, env->GetFieldID(cls, "Enabled", "Z"), s.Enabled ? JNI_TRUE : JNI_FALSE);
+		env->SetIntField(obj, env->GetFieldID(cls, "OutputVolume", "I"), (jint)s.OutputVolume);
+		env->SetDoubleField(obj, env->GetFieldID(cls, "Frequency", "D"), (jdouble)s.Frequency);
+		jobject LengthCounter = NewApuLengthCounterState(env, s.LengthCounter);
+		env->SetObjectField(obj, env->GetFieldID(cls, "LengthCounter", "Lmesen/debugger/ApuLengthCounterState;"), LengthCounter);
+		env->DeleteLocalRef(LengthCounter);
+		jobject Envelope = NewApuEnvelopeState(env, s.Envelope);
+		env->SetObjectField(obj, env->GetFieldID(cls, "Envelope", "Lmesen/debugger/ApuEnvelopeState;"), Envelope);
+		env->DeleteLocalRef(Envelope);
+		env->DeleteLocalRef(cls);
+		return obj;
+	}
+
+	jobject NewApuTriangleState(JNIEnv* env, const ApuTriangleState& s)
+	{
+		jclass cls = env->FindClass("mesen/debugger/ApuTriangleState");
+		jobject obj = env->NewObject(cls, env->GetMethodID(cls, "<init>", "()V"));
+		env->SetIntField(obj, env->GetFieldID(cls, "Period", "I"), (jint)s.Period);
+		env->SetIntField(obj, env->GetFieldID(cls, "Timer", "I"), (jint)s.Timer);
+		env->SetIntField(obj, env->GetFieldID(cls, "SequencePosition", "I"), (jint)s.SequencePosition);
+		env->SetBooleanField(obj, env->GetFieldID(cls, "Enabled", "Z"), s.Enabled ? JNI_TRUE : JNI_FALSE);
+		env->SetDoubleField(obj, env->GetFieldID(cls, "Frequency", "D"), (jdouble)s.Frequency);
+		env->SetIntField(obj, env->GetFieldID(cls, "OutputVolume", "I"), (jint)s.OutputVolume);
+		env->SetIntField(obj, env->GetFieldID(cls, "LinearCounter", "I"), (jint)s.LinearCounter);
+		env->SetIntField(obj, env->GetFieldID(cls, "LinearCounterReload", "I"), (jint)s.LinearCounterReload);
+		env->SetBooleanField(obj, env->GetFieldID(cls, "LinearReloadFlag", "Z"), s.LinearReloadFlag ? JNI_TRUE : JNI_FALSE);
+		jobject LengthCounter = NewApuLengthCounterState(env, s.LengthCounter);
+		env->SetObjectField(obj, env->GetFieldID(cls, "LengthCounter", "Lmesen/debugger/ApuLengthCounterState;"), LengthCounter);
+		env->DeleteLocalRef(LengthCounter);
+		env->DeleteLocalRef(cls);
+		return obj;
+	}
+
+	jobject NewApuNoiseState(JNIEnv* env, const ApuNoiseState& s)
+	{
+		jclass cls = env->FindClass("mesen/debugger/ApuNoiseState");
+		jobject obj = env->NewObject(cls, env->GetMethodID(cls, "<init>", "()V"));
+		env->SetIntField(obj, env->GetFieldID(cls, "Period", "I"), (jint)s.Period);
+		env->SetIntField(obj, env->GetFieldID(cls, "Timer", "I"), (jint)s.Timer);
+		env->SetIntField(obj, env->GetFieldID(cls, "ShiftRegister", "I"), (jint)s.ShiftRegister);
+		env->SetBooleanField(obj, env->GetFieldID(cls, "ModeFlag", "Z"), s.ModeFlag ? JNI_TRUE : JNI_FALSE);
+		env->SetBooleanField(obj, env->GetFieldID(cls, "Enabled", "Z"), s.Enabled ? JNI_TRUE : JNI_FALSE);
+		env->SetDoubleField(obj, env->GetFieldID(cls, "Frequency", "D"), (jdouble)s.Frequency);
+		env->SetIntField(obj, env->GetFieldID(cls, "OutputVolume", "I"), (jint)s.OutputVolume);
+		jobject LengthCounter = NewApuLengthCounterState(env, s.LengthCounter);
+		env->SetObjectField(obj, env->GetFieldID(cls, "LengthCounter", "Lmesen/debugger/ApuLengthCounterState;"), LengthCounter);
+		env->DeleteLocalRef(LengthCounter);
+		jobject Envelope = NewApuEnvelopeState(env, s.Envelope);
+		env->SetObjectField(obj, env->GetFieldID(cls, "Envelope", "Lmesen/debugger/ApuEnvelopeState;"), Envelope);
+		env->DeleteLocalRef(Envelope);
+		env->DeleteLocalRef(cls);
+		return obj;
+	}
+
+	jobject NewApuDmcState(JNIEnv* env, const ApuDmcState& s)
+	{
+		jclass cls = env->FindClass("mesen/debugger/ApuDmcState");
+		jobject obj = env->NewObject(cls, env->GetMethodID(cls, "<init>", "()V"));
+		env->SetDoubleField(obj, env->GetFieldID(cls, "SampleRate", "D"), (jdouble)s.SampleRate);
+		env->SetIntField(obj, env->GetFieldID(cls, "SampleAddr", "I"), (jint)s.SampleAddr);
+		env->SetIntField(obj, env->GetFieldID(cls, "NextSampleAddr", "I"), (jint)s.NextSampleAddr);
+		env->SetIntField(obj, env->GetFieldID(cls, "SampleLength", "I"), (jint)s.SampleLength);
+		env->SetBooleanField(obj, env->GetFieldID(cls, "Loop", "Z"), s.Loop ? JNI_TRUE : JNI_FALSE);
+		env->SetBooleanField(obj, env->GetFieldID(cls, "IrqEnabled", "Z"), s.IrqEnabled ? JNI_TRUE : JNI_FALSE);
+		env->SetIntField(obj, env->GetFieldID(cls, "Period", "I"), (jint)s.Period);
+		env->SetIntField(obj, env->GetFieldID(cls, "Timer", "I"), (jint)s.Timer);
+		env->SetIntField(obj, env->GetFieldID(cls, "BytesRemaining", "I"), (jint)s.BytesRemaining);
+		env->SetIntField(obj, env->GetFieldID(cls, "BitsRemaining", "I"), (jint)s.BitsRemaining);
+		env->SetIntField(obj, env->GetFieldID(cls, "OutputVolume", "I"), (jint)s.OutputVolume);
+		env->DeleteLocalRef(cls);
+		return obj;
+	}
+
+	jobject NewApuFrameCounterState(JNIEnv* env, const ApuFrameCounterState& s)
+	{
+		jclass cls = env->FindClass("mesen/debugger/ApuFrameCounterState");
+		jobject obj = env->NewObject(cls, env->GetMethodID(cls, "<init>", "()V"));
+		env->SetBooleanField(obj, env->GetFieldID(cls, "FiveStepMode", "Z"), s.FiveStepMode ? JNI_TRUE : JNI_FALSE);
+		env->SetIntField(obj, env->GetFieldID(cls, "SequencePosition", "I"), (jint)s.SequencePosition);
+		env->SetBooleanField(obj, env->GetFieldID(cls, "IrqEnabled", "Z"), s.IrqEnabled ? JNI_TRUE : JNI_FALSE);
+		env->DeleteLocalRef(cls);
+		return obj;
+	}
+
+	jobject NewApuState(JNIEnv* env, const ApuState& s)
+	{
+		jclass cls = env->FindClass("mesen/debugger/ApuState");
+		jobject obj = env->NewObject(cls, env->GetMethodID(cls, "<init>", "()V"));
+
+		jobject Square1 = NewApuSquareState(env, s.Square1);
+		env->SetObjectField(obj, env->GetFieldID(cls, "Square1", "Lmesen/debugger/ApuSquareState;"), Square1);
+		env->DeleteLocalRef(Square1);
+
+		jobject Square2 = NewApuSquareState(env, s.Square2);
+		env->SetObjectField(obj, env->GetFieldID(cls, "Square2", "Lmesen/debugger/ApuSquareState;"), Square2);
+		env->DeleteLocalRef(Square2);
+
+		jobject Triangle = NewApuTriangleState(env, s.Triangle);
+		env->SetObjectField(obj, env->GetFieldID(cls, "Triangle", "Lmesen/debugger/ApuTriangleState;"), Triangle);
+		env->DeleteLocalRef(Triangle);
+
+		jobject Noise = NewApuNoiseState(env, s.Noise);
+		env->SetObjectField(obj, env->GetFieldID(cls, "Noise", "Lmesen/debugger/ApuNoiseState;"), Noise);
+		env->DeleteLocalRef(Noise);
+
+		jobject Dmc = NewApuDmcState(env, s.Dmc);
+		env->SetObjectField(obj, env->GetFieldID(cls, "Dmc", "Lmesen/debugger/ApuDmcState;"), Dmc);
+		env->DeleteLocalRef(Dmc);
+
+		jobject FrameCounter = NewApuFrameCounterState(env, s.FrameCounter);
+		env->SetObjectField(obj, env->GetFieldID(cls, "FrameCounter", "Lmesen/debugger/ApuFrameCounterState;"), FrameCounter);
+		env->DeleteLocalRef(FrameCounter);
+
+		env->DeleteLocalRef(cls);
+		return obj;
+	}
+
+	void SetIntArrayField(JNIEnv* env, jclass cls, jobject obj, const char* name, const int32_t* source, int count)
+	{
+		std::vector<jint> values((size_t)count);
+		for(int i = 0; i < count; i++) {
+			values[i] = (jint)source[i];
+		}
+
+		jintArray array = env->NewIntArray(count);
+		env->SetIntArrayRegion(array, 0, count, values.data());
+		env->SetObjectField(obj, env->GetFieldID(cls, name, "[I"), array);
+		env->DeleteLocalRef(array);
+	}
+
+
+
+	jobject NewNesCartridgeState(JNIEnv* env, const CartridgeState& s)
+	{
+		jclass cls = env->FindClass("mesen/debugger/NesCartridgeState");
+		jobject obj = env->NewObject(cls, env->GetMethodID(cls, "<init>", "()V"));
+
+		env->SetIntField(obj, env->GetFieldID(cls, "PrgRomSize", "I"), (jint)s.PrgRomSize);
+		env->SetIntField(obj, env->GetFieldID(cls, "ChrRomSize", "I"), (jint)s.ChrRomSize);
+		env->SetIntField(obj, env->GetFieldID(cls, "ChrRamSize", "I"), (jint)s.ChrRamSize);
+		env->SetIntField(obj, env->GetFieldID(cls, "PrgPageCount", "I"), (jint)s.PrgPageCount);
+		env->SetIntField(obj, env->GetFieldID(cls, "PrgPageSize", "I"), (jint)s.PrgPageSize);
+		env->SetIntField(obj, env->GetFieldID(cls, "ChrPageCount", "I"), (jint)s.ChrPageCount);
+		env->SetIntField(obj, env->GetFieldID(cls, "ChrPageSize", "I"), (jint)s.ChrPageSize);
+		env->SetIntField(obj, env->GetFieldID(cls, "ChrRamPageSize", "I"), (jint)s.ChrRamPageSize);
+		env->SetIntField(obj, env->GetFieldID(cls, "WorkRamPageSize", "I"), (jint)s.WorkRamPageSize);
+		env->SetIntField(obj, env->GetFieldID(cls, "SaveRamPageSize", "I"), (jint)s.SaveRamPageSize);
+		env->SetIntField(obj, env->GetFieldID(cls, "Mirroring", "I"), (jint)s.Mirroring);
+		env->SetBooleanField(obj, env->GetFieldID(cls, "HasBattery", "Z"), s.HasBattery ? JNI_TRUE : JNI_FALSE);
+		env->SetIntField(obj, env->GetFieldID(cls, "CustomEntryCount", "I"), (jint)s.CustomEntryCount);
+
+		SetIntArrayField(env, cls, obj, "PrgMemoryOffset", s.PrgMemoryOffset, 0x100);
+		SetIntArrayField(env, cls, obj, "ChrMemoryOffset", s.ChrMemoryOffset, 0x40);
+
+		// Enum arrays are widened to int32 here (they are 1-byte enums in the core,
+		// and a template helper cannot live inside extern "C").
+		std::vector<int32_t> prgType(0x100), prgAccess(0x100), chrType(0x40), chrAccess(0x40);
+		for(int i = 0; i < 0x100; i++) {
+			prgType[i] = (int32_t)s.PrgType[i];
+			prgAccess[i] = (int32_t)s.PrgMemoryAccess[i];
+		}
+		for(int i = 0; i < 0x40; i++) {
+			chrType[i] = (int32_t)s.ChrType[i];
+			chrAccess[i] = (int32_t)s.ChrMemoryAccess[i];
+		}
+		SetIntArrayField(env, cls, obj, "PrgType", prgType.data(), 0x100);
+		SetIntArrayField(env, cls, obj, "PrgMemoryAccess", prgAccess.data(), 0x100);
+		SetIntArrayField(env, cls, obj, "ChrType", chrType.data(), 0x40);
+		SetIntArrayField(env, cls, obj, "ChrMemoryAccess", chrAccess.data(), 0x40);
+
+		jclass entryCls = env->FindClass("mesen/debugger/NesMapperStateEntry");
+		jmethodID entryCtor = env->GetMethodID(entryCls, "<init>", "()V");
+		jfieldID rawValueField = env->GetFieldID(entryCls, "rawValue", "J");
+		jfieldID typeField = env->GetFieldID(entryCls, "type", "I");
+		jfieldID addressField = env->GetFieldID(entryCls, "address", "[B");
+		jfieldID nameField = env->GetFieldID(entryCls, "name", "[B");
+
+		jobjectArray entries = env->NewObjectArray(200, entryCls, nullptr);
+		for(int i = 0; i < 200; i++) {
+			const MapperStateEntry& source = s.CustomEntries[i];
+			jobject entry = env->NewObject(entryCls, entryCtor);
+			env->SetLongField(entry, rawValueField, (jlong)source.RawValue);
+			env->SetIntField(entry, typeField, (jint)source.Type);
+
+			jbyteArray address = env->NewByteArray(MapperStateEntry::MaxLength);
+			env->SetByteArrayRegion(address, 0, MapperStateEntry::MaxLength, (const jbyte*)source.Address);
+			env->SetObjectField(entry, addressField, address);
+			env->DeleteLocalRef(address);
+
+			jbyteArray name = env->NewByteArray(MapperStateEntry::MaxLength);
+			env->SetByteArrayRegion(name, 0, MapperStateEntry::MaxLength, (const jbyte*)source.Name);
+			env->SetObjectField(entry, nameField, name);
+			env->DeleteLocalRef(name);
+
+			env->SetObjectArrayElement(entries, i, entry);
+			env->DeleteLocalRef(entry);
+		}
+		env->SetObjectField(obj, env->GetFieldID(cls, "CustomEntries", "[Lmesen/debugger/NesMapperStateEntry;"), entries);
+		env->DeleteLocalRef(entries);
+		env->DeleteLocalRef(entryCls);
+
+		env->DeleteLocalRef(cls);
+		return obj;
+	}
+
+	JNIEXPORT jobject JNICALL Java_mesen_MesenDebugger_getNesConsoleState(JNIEnv* env, jclass)
+	{
+		if(!InitCache(env)) {
+			return nullptr;
+		}
+
+		NesState state = {};
+		GetConsoleState(*reinterpret_cast<BaseState*>(&state), ConsoleType::Nes);
+
+		jclass cls = env->FindClass("mesen/debugger/NesConsoleState");
+		jobject obj = env->NewObject(cls, env->GetMethodID(cls, "<init>", "()V"));
+
+		jobject cpu = NewNesCpuState(env, state.Cpu);
+		env->SetObjectField(obj, env->GetFieldID(cls, "cpu", "Lmesen/debugger/NesCpuState;"), cpu);
+		env->DeleteLocalRef(cpu);
+
+		jobject ppu = NewNesPpuState(env, state.Ppu);
+		env->SetObjectField(obj, env->GetFieldID(cls, "ppu", "Lmesen/debugger/NesPpuState;"), ppu);
+		env->DeleteLocalRef(ppu);
+
+		jobject cartridge = NewNesCartridgeState(env, state.Cartridge);
+		env->SetObjectField(obj, env->GetFieldID(cls, "cartridge", "Lmesen/debugger/NesCartridgeState;"), cartridge);
+		env->DeleteLocalRef(cartridge);
+
+		jobject apu = NewApuState(env, state.Apu);
+		env->SetObjectField(obj, env->GetFieldID(cls, "apu", "Lmesen/debugger/ApuState;"), apu);
+		env->DeleteLocalRef(apu);
+
+		env->SetIntField(obj, env->GetFieldID(cls, "clockRate", "I"), (jint)state.ClockRate);
+		env->DeleteLocalRef(cls);
+		return obj;
+	}}
