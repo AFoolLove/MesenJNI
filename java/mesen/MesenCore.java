@@ -254,6 +254,13 @@ public final class MesenCore
     /** 当前渲染设备是否支持 librashader 着色器。 */
     public static native boolean checkShaderSupport();
 
+    /**
+     * 上游 PGO 性能剖析用的测试跑批。
+     *
+     * <p><b>不要在生产里调用</b>：core 会注册一个假输入设备、把 home 目录改成
+     * {@code ../PGOMesenHome}，然后逐个 ROM 跑到底。</p>
+     */
+    public static native void pgoRunTest(String[] testRoms, boolean enableDebugger);
     // --- 网表对战 -----------------------------------------------------------
 
     /** 开服务器（0 = 由系统选端口）。 */

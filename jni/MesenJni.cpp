@@ -1637,4 +1637,31 @@ JNIEXPORT jobject JNICALL Java_mesen_MesenCore_netplayGetControllerPort(JNIEnv* 
 {
 	return NewNetplayControllerInfo(env, NetPlayGetControllerPort());
 }
+// ---------------------------------------------------------------------------
+// PGO profiling helper (upstream CI only)
+// ---------------------------------------------------------------------------
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_pgoRunTest(JNIEnv* env, jclass, jobjectArray testRoms, jboolean enableDebugger)
+{
+	jsize count = testRoms ? env->GetArrayLength(testRoms) : 0;
+	if(count <= 0) {
+		return;
+	}
+
+	std::vector<string> roms;
+	roms.reserve((size_t)count);
+	for(jsize i = 0; i < count; i++) {
+		jstring item = (jstring)env->GetObjectArrayElement(testRoms, i);
+		if(item) {
+			const char* chars = env->GetStringUTFChars(item, nullptr);
+			if(chars) {
+				roms.push_back(chars);
+				env->ReleaseStringUTFChars(item, chars);
+			}
+			env->DeleteLocalRef(item);
+		}
+	}
+
+	PgoRunTest(roms, enableDebugger == JNI_TRUE);
+}
 } // extern "C"

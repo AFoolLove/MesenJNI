@@ -97,6 +97,8 @@ MESEN_EXTERN
 	void MESEN_CALL LoadStateFile(char* filepath);
 	void MESEN_CALL LoadRecentGame(char* filepath, bool resetGame);
 
+	// --- EmuApiWrapper (PGO profiling helper; upstream CI only) ---
+	void MESEN_CALL PgoRunTest(vector<string> testRoms, bool enableDebugger);
 	// --- NetplayApiWrapper ---
 	void MESEN_CALL StartServer(uint16_t port, char* password);
 	void MESEN_CALL StopServer();
@@ -250,6 +252,8 @@ MESEN_EXTERN
 	void MESEN_CALL SetInputOverrides(uint32_t index, DebugControllerState state);
 	void MESEN_CALL GetAvailableInputOverrides(uint8_t* availableIndexes);
 
+	// --- EmuApiWrapper (PGO profiling helper; upstream CI only) ---
+	void MESEN_CALL PgoRunTest(vector<string> testRoms, bool enableDebugger);
 	// --- NetplayApiWrapper ---
 	void MESEN_CALL StartServer(uint16_t port, char* password);
 	void MESEN_CALL StopServer();
