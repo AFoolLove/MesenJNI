@@ -241,6 +241,10 @@ public final class Mesen
     public static final int HUD_SIZE_FIXED = 0;
     public static final int HUD_SIZE_SCALED = 1;
 
+    // --- RomTestState (Core/Shared/RecordedRomTest.h) ----------------------
+    public static final int ROM_TEST_FAILED = 0;
+    public static final int ROM_TEST_PASSED = 1;
+    public static final int ROM_TEST_PASSED_WITH_WARNINGS = 2;
     // --- EmulatorShortcut (Core/Shared/SettingTypes.h) ---------------------
     // 按结构体声明顺序从 0 开始（core 里没有显式赋值），与枚举值一一对应。
     public static final int SHORTCUT_FAST_FORWARD = 0;

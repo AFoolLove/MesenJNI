@@ -33,6 +33,7 @@
 #include "Core/Shared/Audio/AudioPlayerTypes.h"       // AudioPlayerActionParams
 #include "Utilities/Video/LibrashaderUtilities.h"     // ShaderParamDefinition
 #include "Core/Shared/HistoryViewer.h"                // HistoryViewerState/Options
+#include "Core/Shared/RecordedRomTest.h"              // RomTestResult
 
 class Breakpoint;
 struct AddressCounters;
@@ -95,6 +96,13 @@ MESEN_EXTERN
 	void MESEN_CALL LoadStateFile(char* filepath);
 	void MESEN_CALL LoadRecentGame(char* filepath, bool resetGame);
 
+	// --- TestApiWrapper (recorded ROM tests / CI) ---
+	RomTestResult MESEN_CALL RunRecordedTest(const char* filename, bool inBackground);
+	uint64_t MESEN_CALL RunTest(char* filename, uint32_t address, MemoryType memType);
+	void MESEN_CALL RomTestRecord(char* filename, bool reset);
+	void MESEN_CALL RomTestStop();
+	bool MESEN_CALL RomTestRecording();
+	bool MESEN_CALL RunCiTests(string testFolder, bool enableDebugger);
 	// --- ConfigApiWrapper ---
 	void MESEN_CALL SetVideoConfig(VideoConfig config);
 	void MESEN_CALL SetAudioConfig(AudioConfig config);
@@ -231,6 +239,13 @@ MESEN_EXTERN
 	void MESEN_CALL SetInputOverrides(uint32_t index, DebugControllerState state);
 	void MESEN_CALL GetAvailableInputOverrides(uint8_t* availableIndexes);
 
+	// --- TestApiWrapper (recorded ROM tests / CI) ---
+	RomTestResult MESEN_CALL RunRecordedTest(const char* filename, bool inBackground);
+	uint64_t MESEN_CALL RunTest(char* filename, uint32_t address, MemoryType memType);
+	void MESEN_CALL RomTestRecord(char* filename, bool reset);
+	void MESEN_CALL RomTestStop();
+	bool MESEN_CALL RomTestRecording();
+	bool MESEN_CALL RunCiTests(string testFolder, bool enableDebugger);
 	// --- ConfigApiWrapper ---
 	void MESEN_CALL SetDebugConfig(DebugConfig config);
 

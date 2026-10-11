@@ -1418,4 +1418,99 @@ JNIEXPORT void JNICALL Java_mesen_MesenCore_historyViewerUnregisterNotificationL
 	// our reference is what unregisters us.
 	_javaHistoryNotificationListener.reset();
 }
+// ---------------------------------------------------------------------------
+// Recorded ROM tests / CI runner
+// ---------------------------------------------------------------------------
+
+jobject NewRomTestResult(JNIEnv* env, const RomTestResult& result)
+{
+	jclass cls = env->FindClass("mesen/RomTestResult");
+	jobject obj = env->NewObject(cls, env->GetMethodID(cls, "<init>", "()V"));
+
+	env->SetIntField(obj, env->GetFieldID(cls, "state", "I"), (jint)result.State);
+	env->SetIntField(obj, env->GetFieldID(cls, "errorCode", "I"), (jint)result.ErrorCode);
+
+	// LastFrameHash is a fixed 40-byte buffer, not guaranteed null-terminated.
+	char hash[41];
+	memcpy(hash, result.LastFrameHash, 40);
+	hash[40] = 0;
+	jstring hashStr = env->NewStringUTF(hash);
+	env->SetObjectField(obj, env->GetFieldID(cls, "lastFrameHash", "Ljava/lang/String;"), hashStr);
+	env->DeleteLocalRef(hashStr);
+
+	env->DeleteLocalRef(cls);
+	return obj;
+}
+
+JNIEXPORT jobject JNICALL Java_mesen_MesenCore_runRecordedTest(JNIEnv* env, jclass, jstring filename, jboolean inBackground)
+{
+	if(!filename) {
+		return nullptr;
+	}
+
+	const char* chars = env->GetStringUTFChars(filename, nullptr);
+	if(!chars) {
+		return nullptr;
+	}
+
+	RomTestResult result = RunRecordedTest(chars, inBackground == JNI_TRUE);
+	env->ReleaseStringUTFChars(filename, chars);
+	return NewRomTestResult(env, result);
+}
+
+JNIEXPORT jlong JNICALL Java_mesen_MesenCore_runTest(JNIEnv* env, jclass, jstring filename, jint address, jint memoryType)
+{
+	if(!filename) {
+		return 0;
+	}
+
+	const char* chars = env->GetStringUTFChars(filename, nullptr);
+	if(!chars) {
+		return 0;
+	}
+
+	uint64_t result = RunTest(const_cast<char*>(chars), (uint32_t)address, (MemoryType)memoryType);
+	env->ReleaseStringUTFChars(filename, chars);
+	return (jlong)result;
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_romTestRecord(JNIEnv* env, jclass, jstring filename, jboolean reset)
+{
+	if(!filename) {
+		return;
+	}
+
+	const char* chars = env->GetStringUTFChars(filename, nullptr);
+	if(chars) {
+		RomTestRecord(const_cast<char*>(chars), reset == JNI_TRUE);
+		env->ReleaseStringUTFChars(filename, chars);
+	}
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_romTestStop(JNIEnv*, jclass)
+{
+	RomTestStop();
+}
+
+JNIEXPORT jboolean JNICALL Java_mesen_MesenCore_romTestRecording(JNIEnv*, jclass)
+{
+	return RomTestRecording() ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL Java_mesen_MesenCore_runCiTests(JNIEnv* env, jclass, jstring testFolder, jboolean enableDebugger)
+{
+	if(!testFolder) {
+		return JNI_FALSE;
+	}
+
+	const char* chars = env->GetStringUTFChars(testFolder, nullptr);
+	if(!chars) {
+		return JNI_FALSE;
+	}
+
+	// RunCiTests takes a std::string by value; same DLL and compiler, so this is fine.
+	bool result = RunCiTests(std::string(chars), enableDebugger == JNI_TRUE);
+	env->ReleaseStringUTFChars(testFolder, chars);
+	return result ? JNI_TRUE : JNI_FALSE;
+}
 } // extern "C"

@@ -254,6 +254,39 @@ public final class MesenCore
     /** 当前渲染设备是否支持 librashader 着色器。 */
     public static native boolean checkShaderSupport();
 
+    // --- 自动化测试（上游 CI 用，需要 .mtp 测试 ROM）------------------------
+
+    /**
+     * 运行一个录制好的测试（.mtp）。
+     *
+     * @param inBackground 是否在独立的模拟器实例里跑
+     */
+    public static native RomTestResult runRecordedTest(String filename, boolean inBackground);
+
+    /**
+     * 运行一个测试 ROM 并读回结果。
+     *
+     * <p>跑到 500 帧后，从 {@code memoryType} 的 {@code address} 处读 8 个字节当作
+     * 结果。注意它会<b>自己新建一个模拟器</b>加载该 ROM，不影响当前运行的游戏。</p>
+     */
+    public static native long runTest(String filename, int address, int memoryType);
+
+    /** 开始录制测试（.mtp）。 */
+    public static native void romTestRecord(String filename, boolean reset);
+
+    /** 停止录制测试。 */
+    public static native void romTestStop();
+
+    /** 是否正在录制测试。 */
+    public static native boolean romTestRecording();
+
+    /**
+     * 跑一整个目录的 CI 测试（递归 5 层找 .mtp）。
+     *
+     * <p><b>注意</b>：core 会把全局 home 目录改成
+     * {@code <testFolder>/MesenHomeFolder}，调用后当前模拟器的存档目录也随之改变。</p>
+     */
+    public static native boolean runCiTests(String testFolder, boolean enableDebugger);
     /** 读取着色器文件定义的参数（文件不存在或解析失败时返回空数组）。 */
     public static native ShaderParamDefinition[] getShaderParams(String shaderFile);
 
