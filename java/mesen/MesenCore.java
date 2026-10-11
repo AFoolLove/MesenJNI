@@ -165,4 +165,57 @@ public final class MesenCore
 
     /** 是否正在录制回放。 */
     public static native boolean movieRecording();
+
+    // --- 作弊 ---------------------------------------------------------------
+
+    /** 设置作弊码列表（会替换掉之前的）。 */
+    public static native void setCheats(CheatCode[] codes);
+
+    /** 清空作弊码。 */
+    public static native void clearCheats();
+
+    /**
+     * 把作弊码转成 core 内部形式（调试/显示用）。
+     *
+     * @return 转换失败（码不合法）时返回 null
+     */
+    public static native InternalCheatCode getConvertedCheat(CheatCode input);
+
+    // --- 存档 / ROM ---------------------------------------------------------
+
+    /** 取存档的预览图（PNG 字节；没有预览或文件不存在时返回空数组）。 */
+    public static native byte[] getSaveStatePreview(String saveStatePath);
+
+    /** 列出压缩包（zip 等）里的 ROM 文件名。 */
+    public static native String[] getArchiveRomList(String archivePath);
+
+    // --- 显示 / 外设 --------------------------------------------------------
+
+    /**
+     * 切换全屏。
+     *
+     * @param windowHandle 原生窗口句柄（0 = 无）
+     * @param mode         {@code Mesen.FULLSCREEN_*}
+     */
+    public static native void setFullscreenMode(long windowHandle, int width, int height, int mode);
+
+    /** 给条码枪外设送一个条码。 */
+    public static native void inputBarcode(long barcode, int digitCount);
+
+    /**
+     * 磁带机操作。
+     *
+     * @param action {@code Mesen.TAPE_*}
+     */
+    public static native void processTapeRecorderAction(int action, String filename);
+
+    /**
+     * 音频播放器操作（NSF/GBS 等）。
+     *
+     * @param action {@code Mesen.AUDIO_PLAYER_*}
+     */
+    public static native void processAudioPlayerAction(int action, int trackNumber);
+
+    /** 延迟计数器归零。 */
+    public static native void resetLagCounter();
 }

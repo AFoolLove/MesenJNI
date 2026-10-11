@@ -222,6 +222,21 @@ public final class Mesen
     public static final int CHEAT_SMS_PRO_ACTION_REPLAY = 9;
     public static final int CHEAT_SMS_GAME_GENIE = 10;
 
+    // --- TapeRecorderAction (Core/Shared/Interfaces/ITapeRecorder.h) -------
+    public static final int TAPE_PLAY = 0;
+    public static final int TAPE_START_RECORD = 1;
+    public static final int TAPE_STOP_RECORD = 2;
+
+    // --- AudioPlayerAction (Core/Shared/Audio/AudioPlayerTypes.h) ----------
+    public static final int AUDIO_PLAYER_NEXT_TRACK = 0;
+    public static final int AUDIO_PLAYER_PREV_TRACK = 1;
+    public static final int AUDIO_PLAYER_SELECT_TRACK = 2;
+
+    // --- FullscreenMode (Core/Shared/Interfaces/IRenderingDevice.h) --------
+    public static final int FULLSCREEN_DISABLED = 0;
+    public static final int FULLSCREEN_BORDERLESS = 1;
+    public static final int FULLSCREEN_EXCLUSIVE = 2;
+
     // --- ConsoleType (Core/Shared/SettingTypes.h) --------------------------
     public static final int CONSOLE_SNES = 0;
     public static final int CONSOLE_GAMEBOY = 1;

@@ -27,6 +27,10 @@
 #include "Core/Shared/SettingTypes.h"         // DebugConfig
 #include "Core/Shared/Video/VideoRenderer.h"  // RecordAviOptions, VideoCodec
 #include "Core/Shared/Movies/MovieTypes.h"    // RecordMovieOptions
+#include "Core/Shared/CheatManager.h"         // CheatCode, InternalCheatCode
+#include "Core/Shared/Interfaces/IRenderingDevice.h"  // FullscreenSettings
+#include "Core/Shared/Interfaces/ITapeRecorder.h"     // TapeRecorderAction
+#include "Core/Shared/Audio/AudioPlayerTypes.h"       // AudioPlayerActionParams
 
 class Breakpoint;
 struct AddressCounters;
@@ -235,6 +239,20 @@ MESEN_EXTERN
 	bool MESEN_CALL MoviePlaying();
 	bool MESEN_CALL MovieRecording();
 	void MESEN_CALL MovieRecord(RecordMovieOptions options);
+
+	// --- EmuApiWrapper (cheats / save state / misc) ---
+	void MESEN_CALL ClearCheats();
+	void MESEN_CALL SetCheats(CheatCode codes[], uint32_t length);
+	bool MESEN_CALL GetConvertedCheat(CheatCode input, InternalCheatCode& output);
+	void MESEN_CALL GetArchiveRomList(char* filename, char* outBuffer, uint32_t maxLength);
+	void MESEN_CALL SetFullscreenMode(FullscreenSettings settings);
+	void MESEN_CALL InputBarcode(uint64_t barcode, uint32_t digitCount);
+	void MESEN_CALL ProcessTapeRecorderAction(TapeRecorderAction action, char* filename);
+	void MESEN_CALL ProcessAudioPlayerAction(AudioPlayerActionParams p);
+	int32_t MESEN_CALL GetSaveStatePreview(char* saveStatePath, uint8_t* pngData);
+
+	// --- InputApiWrapper ---
+	void MESEN_CALL ResetLagCounter();
 
 	// --- DebugApiWrapper (labels / undo / address conversion) ---
 	void MESEN_CALL SetLabel(uint32_t address, MemoryType memType, char* label, char* comment);

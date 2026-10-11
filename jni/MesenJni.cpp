@@ -851,4 +851,191 @@ JNIEXPORT jboolean JNICALL Java_mesen_MesenCore_movieRecording(JNIEnv*, jclass)
 {
 	return MovieRecording() ? JNI_TRUE : JNI_FALSE;
 }
+// ---------------------------------------------------------------------------
+// Cheats / save state preview / archive listing / misc
+// ---------------------------------------------------------------------------
+
+void ReadCheatCode(JNIEnv* env, jobject obj, jclass cls, CheatCode& out)
+{
+	out = {};
+	if(!obj) {
+		return;
+	}
+
+	out.Type = (CheatType)env->GetIntField(obj, env->GetFieldID(cls, "type", "I"));
+	jstring code = (jstring)env->GetObjectField(obj, env->GetFieldID(cls, "code", "Ljava/lang/String;"));
+	if(code) {
+		const char* chars = env->GetStringUTFChars(code, nullptr);
+		if(chars) {
+			strncpy(out.Code, chars, sizeof(out.Code) - 1);
+			env->ReleaseStringUTFChars(code, chars);
+		}
+		env->DeleteLocalRef(code);
+	}
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setCheats(JNIEnv* env, jclass, jobjectArray codes)
+{
+	jsize count = codes ? env->GetArrayLength(codes) : 0;
+	if(count <= 0) {
+		ClearCheats();
+		return;
+	}
+
+	jclass cheatClass = env->FindClass("mesen/CheatCode");
+	std::vector<CheatCode> cheats((size_t)count);
+	for(jsize i = 0; i < count; i++) {
+		jobject item = env->GetObjectArrayElement(codes, i);
+		ReadCheatCode(env, item, cheatClass, cheats[i]);
+		if(item) {
+			env->DeleteLocalRef(item);
+		}
+	}
+
+	SetCheats(cheats.data(), (uint32_t)count);
+	env->DeleteLocalRef(cheatClass);
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_clearCheats(JNIEnv*, jclass)
+{
+	ClearCheats();
+}
+
+JNIEXPORT jobject JNICALL Java_mesen_MesenCore_getConvertedCheat(JNIEnv* env, jclass, jobject input)
+{
+	jclass cheatClass = env->FindClass("mesen/CheatCode");
+	CheatCode cheat = {};
+	ReadCheatCode(env, input, cheatClass, cheat);
+	env->DeleteLocalRef(cheatClass);
+
+	InternalCheatCode converted = {};
+	if(!GetConvertedCheat(cheat, converted)) {
+		return nullptr;
+	}
+
+	jclass cls = env->FindClass("mesen/InternalCheatCode");
+	jmethodID ctor = env->GetMethodID(cls, "<init>", "()V");
+	jobject obj = env->NewObject(cls, ctor);
+	env->SetIntField(obj, env->GetFieldID(cls, "memoryType", "I"), (jint)converted.MemType);
+	env->SetIntField(obj, env->GetFieldID(cls, "address", "I"), (jint)converted.Address);
+	env->SetIntField(obj, env->GetFieldID(cls, "compare", "I"), (jint)converted.Compare);
+	env->SetIntField(obj, env->GetFieldID(cls, "value", "I"), (jint)converted.Value);
+	env->SetIntField(obj, env->GetFieldID(cls, "cheatType", "I"), (jint)converted.Type);
+	env->SetIntField(obj, env->GetFieldID(cls, "cpuType", "I"), (jint)converted.Cpu);
+	env->SetBooleanField(obj, env->GetFieldID(cls, "isRamCode", "Z"), converted.IsRamCode ? JNI_TRUE : JNI_FALSE);
+	env->SetBooleanField(obj, env->GetFieldID(cls, "isAbsoluteAddress", "Z"), converted.IsAbsoluteAddress ? JNI_TRUE : JNI_FALSE);
+	env->DeleteLocalRef(cls);
+	return obj;
+}
+
+JNIEXPORT jbyteArray JNICALL Java_mesen_MesenCore_getSaveStatePreview(JNIEnv* env, jclass, jstring path)
+{
+	if(!path) {
+		return env->NewByteArray(0);
+	}
+
+	const char* chars = env->GetStringUTFChars(path, nullptr);
+	if(!chars) {
+		return env->NewByteArray(0);
+	}
+
+	// Same buffer size the .NET interop uses.
+	std::vector<uint8_t> buffer(512 * 478 * 4, 0);
+	int32_t size = GetSaveStatePreview(const_cast<char*>(chars), buffer.data());
+	env->ReleaseStringUTFChars(path, chars);
+
+	if(size <= 0) {
+		return env->NewByteArray(0);
+	}
+	if((size_t)size > buffer.size()) {
+		size = (int32_t)buffer.size();
+	}
+
+	jbyteArray result = env->NewByteArray(size);
+	env->SetByteArrayRegion(result, 0, size, (const jbyte*)buffer.data());
+	return result;
+}
+
+JNIEXPORT jobjectArray JNICALL Java_mesen_MesenCore_getArchiveRomList(JNIEnv* env, jclass, jstring path)
+{
+	if(!path) {
+		return nullptr;
+	}
+
+	const char* chars = env->GetStringUTFChars(path, nullptr);
+	if(!chars) {
+		return nullptr;
+	}
+
+	std::vector<char> buffer(1024 * 1024, 0);
+	GetArchiveRomList(const_cast<char*>(chars), buffer.data(), (uint32_t)buffer.size());
+	env->ReleaseStringUTFChars(path, chars);
+
+	// The core writes a newline-separated list.
+	std::vector<std::string> entries;
+	std::string current;
+	for(char c : buffer) {
+		if(c == 0) {
+			break;
+		}
+		if(c == '\n' || c == '\r') {
+			if(!current.empty()) {
+				entries.push_back(current);
+				current.clear();
+			}
+		} else {
+			current += c;
+		}
+	}
+	if(!current.empty()) {
+		entries.push_back(current);
+	}
+
+	jclass stringClass = env->FindClass("java/lang/String");
+	jobjectArray result = env->NewObjectArray((jsize)entries.size(), stringClass, nullptr);
+	for(size_t i = 0; i < entries.size(); i++) {
+		jstring item = env->NewStringUTF(entries[i].c_str());
+		env->SetObjectArrayElement(result, (jsize)i, item);
+		env->DeleteLocalRef(item);
+	}
+	env->DeleteLocalRef(stringClass);
+	return result;
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_setFullscreenMode(JNIEnv*, jclass, jlong windowHandle, jint width, jint height, jint mode)
+{
+	FullscreenSettings settings = {};
+	settings.WindowHandle = (void*)(intptr_t)windowHandle;
+	settings.Width = (uint32_t)width;
+	settings.Height = (uint32_t)height;
+	settings.Mode = (FullscreenMode)mode;
+	SetFullscreenMode(settings);
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_inputBarcode(JNIEnv*, jclass, jlong barcode, jint digitCount)
+{
+	InputBarcode((uint64_t)barcode, (uint32_t)digitCount);
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_processTapeRecorderAction(JNIEnv* env, jclass, jint action, jstring filename)
+{
+	const char* chars = filename ? env->GetStringUTFChars(filename, nullptr) : nullptr;
+	ProcessTapeRecorderAction((TapeRecorderAction)action, const_cast<char*>(chars ? chars : ""));
+	if(chars) {
+		env->ReleaseStringUTFChars(filename, chars);
+	}
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_processAudioPlayerAction(JNIEnv*, jclass, jint action, jint trackNumber)
+{
+	AudioPlayerActionParams params = {};
+	params.Action = (AudioPlayerAction)action;
+	params.TrackNumber = (uint32_t)trackNumber;
+	ProcessAudioPlayerAction(params);
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_resetLagCounter(JNIEnv*, jclass)
+{
+	ResetLagCounter();
+}
 } // extern "C"
