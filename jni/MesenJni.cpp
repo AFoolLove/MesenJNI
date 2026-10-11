@@ -1513,4 +1513,128 @@ JNIEXPORT jboolean JNICALL Java_mesen_MesenCore_runCiTests(JNIEnv* env, jclass, 
 	env->ReleaseStringUTFChars(testFolder, chars);
 	return result ? JNI_TRUE : JNI_FALSE;
 }
+// ---------------------------------------------------------------------------
+// Netplay
+// ---------------------------------------------------------------------------
+
+jobject NewNetplayControllerInfo(JNIEnv* env, const NetplayControllerInfo& info)
+{
+	jclass cls = env->FindClass("mesen/NetplayControllerInfo");
+	jobject obj = env->NewObject(cls, env->GetMethodID(cls, "<init>", "()V"));
+	env->SetIntField(obj, env->GetFieldID(cls, "port", "I"), (jint)info.Port);
+	env->SetIntField(obj, env->GetFieldID(cls, "subPort", "I"), (jint)info.SubPort);
+	env->DeleteLocalRef(cls);
+	return obj;
+}
+
+bool ReadNullableString(JNIEnv* env, jstring value, std::string& out)
+{
+	out.clear();
+	if(!value) {
+		return false;
+	}
+
+	const char* chars = env->GetStringUTFChars(value, nullptr);
+	if(!chars) {
+		return false;
+	}
+	out = chars;
+	env->ReleaseStringUTFChars(value, chars);
+	return true;
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_startServer(JNIEnv* env, jclass, jint port, jstring password)
+{
+	std::string passwordText;
+	ReadNullableString(env, password, passwordText);
+	StartServer((uint16_t)port, const_cast<char*>(passwordText.c_str()));
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_stopServer(JNIEnv*, jclass)
+{
+	StopServer();
+}
+
+JNIEXPORT jboolean JNICALL Java_mesen_MesenCore_isServerRunning(JNIEnv*, jclass)
+{
+	return IsServerRunning() ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_connect(JNIEnv* env, jclass, jstring host, jint port, jstring password, jboolean spectator)
+{
+	std::string hostText;
+	std::string passwordText;
+	ReadNullableString(env, host, hostText);
+	ReadNullableString(env, password, passwordText);
+	Connect(const_cast<char*>(hostText.c_str()), (uint16_t)port, const_cast<char*>(passwordText.c_str()), spectator == JNI_TRUE);
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_disconnect(JNIEnv*, jclass)
+{
+	Disconnect();
+}
+
+JNIEXPORT jboolean JNICALL Java_mesen_MesenCore_isConnected(JNIEnv*, jclass)
+{
+	return IsConnected() ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jobjectArray JNICALL Java_mesen_MesenCore_netplayGetControllerList(JNIEnv* env, jclass)
+{
+	// Two-call pattern: length 0 with a null list just reports the count.
+	int32_t count = 0;
+	NetPlayGetControllerList(nullptr, count);
+	if(count <= 0) {
+		return env->NewObjectArray(0, env->FindClass("mesen/NetplayControllerUsageInfo"), nullptr);
+	}
+
+	std::vector<NetplayControllerUsageInfo> controllers((size_t)count);
+	NetPlayGetControllerList(controllers.data(), count);
+	if(count > (int32_t)controllers.size()) {
+		count = (int32_t)controllers.size();
+	}
+
+	jclass cls = env->FindClass("mesen/NetplayControllerUsageInfo");
+	jobjectArray result = env->NewObjectArray((jsize)count, cls, nullptr);
+	jmethodID ctor = env->GetMethodID(cls, "<init>", "()V");
+	jfieldID portField = env->GetFieldID(cls, "port", "Lmesen/NetplayControllerInfo;");
+	jfieldID typeField = env->GetFieldID(cls, "type", "I");
+	jfieldID inUseField = env->GetFieldID(cls, "inUse", "Z");
+
+	for(int32_t i = 0; i < count; i++) {
+		jobject obj = env->NewObject(cls, ctor);
+
+		jobject port = NewNetplayControllerInfo(env, controllers[i].Port);
+		env->SetObjectField(obj, portField, port);
+		env->DeleteLocalRef(port);
+
+		env->SetIntField(obj, typeField, (jint)controllers[i].Type);
+		env->SetBooleanField(obj, inUseField, controllers[i].InUse ? JNI_TRUE : JNI_FALSE);
+		env->SetObjectArrayElement(result, (jsize)i, obj);
+		env->DeleteLocalRef(obj);
+	}
+
+	env->DeleteLocalRef(cls);
+	return result;
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_netplaySelectController(JNIEnv* env, jclass, jobject obj)
+{
+	if(!obj) {
+		return;
+	}
+
+	jclass cls = env->FindClass("mesen/NetplayControllerInfo");
+	NetplayControllerInfo info = {};
+	info.Port = (uint8_t)env->GetIntField(obj, env->GetFieldID(cls, "port", "I"));
+	info.SubPort = (uint8_t)env->GetIntField(obj, env->GetFieldID(cls, "subPort", "I"));
+	env->DeleteLocalRef(cls);
+
+	NetPlaySelectController(info);
+}
+
+JNIEXPORT jobject JNICALL Java_mesen_MesenCore_netplayGetControllerPort(JNIEnv* env, jclass)
+{
+	return NewNetplayControllerInfo(env, NetPlayGetControllerPort());
+}
 } // extern "C"

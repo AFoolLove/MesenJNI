@@ -254,6 +254,38 @@ public final class MesenCore
     /** 当前渲染设备是否支持 librashader 着色器。 */
     public static native boolean checkShaderSupport();
 
+    // --- 网表对战 -----------------------------------------------------------
+
+    /** 开服务器（0 = 由系统选端口）。 */
+    public static native void startServer(int port, String password);
+
+    /** 关服务器。 */
+    public static native void stopServer();
+
+    /** 服务器是否在跑。 */
+    public static native boolean isServerRunning();
+
+    /**
+     * 连接服务器。
+     *
+     * @param spectator 是否以观战身份加入
+     */
+    public static native void connect(String host, int port, String password, boolean spectator);
+
+    /** 断开连接。 */
+    public static native void disconnect();
+
+    /** 是否已连接。 */
+    public static native boolean isConnected();
+
+    /** 取控制器占用情况（服务器在跑时问服务器，否则问客户端）。 */
+    public static native NetplayControllerUsageInfo[] netplayGetControllerList();
+
+    /** 选择自己要用的控制器端口。 */
+    public static native void netplaySelectController(NetplayControllerInfo controller);
+
+    /** 取自己当前占用的控制器端口。 */
+    public static native NetplayControllerInfo netplayGetControllerPort();
     // --- 自动化测试（上游 CI 用，需要 .mtp 测试 ROM）------------------------
 
     /**

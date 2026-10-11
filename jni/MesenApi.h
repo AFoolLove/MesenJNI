@@ -34,6 +34,7 @@
 #include "Utilities/Video/LibrashaderUtilities.h"     // ShaderParamDefinition
 #include "Core/Shared/HistoryViewer.h"                // HistoryViewerState/Options
 #include "Core/Shared/RecordedRomTest.h"              // RomTestResult
+#include "Core/Netplay/NetplayTypes.h"                 // NetplayControllerInfo/UsageInfo
 
 class Breakpoint;
 struct AddressCounters;
@@ -96,6 +97,16 @@ MESEN_EXTERN
 	void MESEN_CALL LoadStateFile(char* filepath);
 	void MESEN_CALL LoadRecentGame(char* filepath, bool resetGame);
 
+	// --- NetplayApiWrapper ---
+	void MESEN_CALL StartServer(uint16_t port, char* password);
+	void MESEN_CALL StopServer();
+	bool MESEN_CALL IsServerRunning();
+	void MESEN_CALL Connect(char* host, uint16_t port, char* password, bool spectator);
+	void MESEN_CALL Disconnect();
+	bool MESEN_CALL IsConnected();
+	void MESEN_CALL NetPlayGetControllerList(NetplayControllerUsageInfo* list, int32_t& length);
+	void MESEN_CALL NetPlaySelectController(NetplayControllerInfo controller);
+	NetplayControllerInfo MESEN_CALL NetPlayGetControllerPort();
 	// --- TestApiWrapper (recorded ROM tests / CI) ---
 	RomTestResult MESEN_CALL RunRecordedTest(const char* filename, bool inBackground);
 	uint64_t MESEN_CALL RunTest(char* filename, uint32_t address, MemoryType memType);
@@ -239,6 +250,16 @@ MESEN_EXTERN
 	void MESEN_CALL SetInputOverrides(uint32_t index, DebugControllerState state);
 	void MESEN_CALL GetAvailableInputOverrides(uint8_t* availableIndexes);
 
+	// --- NetplayApiWrapper ---
+	void MESEN_CALL StartServer(uint16_t port, char* password);
+	void MESEN_CALL StopServer();
+	bool MESEN_CALL IsServerRunning();
+	void MESEN_CALL Connect(char* host, uint16_t port, char* password, bool spectator);
+	void MESEN_CALL Disconnect();
+	bool MESEN_CALL IsConnected();
+	void MESEN_CALL NetPlayGetControllerList(NetplayControllerUsageInfo* list, int32_t& length);
+	void MESEN_CALL NetPlaySelectController(NetplayControllerInfo controller);
+	NetplayControllerInfo MESEN_CALL NetPlayGetControllerPort();
 	// --- TestApiWrapper (recorded ROM tests / CI) ---
 	RomTestResult MESEN_CALL RunRecordedTest(const char* filename, bool inBackground);
 	uint64_t MESEN_CALL RunTest(char* filename, uint32_t address, MemoryType memType);
