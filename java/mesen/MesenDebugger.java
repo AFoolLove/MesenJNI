@@ -344,7 +344,7 @@ public final class MesenDebugger
      *
      * <p>比 {@link #getNesCpuState()} / {@link #getNesPpuState()} 全得多：
      * 卡带部分含 PRG/CHR 页映射表（各 256/64 项）和 200 项 mapper 自定义状态。
-     * 该机种没在跑时返回 null。</p>
+     * 该机种没在跑时返回全 0 的状态（`clockRate == 0` 可用来判断）。</p>
      */
     public static native NesConsoleState getNesConsoleState();
     // ---- 执行跟踪 ---------------------------------------------------------
