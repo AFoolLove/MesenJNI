@@ -5,11 +5,16 @@ import mesen.debugger.AddressInfo;
 import mesen.debugger.Breakpoint;
 import mesen.debugger.CdlStatistics;
 import mesen.debugger.CodeLine;
+import mesen.debugger.DebugConfig;
+import mesen.debugger.DebugControllerState;
 import mesen.debugger.DebugEventInfo;
 import mesen.debugger.DebuggerFeatures;
 import mesen.debugger.EvalResult;
 import mesen.debugger.EventViewerConfig;
 import mesen.debugger.InstructionProgress;
+import mesen.debugger.ProfiledFunction;
+import mesen.debugger.TraceLoggerOptions;
+import mesen.debugger.TraceRow;
 import mesen.debugger.NesCpuState;
 import mesen.debugger.NesPpuState;
 import mesen.debugger.PaletteInfo;
@@ -330,6 +335,84 @@ public final class MesenDebugger
 
     /** 移除某个查看器的刷新时机。 */
     public static native void removeViewerId(int viewerId, int cpuType);
+
+    // ---- 执行跟踪 ---------------------------------------------------------
+
+    /** 设置跟踪选项（结构体自带 Enabled 开关）。 */
+    public static native void setTraceOptions(int cpuType, TraceLoggerOptions options);
+
+    /**
+     * 取执行跟踪的若干行。
+     *
+     * @param startOffset 从第几行开始（0 = 最早）
+     * @param lineCount   最多取几行
+     */
+    public static native TraceRow[] getExecutionTrace(int startOffset, int lineCount);
+
+    /** 清空跟踪缓冲。 */
+    public static native void clearExecutionTrace();
+
+    /** 把跟踪同时写到文件（UTF-8 路径）。 */
+    public static native void startLogTraceToFile(String filename);
+
+    /** 停止写跟踪文件。 */
+    public static native void stopLogTraceToFile();
+
+    // ---- CDL 文件读写 -----------------------------------------------------
+
+    /**
+     * 取 CDL 数据。
+     *
+     * @param memoryType {@code Mesen.MEM_*}
+     * @param offset     起始偏移
+     * @param length     长度（字节）
+     */
+    public static native byte[] getCdlData(int memoryType, int offset, int length);
+
+    /** 写回 CDL 数据（长度由数组决定，从偏移 0 开始）。 */
+    public static native void setCdlData(int memoryType, byte[] data);
+
+    /** 把 [start, end] 范围的字节标记为给定标志（{@code Mesen.CDL_*}）。 */
+    public static native void markBytesAs(int memoryType, int start, int end, int flags);
+
+    /** 保存 CDL 到文件（.cdl 扩展名）。 */
+    public static native void saveCdlFile(int memoryType, String filename);
+
+    /** 从文件载入 CDL。 */
+    public static native void loadCdlFile(int memoryType, String filename);
+
+    // ---- 性能分析 ---------------------------------------------------------
+
+    /** 取性能分析结果（函数列表）。分析器需要先在调试器里开着才有数据。 */
+    public static native ProfiledFunction[] getProfilerData(int cpuType);
+
+    /** 取该 CPU 的占用率（百分比）。 */
+    public static native int getProfilerCpuUsage(int cpuType);
+
+    /** 重置性能分析数据。 */
+    public static native void resetProfiler(int cpuType);
+
+    // ---- 输入覆盖 ---------------------------------------------------------
+
+    /**
+     * 强制设置某个控制端口的按键状态（调试/回放用）。
+     *
+     * @param index 端口索引（见 {@link #getAvailableInputOverrides()}）
+     */
+    public static native void setInputOverrides(int index, DebugControllerState state);
+
+    /** 哪些端口可以覆盖（返回 8 个元素的数组，1 = 可用）。 */
+    public static native byte[] getAvailableInputOverrides();
+
+    // ---- 调试器配置 -------------------------------------------------------
+
+    /**
+     * 整份提交调试器配置。
+     *
+     * <p>core 没有「读回配置」的接口，所以 {@link DebugConfig} 里没改的字段会按
+     * 默认值写入（绝大多数是 false，{@code ScriptTimeout} 默认 1）。</p>
+     */
+    public static native void setDebugConfig(DebugConfig config);
 
     // ---- 内存快照 --------------------------------------------------------
 

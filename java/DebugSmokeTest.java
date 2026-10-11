@@ -27,6 +27,11 @@ import mesen.debugger.TilemapOptions;
 import mesen.debugger.TilemapResult;
 import mesen.debugger.TilemapTileInfo;
 
+import mesen.debugger.DebugConfig;
+import mesen.debugger.DebugControllerState;
+import mesen.debugger.ProfiledFunction;
+import mesen.debugger.TraceLoggerOptions;
+import mesen.debugger.TraceRow;
 import mesen.debugger.ViewerSize;
 
 /** 调试 API（MesenDebugger）回归测试。 */
@@ -352,6 +357,134 @@ public class DebugSmokeTest
         MesenDebugger.setViewerUpdateTiming(1, 100, 0, Mesen.CPU_NES);
         MesenDebugger.removeViewerId(1, Mesen.CPU_NES);
         check(true, "setViewerUpdateTiming()/removeViewerId() 无异常");
+
+        // ---- 执行跟踪 ----
+        System.out.println("== 执行跟踪 ==");
+        TraceLoggerOptions traceOptions = new TraceLoggerOptions();
+        traceOptions.enabled = true;
+        traceOptions.format = "[PC,h] [Disassembly] [ByteCode]";
+        MesenDebugger.setTraceOptions(Mesen.CPU_NES, traceOptions);
+
+        MesenCore.resume();
+        Thread.sleep(300);
+        MesenCore.pause();
+        waitStopped(5000);
+
+        TraceRow[] traceRows = MesenDebugger.getExecutionTrace(0, 8);
+        check(traceRows != null && traceRows.length > 0,
+            "getExecutionTrace() -> " + (traceRows == null ? "null" : traceRows.length + " 行"));
+        if(traceRows != null) {
+            for(int i = 0; i < Math.min(traceRows.length, 4); i++) {
+                System.out.println("      " + traceRows[i]);
+            }
+        }
+
+        MesenDebugger.startLogTraceToFile("temp/trace.log");
+        MesenCore.resume();
+        Thread.sleep(250);
+        MesenCore.pause();
+        waitStopped(5000);
+        MesenDebugger.stopLogTraceToFile();
+        java.io.File traceFile = new java.io.File("temp/trace.log");
+        check(traceFile.exists() && traceFile.length() > 0, "startLogTraceToFile()/stopLogTraceToFile() -> "
+            + (traceFile.exists() ? traceFile.length() + " 字节" : "文件未生成"));
+
+        MesenDebugger.clearExecutionTrace();
+        TraceRow[] clearedRows = MesenDebugger.getExecutionTrace(0, 8);
+        check(clearedRows != null && clearedRows.length == 0, "clearExecutionTrace() 生效");
+
+        traceOptions.enabled = false;
+        MesenDebugger.setTraceOptions(Mesen.CPU_NES, traceOptions);
+
+        // ---- CDL 文件读写 ----
+        System.out.println("== CDL 文件读写 ==");
+        // MetalMax 的 PRG ROM 是 512KB；起始 4KB 是填充区，所以要扫全片
+        byte[] cdlData = MesenDebugger.getCdlData(Mesen.MEM_NES_PRG_ROM, 0, 524288);
+        int flagged = 0;
+        int firstFlagged = -1;
+        for(int i = 0; i < cdlData.length; i++) {
+            if(cdlData[i] != 0) {
+                flagged++;
+                if(firstFlagged < 0) firstFlagged = i;
+            }
+        }
+        check(cdlData != null && cdlData.length == 524288 && flagged > 0,
+            "getCdlData() -> " + cdlData.length + " 字节, " + flagged + " 个有标记, 首个 @$"
+                + Integer.toHexString(firstFlagged));
+
+        MesenDebugger.saveCdlFile(Mesen.MEM_NES_PRG_ROM, "temp/test.cdl");
+        java.io.File cdlFile = new java.io.File("temp/test.cdl");
+        check(cdlFile.exists() && cdlFile.length() > 0, "saveCdlFile() -> "
+            + (cdlFile.exists() ? cdlFile.length() + " 字节" : "文件未生成"));
+
+        byte[] cdlBefore = MesenDebugger.getCdlData(Mesen.MEM_NES_PRG_ROM, 0, 32);
+        MesenDebugger.setCdlData(Mesen.MEM_NES_PRG_ROM, new byte[4096]);
+        MesenDebugger.loadCdlFile(Mesen.MEM_NES_PRG_ROM, "temp/test.cdl");
+        byte[] cdlAfter = MesenDebugger.getCdlData(Mesen.MEM_NES_PRG_ROM, 0, 32);
+        check(java.util.Arrays.equals(cdlBefore, cdlAfter), "saveCdlFile()/loadCdlFile() 往返一致");
+
+        MesenDebugger.markBytesAs(Mesen.MEM_NES_PRG_ROM, 0x100, 0x10F,
+            Mesen.CDL_CODE | Mesen.CDL_JUMP_TARGET);
+        byte[] marked = MesenDebugger.getCdlData(Mesen.MEM_NES_PRG_ROM, 0x100, 16);
+        check((marked[0] & 0xFF) == (Mesen.CDL_CODE | Mesen.CDL_JUMP_TARGET),
+            "markBytesAs() -> $" + String.format("%02X", marked[0] & 0xFF));
+
+        // ---- 性能分析 ----
+        System.out.println("== 性能分析 ==");
+        MesenDebugger.resetProfiler(Mesen.CPU_NES);
+        MesenCore.resume();
+        Thread.sleep(300);
+        MesenCore.pause();
+        waitStopped(5000);
+
+        ProfiledFunction[] profiled = MesenDebugger.getProfilerData(Mesen.CPU_NES);
+        check(profiled != null, "getProfilerData() -> "
+            + (profiled == null ? "null" : profiled.length + " 个函数"));
+        if(profiled != null && profiled.length > 0) {
+            System.out.println("      " + profiled[0]);
+        }
+
+        int cpuUsage = MesenDebugger.getProfilerCpuUsage(Mesen.CPU_NES);
+        check(cpuUsage >= 0, "getProfilerCpuUsage() -> " + cpuUsage + "%");
+
+        // ---- 输入覆盖 ----
+        System.out.println("== 输入覆盖 ==");
+        byte[] availableOverrides = MesenDebugger.getAvailableInputOverrides();
+        StringBuilder overridePorts = new StringBuilder();
+        for(int i = 0; i < availableOverrides.length; i++) {
+            if(availableOverrides[i] != 0) {
+                overridePorts.append(i).append(' ');
+            }
+        }
+        check(availableOverrides.length == 8, "getAvailableInputOverrides() -> 可用端口 ["
+            + overridePorts.toString().trim() + "]");
+
+        DebugControllerState overrideState = new DebugControllerState();
+        overrideState.A = true;
+        overrideState.Start = true;
+        MesenDebugger.setInputOverrides(0, overrideState);
+        check(true, "setInputOverrides() 无异常");
+
+        // 复位，避免影响后面的测试
+        MesenDebugger.setInputOverrides(0, new DebugControllerState());
+        check(true, "setInputOverrides() 已复位");
+
+        // ---- 调试器配置 ----
+        System.out.println("== 调试器配置 ==");
+        DebugConfig debugConfig = new DebugConfig();
+        debugConfig.UseLowerCaseDisassembly = true;
+        MesenDebugger.setDebugConfig(debugConfig);
+
+        CodeLine[] lowerLines = MesenDebugger.getDisassemblyOutput(Mesen.CPU_NES, pc, 1);
+        boolean isLowerCase = lowerLines != null && lowerLines.length > 0
+            && lowerLines[0].text.equals(lowerLines[0].text.toLowerCase());
+        check(isLowerCase, "setDebugConfig(UseLowerCaseDisassembly) -> "
+            + (lowerLines != null && lowerLines.length > 0 ? lowerLines[0].text.trim() : "?"));
+
+        MesenDebugger.setDebugConfig(new DebugConfig());
+        CodeLine[] normalLines = MesenDebugger.getDisassemblyOutput(Mesen.CPU_NES, pc, 1);
+        check(normalLines != null && normalLines.length > 0, "setDebugConfig() 已复位 -> "
+            + normalLines[0].text.trim());
 
         // ---- 汇编 / ROM 导出 ----
         System.out.println("== 汇编 / ROM 导出 ==");

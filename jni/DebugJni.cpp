@@ -219,6 +219,80 @@ namespace
 		jclass viewerSize;
 		jmethodID viewerSizeCtor;
 		jfieldID vsWidth, vsHeight;
+
+		// Execution trace
+		jclass traceRow;
+		jmethodID traceRowCtor;
+		jfieldID trProgramCounter, trType, trByteCode, trByteCodeSize, trLogOutput;
+
+		jclass traceLoggerOptions;
+		jmethodID traceLoggerOptionsCtor;
+		jfieldID tloEnabled, tloIndentCode, tloUseLabels, tloCondition, tloFormat;
+
+		// Profiler
+		jclass profiledFunction;
+		jmethodID profiledFunctionCtor;
+		jfieldID pfExclusiveCycles, pfInclusiveCycles, pfCallCount, pfMinCycles,
+			pfMaxCycles, pfAddress, pfFlags;
+
+		// Input overrides
+		jclass debugControllerState;
+		jmethodID debugControllerStateCtor;
+		jfieldID dcsA, dcsB, dcsX, dcsY, dcsL, dcsR, dcsU, dcsD,
+			dcsUp, dcsDown, dcsLeft, dcsRight, dcsSelect, dcsStart;
+
+		jclass debugConfig;		// DebugConfig (generated from Core/Shared/SettingTypes.h)
+		jfieldID dcBreakOnUninitRead;
+		jfieldID dcShowJumpLabels;
+		jfieldID dcDrawPartialFrame;
+		jfieldID dcShowVerifiedData;
+		jfieldID dcDisassembleVerifiedData;
+		jfieldID dcShowUnidentifiedData;
+		jfieldID dcDisassembleUnidentifiedData;
+		jfieldID dcUseLowerCaseDisassembly;
+		jfieldID dcShowMemoryValues;
+		jfieldID dcAutoResetCdl;
+		jfieldID dcUsePredictiveBreakpoints;
+		jfieldID dcSingleBreakpointPerInstruction;
+		jfieldID dcSnesBreakOnBrk;
+		jfieldID dcSnesBreakOnCop;
+		jfieldID dcSnesBreakOnWdm;
+		jfieldID dcSnesBreakOnStp;
+		jfieldID dcSnesBreakOnInvalidPpuAccess;
+		jfieldID dcSnesBreakOnReadDuringAutoJoy;
+		jfieldID dcSnesUseAltSpcOpNames;
+		jfieldID dcSnesIgnoreDspReadWrites;
+		jfieldID dcSpcBreakOnBrk;
+		jfieldID dcSpcBreakOnStpSleep;
+		jfieldID dcGbBreakOnInvalidOamAccess;
+		jfieldID dcGbBreakOnInvalidVramAccess;
+		jfieldID dcGbBreakOnDisableLcdOutsideVblank;
+		jfieldID dcGbBreakOnInvalidOpCode;
+		jfieldID dcGbBreakOnNopLoad;
+		jfieldID dcGbBreakOnOamCorruption;
+		jfieldID dcNesBreakOnBrk;
+		jfieldID dcNesBreakOnUnofficialOpCode;
+		jfieldID dcNesBreakOnUnstableOpCode;
+		jfieldID dcNesBreakOnCpuCrash;
+		jfieldID dcNesBreakOnBusConflict;
+		jfieldID dcNesBreakOnDecayedOamRead;
+		jfieldID dcNesBreakOnPpuScrollGlitch;
+		jfieldID dcNesBreakOnExtOutputMode;
+		jfieldID dcNesBreakOnInvalidVramAccess;
+		jfieldID dcNesBreakOnInvalidOamWrite;
+		jfieldID dcNesBreakOnDmaInputRead;
+		jfieldID dcPceBreakOnBrk;
+		jfieldID dcPceBreakOnUnofficialOpCode;
+		jfieldID dcPceBreakOnInvalidVramAddress;
+		jfieldID dcSmsBreakOnNopLoad;
+		jfieldID dcGbaBreakOnNopLoad;
+		jfieldID dcGbaBreakOnInvalidOpCode;
+		jfieldID dcGbaBreakOnUnalignedMemAccess;
+		jfieldID dcGbaDisMode;
+		jfieldID dcWsBreakOnInvalidOpCode;
+		jfieldID dcScriptAllowIoOsAccess;
+		jfieldID dcScriptAllowNetworkAccess;
+		jfieldID dcScriptTimeout;
 	};
 
 	JniCache g_cache;
@@ -271,6 +345,11 @@ namespace
 		g_cache.debugEventInfo = findClass("mesen/debugger/DebugEventInfo");
 		g_cache.eventViewerConfig = findClass("mesen/debugger/EventViewerConfig");
 		g_cache.viewerSize = findClass("mesen/debugger/ViewerSize");
+		g_cache.traceRow = findClass("mesen/debugger/TraceRow");
+		g_cache.traceLoggerOptions = findClass("mesen/debugger/TraceLoggerOptions");
+		g_cache.profiledFunction = findClass("mesen/debugger/ProfiledFunction");
+		g_cache.debugControllerState = findClass("mesen/debugger/DebugControllerState");
+		g_cache.debugConfig = findClass("mesen/debugger/DebugConfig");
 
 		if(!g_cache.addressInfo || !g_cache.effectiveAddress || !g_cache.codeLine ||
 			!g_cache.breakpoint || !g_cache.stackFrame || !g_cache.cdlStatistics ||
@@ -281,7 +360,9 @@ namespace
 			!g_cache.tilemapInfo || !g_cache.tilemapResult || !g_cache.tilemapTileInfo ||
 			!g_cache.spriteOptions || !g_cache.spritePreviewInfo || !g_cache.spriteInfo ||
 			!g_cache.spriteListResult || !g_cache.paletteInfo ||
-			!g_cache.debugEventInfo || !g_cache.eventViewerConfig || !g_cache.viewerSize) {
+			!g_cache.debugEventInfo || !g_cache.eventViewerConfig || !g_cache.viewerSize ||
+			!g_cache.traceRow || !g_cache.traceLoggerOptions || !g_cache.profiledFunction ||
+			!g_cache.debugControllerState || !g_cache.debugConfig) {
 			return false;
 		}
 
@@ -592,6 +673,97 @@ namespace
 		g_cache.viewerSizeCtor = env->GetMethodID(g_cache.viewerSize, "<init>", "()V");
 		g_cache.vsWidth = field(g_cache.viewerSize, "width", "I");
 		g_cache.vsHeight = field(g_cache.viewerSize, "height", "I");
+		g_cache.traceRowCtor = env->GetMethodID(g_cache.traceRow, "<init>", "()V");
+		g_cache.trProgramCounter = field(g_cache.traceRow, "programCounter", "I");
+		g_cache.trType = field(g_cache.traceRow, "type", "I");
+		g_cache.trByteCode = field(g_cache.traceRow, "byteCode", "[B");
+		g_cache.trByteCodeSize = field(g_cache.traceRow, "byteCodeSize", "I");
+		g_cache.trLogOutput = field(g_cache.traceRow, "logOutput", "Ljava/lang/String;");
+
+		g_cache.traceLoggerOptionsCtor = env->GetMethodID(g_cache.traceLoggerOptions, "<init>", "()V");
+		g_cache.tloEnabled = field(g_cache.traceLoggerOptions, "enabled", "Z");
+		g_cache.tloIndentCode = field(g_cache.traceLoggerOptions, "indentCode", "Z");
+		g_cache.tloUseLabels = field(g_cache.traceLoggerOptions, "useLabels", "Z");
+		g_cache.tloCondition = field(g_cache.traceLoggerOptions, "condition", "Ljava/lang/String;");
+		g_cache.tloFormat = field(g_cache.traceLoggerOptions, "format", "Ljava/lang/String;");
+
+		g_cache.profiledFunctionCtor = env->GetMethodID(g_cache.profiledFunction, "<init>", "()V");
+		g_cache.pfExclusiveCycles = field(g_cache.profiledFunction, "exclusiveCycles", "J");
+		g_cache.pfInclusiveCycles = field(g_cache.profiledFunction, "inclusiveCycles", "J");
+		g_cache.pfCallCount = field(g_cache.profiledFunction, "callCount", "J");
+		g_cache.pfMinCycles = field(g_cache.profiledFunction, "minCycles", "J");
+		g_cache.pfMaxCycles = field(g_cache.profiledFunction, "maxCycles", "J");
+		g_cache.pfAddress = field(g_cache.profiledFunction, "address", "Lmesen/debugger/AddressInfo;");
+		g_cache.pfFlags = field(g_cache.profiledFunction, "flags", "I");
+
+		g_cache.debugControllerStateCtor = env->GetMethodID(g_cache.debugControllerState, "<init>", "()V");
+		g_cache.dcsA = field(g_cache.debugControllerState, "A", "Z");
+		g_cache.dcsB = field(g_cache.debugControllerState, "B", "Z");
+		g_cache.dcsX = field(g_cache.debugControllerState, "X", "Z");
+		g_cache.dcsY = field(g_cache.debugControllerState, "Y", "Z");
+		g_cache.dcsL = field(g_cache.debugControllerState, "L", "Z");
+		g_cache.dcsR = field(g_cache.debugControllerState, "R", "Z");
+		g_cache.dcsU = field(g_cache.debugControllerState, "U", "Z");
+		g_cache.dcsD = field(g_cache.debugControllerState, "D", "Z");
+		g_cache.dcsUp = field(g_cache.debugControllerState, "Up", "Z");
+		g_cache.dcsDown = field(g_cache.debugControllerState, "Down", "Z");
+		g_cache.dcsLeft = field(g_cache.debugControllerState, "Left", "Z");
+		g_cache.dcsRight = field(g_cache.debugControllerState, "Right", "Z");
+		g_cache.dcsSelect = field(g_cache.debugControllerState, "Select", "Z");
+		g_cache.dcsStart = field(g_cache.debugControllerState, "Start", "Z");
+
+		// DebugConfig
+		g_cache.dcBreakOnUninitRead = field(g_cache.debugConfig, "BreakOnUninitRead", "Z");
+		g_cache.dcShowJumpLabels = field(g_cache.debugConfig, "ShowJumpLabels", "Z");
+		g_cache.dcDrawPartialFrame = field(g_cache.debugConfig, "DrawPartialFrame", "Z");
+		g_cache.dcShowVerifiedData = field(g_cache.debugConfig, "ShowVerifiedData", "Z");
+		g_cache.dcDisassembleVerifiedData = field(g_cache.debugConfig, "DisassembleVerifiedData", "Z");
+		g_cache.dcShowUnidentifiedData = field(g_cache.debugConfig, "ShowUnidentifiedData", "Z");
+		g_cache.dcDisassembleUnidentifiedData = field(g_cache.debugConfig, "DisassembleUnidentifiedData", "Z");
+		g_cache.dcUseLowerCaseDisassembly = field(g_cache.debugConfig, "UseLowerCaseDisassembly", "Z");
+		g_cache.dcShowMemoryValues = field(g_cache.debugConfig, "ShowMemoryValues", "Z");
+		g_cache.dcAutoResetCdl = field(g_cache.debugConfig, "AutoResetCdl", "Z");
+		g_cache.dcUsePredictiveBreakpoints = field(g_cache.debugConfig, "UsePredictiveBreakpoints", "Z");
+		g_cache.dcSingleBreakpointPerInstruction = field(g_cache.debugConfig, "SingleBreakpointPerInstruction", "Z");
+		g_cache.dcSnesBreakOnBrk = field(g_cache.debugConfig, "SnesBreakOnBrk", "Z");
+		g_cache.dcSnesBreakOnCop = field(g_cache.debugConfig, "SnesBreakOnCop", "Z");
+		g_cache.dcSnesBreakOnWdm = field(g_cache.debugConfig, "SnesBreakOnWdm", "Z");
+		g_cache.dcSnesBreakOnStp = field(g_cache.debugConfig, "SnesBreakOnStp", "Z");
+		g_cache.dcSnesBreakOnInvalidPpuAccess = field(g_cache.debugConfig, "SnesBreakOnInvalidPpuAccess", "Z");
+		g_cache.dcSnesBreakOnReadDuringAutoJoy = field(g_cache.debugConfig, "SnesBreakOnReadDuringAutoJoy", "Z");
+		g_cache.dcSnesUseAltSpcOpNames = field(g_cache.debugConfig, "SnesUseAltSpcOpNames", "Z");
+		g_cache.dcSnesIgnoreDspReadWrites = field(g_cache.debugConfig, "SnesIgnoreDspReadWrites", "Z");
+		g_cache.dcSpcBreakOnBrk = field(g_cache.debugConfig, "SpcBreakOnBrk", "Z");
+		g_cache.dcSpcBreakOnStpSleep = field(g_cache.debugConfig, "SpcBreakOnStpSleep", "Z");
+		g_cache.dcGbBreakOnInvalidOamAccess = field(g_cache.debugConfig, "GbBreakOnInvalidOamAccess", "Z");
+		g_cache.dcGbBreakOnInvalidVramAccess = field(g_cache.debugConfig, "GbBreakOnInvalidVramAccess", "Z");
+		g_cache.dcGbBreakOnDisableLcdOutsideVblank = field(g_cache.debugConfig, "GbBreakOnDisableLcdOutsideVblank", "Z");
+		g_cache.dcGbBreakOnInvalidOpCode = field(g_cache.debugConfig, "GbBreakOnInvalidOpCode", "Z");
+		g_cache.dcGbBreakOnNopLoad = field(g_cache.debugConfig, "GbBreakOnNopLoad", "Z");
+		g_cache.dcGbBreakOnOamCorruption = field(g_cache.debugConfig, "GbBreakOnOamCorruption", "Z");
+		g_cache.dcNesBreakOnBrk = field(g_cache.debugConfig, "NesBreakOnBrk", "Z");
+		g_cache.dcNesBreakOnUnofficialOpCode = field(g_cache.debugConfig, "NesBreakOnUnofficialOpCode", "Z");
+		g_cache.dcNesBreakOnUnstableOpCode = field(g_cache.debugConfig, "NesBreakOnUnstableOpCode", "Z");
+		g_cache.dcNesBreakOnCpuCrash = field(g_cache.debugConfig, "NesBreakOnCpuCrash", "Z");
+		g_cache.dcNesBreakOnBusConflict = field(g_cache.debugConfig, "NesBreakOnBusConflict", "Z");
+		g_cache.dcNesBreakOnDecayedOamRead = field(g_cache.debugConfig, "NesBreakOnDecayedOamRead", "Z");
+		g_cache.dcNesBreakOnPpuScrollGlitch = field(g_cache.debugConfig, "NesBreakOnPpuScrollGlitch", "Z");
+		g_cache.dcNesBreakOnExtOutputMode = field(g_cache.debugConfig, "NesBreakOnExtOutputMode", "Z");
+		g_cache.dcNesBreakOnInvalidVramAccess = field(g_cache.debugConfig, "NesBreakOnInvalidVramAccess", "Z");
+		g_cache.dcNesBreakOnInvalidOamWrite = field(g_cache.debugConfig, "NesBreakOnInvalidOamWrite", "Z");
+		g_cache.dcNesBreakOnDmaInputRead = field(g_cache.debugConfig, "NesBreakOnDmaInputRead", "Z");
+		g_cache.dcPceBreakOnBrk = field(g_cache.debugConfig, "PceBreakOnBrk", "Z");
+		g_cache.dcPceBreakOnUnofficialOpCode = field(g_cache.debugConfig, "PceBreakOnUnofficialOpCode", "Z");
+		g_cache.dcPceBreakOnInvalidVramAddress = field(g_cache.debugConfig, "PceBreakOnInvalidVramAddress", "Z");
+		g_cache.dcSmsBreakOnNopLoad = field(g_cache.debugConfig, "SmsBreakOnNopLoad", "Z");
+		g_cache.dcGbaBreakOnNopLoad = field(g_cache.debugConfig, "GbaBreakOnNopLoad", "Z");
+		g_cache.dcGbaBreakOnInvalidOpCode = field(g_cache.debugConfig, "GbaBreakOnInvalidOpCode", "Z");
+		g_cache.dcGbaBreakOnUnalignedMemAccess = field(g_cache.debugConfig, "GbaBreakOnUnalignedMemAccess", "Z");
+		g_cache.dcGbaDisMode = field(g_cache.debugConfig, "GbaDisMode", "I");
+		g_cache.dcWsBreakOnInvalidOpCode = field(g_cache.debugConfig, "WsBreakOnInvalidOpCode", "Z");
+		g_cache.dcScriptAllowIoOsAccess = field(g_cache.debugConfig, "ScriptAllowIoOsAccess", "Z");
+		g_cache.dcScriptAllowNetworkAccess = field(g_cache.debugConfig, "ScriptAllowNetworkAccess", "Z");
+		g_cache.dcScriptTimeout = field(g_cache.debugConfig, "ScriptTimeout", "I");
 
 		if(env->ExceptionCheck()) {
 			return false;
@@ -1876,6 +2048,328 @@ extern "C"
 		return result ? JNI_TRUE : JNI_FALSE;
 	}
 
+	// Java DebugConfig -> Core DebugConfig (field names match the struct).
+	void ReadDebugConfig(JNIEnv* env, jobject obj, DebugConfig& config)
+	{
+		config.BreakOnUninitRead = env->GetBooleanField(obj, g_cache.dcBreakOnUninitRead) == JNI_TRUE;
+		config.ShowJumpLabels = env->GetBooleanField(obj, g_cache.dcShowJumpLabels) == JNI_TRUE;
+		config.DrawPartialFrame = env->GetBooleanField(obj, g_cache.dcDrawPartialFrame) == JNI_TRUE;
+		config.ShowVerifiedData = env->GetBooleanField(obj, g_cache.dcShowVerifiedData) == JNI_TRUE;
+		config.DisassembleVerifiedData = env->GetBooleanField(obj, g_cache.dcDisassembleVerifiedData) == JNI_TRUE;
+		config.ShowUnidentifiedData = env->GetBooleanField(obj, g_cache.dcShowUnidentifiedData) == JNI_TRUE;
+		config.DisassembleUnidentifiedData = env->GetBooleanField(obj, g_cache.dcDisassembleUnidentifiedData) == JNI_TRUE;
+		config.UseLowerCaseDisassembly = env->GetBooleanField(obj, g_cache.dcUseLowerCaseDisassembly) == JNI_TRUE;
+		config.ShowMemoryValues = env->GetBooleanField(obj, g_cache.dcShowMemoryValues) == JNI_TRUE;
+		config.AutoResetCdl = env->GetBooleanField(obj, g_cache.dcAutoResetCdl) == JNI_TRUE;
+		config.UsePredictiveBreakpoints = env->GetBooleanField(obj, g_cache.dcUsePredictiveBreakpoints) == JNI_TRUE;
+		config.SingleBreakpointPerInstruction = env->GetBooleanField(obj, g_cache.dcSingleBreakpointPerInstruction) == JNI_TRUE;
+		config.SnesBreakOnBrk = env->GetBooleanField(obj, g_cache.dcSnesBreakOnBrk) == JNI_TRUE;
+		config.SnesBreakOnCop = env->GetBooleanField(obj, g_cache.dcSnesBreakOnCop) == JNI_TRUE;
+		config.SnesBreakOnWdm = env->GetBooleanField(obj, g_cache.dcSnesBreakOnWdm) == JNI_TRUE;
+		config.SnesBreakOnStp = env->GetBooleanField(obj, g_cache.dcSnesBreakOnStp) == JNI_TRUE;
+		config.SnesBreakOnInvalidPpuAccess = env->GetBooleanField(obj, g_cache.dcSnesBreakOnInvalidPpuAccess) == JNI_TRUE;
+		config.SnesBreakOnReadDuringAutoJoy = env->GetBooleanField(obj, g_cache.dcSnesBreakOnReadDuringAutoJoy) == JNI_TRUE;
+		config.SnesUseAltSpcOpNames = env->GetBooleanField(obj, g_cache.dcSnesUseAltSpcOpNames) == JNI_TRUE;
+		config.SnesIgnoreDspReadWrites = env->GetBooleanField(obj, g_cache.dcSnesIgnoreDspReadWrites) == JNI_TRUE;
+		config.SpcBreakOnBrk = env->GetBooleanField(obj, g_cache.dcSpcBreakOnBrk) == JNI_TRUE;
+		config.SpcBreakOnStpSleep = env->GetBooleanField(obj, g_cache.dcSpcBreakOnStpSleep) == JNI_TRUE;
+		config.GbBreakOnInvalidOamAccess = env->GetBooleanField(obj, g_cache.dcGbBreakOnInvalidOamAccess) == JNI_TRUE;
+		config.GbBreakOnInvalidVramAccess = env->GetBooleanField(obj, g_cache.dcGbBreakOnInvalidVramAccess) == JNI_TRUE;
+		config.GbBreakOnDisableLcdOutsideVblank = env->GetBooleanField(obj, g_cache.dcGbBreakOnDisableLcdOutsideVblank) == JNI_TRUE;
+		config.GbBreakOnInvalidOpCode = env->GetBooleanField(obj, g_cache.dcGbBreakOnInvalidOpCode) == JNI_TRUE;
+		config.GbBreakOnNopLoad = env->GetBooleanField(obj, g_cache.dcGbBreakOnNopLoad) == JNI_TRUE;
+		config.GbBreakOnOamCorruption = env->GetBooleanField(obj, g_cache.dcGbBreakOnOamCorruption) == JNI_TRUE;
+		config.NesBreakOnBrk = env->GetBooleanField(obj, g_cache.dcNesBreakOnBrk) == JNI_TRUE;
+		config.NesBreakOnUnofficialOpCode = env->GetBooleanField(obj, g_cache.dcNesBreakOnUnofficialOpCode) == JNI_TRUE;
+		config.NesBreakOnUnstableOpCode = env->GetBooleanField(obj, g_cache.dcNesBreakOnUnstableOpCode) == JNI_TRUE;
+		config.NesBreakOnCpuCrash = env->GetBooleanField(obj, g_cache.dcNesBreakOnCpuCrash) == JNI_TRUE;
+		config.NesBreakOnBusConflict = env->GetBooleanField(obj, g_cache.dcNesBreakOnBusConflict) == JNI_TRUE;
+		config.NesBreakOnDecayedOamRead = env->GetBooleanField(obj, g_cache.dcNesBreakOnDecayedOamRead) == JNI_TRUE;
+		config.NesBreakOnPpuScrollGlitch = env->GetBooleanField(obj, g_cache.dcNesBreakOnPpuScrollGlitch) == JNI_TRUE;
+		config.NesBreakOnExtOutputMode = env->GetBooleanField(obj, g_cache.dcNesBreakOnExtOutputMode) == JNI_TRUE;
+		config.NesBreakOnInvalidVramAccess = env->GetBooleanField(obj, g_cache.dcNesBreakOnInvalidVramAccess) == JNI_TRUE;
+		config.NesBreakOnInvalidOamWrite = env->GetBooleanField(obj, g_cache.dcNesBreakOnInvalidOamWrite) == JNI_TRUE;
+		config.NesBreakOnDmaInputRead = env->GetBooleanField(obj, g_cache.dcNesBreakOnDmaInputRead) == JNI_TRUE;
+		config.PceBreakOnBrk = env->GetBooleanField(obj, g_cache.dcPceBreakOnBrk) == JNI_TRUE;
+		config.PceBreakOnUnofficialOpCode = env->GetBooleanField(obj, g_cache.dcPceBreakOnUnofficialOpCode) == JNI_TRUE;
+		config.PceBreakOnInvalidVramAddress = env->GetBooleanField(obj, g_cache.dcPceBreakOnInvalidVramAddress) == JNI_TRUE;
+		config.SmsBreakOnNopLoad = env->GetBooleanField(obj, g_cache.dcSmsBreakOnNopLoad) == JNI_TRUE;
+		config.GbaBreakOnNopLoad = env->GetBooleanField(obj, g_cache.dcGbaBreakOnNopLoad) == JNI_TRUE;
+		config.GbaBreakOnInvalidOpCode = env->GetBooleanField(obj, g_cache.dcGbaBreakOnInvalidOpCode) == JNI_TRUE;
+		config.GbaBreakOnUnalignedMemAccess = env->GetBooleanField(obj, g_cache.dcGbaBreakOnUnalignedMemAccess) == JNI_TRUE;
+		config.GbaDisMode = (GbaDisassemblyMode)env->GetIntField(obj, g_cache.dcGbaDisMode);
+		config.WsBreakOnInvalidOpCode = env->GetBooleanField(obj, g_cache.dcWsBreakOnInvalidOpCode) == JNI_TRUE;
+		config.ScriptAllowIoOsAccess = env->GetBooleanField(obj, g_cache.dcScriptAllowIoOsAccess) == JNI_TRUE;
+		config.ScriptAllowNetworkAccess = env->GetBooleanField(obj, g_cache.dcScriptAllowNetworkAccess) == JNI_TRUE;
+		config.ScriptTimeout = (uint32_t)env->GetIntField(obj, g_cache.dcScriptTimeout);
+	}
+
+	// -----------------------------------------------------------------------
+	// Execution trace / CDL files / profiler / input overrides / debug config
+	// -----------------------------------------------------------------------
+
+	void CopyStringField(JNIEnv* env, jobject obj, jfieldID fieldId, char* buffer, size_t bufferSize)
+	{
+		buffer[0] = 0;
+		jstring str = (jstring)env->GetObjectField(obj, fieldId);
+		if(!str) {
+			return;
+		}
+
+		const char* chars = env->GetStringUTFChars(str, nullptr);
+		if(chars) {
+			strncpy(buffer, chars, bufferSize - 1);
+			buffer[bufferSize - 1] = 0;
+			env->ReleaseStringUTFChars(str, chars);
+		}
+		env->DeleteLocalRef(str);
+	}
+
+	jobject NewTraceRow(JNIEnv* env, const TraceRow& row)
+	{
+		jobject obj = env->NewObject(g_cache.traceRow, g_cache.traceRowCtor);
+		env->SetIntField(obj, g_cache.trProgramCounter, (jint)row.ProgramCounter);
+		env->SetIntField(obj, g_cache.trType, (jint)row.Type);
+		env->SetIntField(obj, g_cache.trByteCodeSize, (jint)row.ByteCodeSize);
+
+		jbyteArray byteCode = env->NewByteArray(8);
+		env->SetByteArrayRegion(byteCode, 0, 8, (const jbyte*)row.ByteCode);
+		env->SetObjectField(obj, g_cache.trByteCode, byteCode);
+		env->DeleteLocalRef(byteCode);
+
+		// LogOutput may not be null-terminated; LogSize says how much is valid.
+		char text[501];
+		uint32_t length = row.LogSize < 500 ? row.LogSize : 500;
+		memcpy(text, row.LogOutput, length);
+		text[length] = 0;
+		jstring logOutput = env->NewStringUTF(text);
+		env->SetObjectField(obj, g_cache.trLogOutput, logOutput);
+		env->DeleteLocalRef(logOutput);
+		return obj;
+	}
+
+	jobject NewProfiledFunction(JNIEnv* env, const ProfiledFunction& fn)
+	{
+		jobject obj = env->NewObject(g_cache.profiledFunction, g_cache.profiledFunctionCtor);
+		env->SetLongField(obj, g_cache.pfExclusiveCycles, (jlong)fn.ExclusiveCycles);
+		env->SetLongField(obj, g_cache.pfInclusiveCycles, (jlong)fn.InclusiveCycles);
+		env->SetLongField(obj, g_cache.pfCallCount, (jlong)fn.CallCount);
+		env->SetLongField(obj, g_cache.pfMinCycles, (jlong)fn.MinCycles);
+		env->SetLongField(obj, g_cache.pfMaxCycles, (jlong)fn.MaxCycles);
+		env->SetIntField(obj, g_cache.pfFlags, (jint)fn.Flags);
+
+		jobject address = env->NewObject(g_cache.addressInfo, g_cache.addressInfoCtor);
+		env->SetIntField(address, g_cache.aiAddress, (jint)fn.Address.Address);
+		env->SetIntField(address, g_cache.aiMemoryType, (jint)fn.Address.Type);
+		env->SetObjectField(obj, g_cache.pfAddress, address);
+		env->DeleteLocalRef(address);
+		return obj;
+	}
+
+	JNIEXPORT void JNICALL Java_mesen_MesenDebugger_setTraceOptions(JNIEnv* env, jclass, jint cpuType, jobject optionsObj)
+	{
+		if(!InitCache(env) || !optionsObj) {
+			return;
+		}
+
+		TraceLoggerOptions options = {};
+		options.Enabled = env->GetBooleanField(optionsObj, g_cache.tloEnabled) == JNI_TRUE;
+		options.IndentCode = env->GetBooleanField(optionsObj, g_cache.tloIndentCode) == JNI_TRUE;
+		options.UseLabels = env->GetBooleanField(optionsObj, g_cache.tloUseLabels) == JNI_TRUE;
+		CopyStringField(env, optionsObj, g_cache.tloCondition, options.Condition, sizeof(options.Condition));
+		CopyStringField(env, optionsObj, g_cache.tloFormat, options.Format, sizeof(options.Format));
+
+		SetTraceOptions((CpuType)cpuType, options);
+	}
+
+	JNIEXPORT jobjectArray JNICALL Java_mesen_MesenDebugger_getExecutionTrace(JNIEnv* env, jclass, jint startOffset, jint lineCount)
+	{
+		if(!InitCache(env)) {
+			return nullptr;
+		}
+		if(lineCount <= 0) {
+			return env->NewObjectArray(0, g_cache.traceRow, nullptr);
+		}
+
+		std::vector<TraceRow> rows((size_t)lineCount);
+		uint32_t count = GetExecutionTrace(rows.data(), (uint32_t)startOffset, (uint32_t)lineCount);
+		if(count > (uint32_t)lineCount) {
+			count = (uint32_t)lineCount;
+		}
+
+		jobjectArray result = env->NewObjectArray((jsize)count, g_cache.traceRow, nullptr);
+		for(uint32_t i = 0; i < count; i++) {
+			jobject row = NewTraceRow(env, rows[i]);
+			env->SetObjectArrayElement(result, (jsize)i, row);
+			env->DeleteLocalRef(row);
+		}
+		return result;
+	}
+
+	JNIEXPORT void JNICALL Java_mesen_MesenDebugger_clearExecutionTrace(JNIEnv*, jclass)
+	{
+		ClearExecutionTrace();
+	}
+
+	JNIEXPORT void JNICALL Java_mesen_MesenDebugger_startLogTraceToFile(JNIEnv* env, jclass, jstring filename)
+	{
+		if(!filename) {
+			return;
+		}
+
+		const char* chars = env->GetStringUTFChars(filename, nullptr);
+		if(chars) {
+			StartLogTraceToFile(chars);
+			env->ReleaseStringUTFChars(filename, chars);
+		}
+	}
+
+	JNIEXPORT void JNICALL Java_mesen_MesenDebugger_stopLogTraceToFile(JNIEnv*, jclass)
+	{
+		StopLogTraceToFile();
+	}
+
+	JNIEXPORT jbyteArray JNICALL Java_mesen_MesenDebugger_getCdlData(JNIEnv* env, jclass, jint memoryType, jint offset, jint length)
+	{
+		if(length <= 0) {
+			return env->NewByteArray(0);
+		}
+
+		std::vector<uint8_t> data((size_t)length, 0);
+		GetCdlData((uint32_t)offset, (uint32_t)length, (MemoryType)memoryType, data.data());
+
+		jbyteArray result = env->NewByteArray(length);
+		env->SetByteArrayRegion(result, 0, length, (const jbyte*)data.data());
+		return result;
+	}
+
+	JNIEXPORT void JNICALL Java_mesen_MesenDebugger_setCdlData(JNIEnv* env, jclass, jint memoryType, jbyteArray data)
+	{
+		if(!data) {
+			return;
+		}
+
+		jsize length = env->GetArrayLength(data);
+		if(length <= 0) {
+			return;
+		}
+
+		std::vector<uint8_t> buffer((size_t)length, 0);
+		env->GetByteArrayRegion(data, 0, length, (jbyte*)buffer.data());
+		SetCdlData((MemoryType)memoryType, buffer.data(), (uint32_t)length);
+	}
+
+	JNIEXPORT void JNICALL Java_mesen_MesenDebugger_markBytesAs(JNIEnv*, jclass, jint memoryType, jint start, jint end, jint flags)
+	{
+		MarkBytesAs((MemoryType)memoryType, (uint32_t)start, (uint32_t)end, (uint8_t)flags);
+	}
+
+	JNIEXPORT void JNICALL Java_mesen_MesenDebugger_saveCdlFile(JNIEnv* env, jclass, jint memoryType, jstring filename)
+	{
+		if(!filename) {
+			return;
+		}
+
+		const char* chars = env->GetStringUTFChars(filename, nullptr);
+		if(chars) {
+			SaveCdlFile((MemoryType)memoryType, const_cast<char*>(chars));
+			env->ReleaseStringUTFChars(filename, chars);
+		}
+	}
+
+	JNIEXPORT void JNICALL Java_mesen_MesenDebugger_loadCdlFile(JNIEnv* env, jclass, jint memoryType, jstring filename)
+	{
+		if(!filename) {
+			return;
+		}
+
+		const char* chars = env->GetStringUTFChars(filename, nullptr);
+		if(chars) {
+			LoadCdlFile((MemoryType)memoryType, const_cast<char*>(chars));
+			env->ReleaseStringUTFChars(filename, chars);
+		}
+	}
+
+	JNIEXPORT jobjectArray JNICALL Java_mesen_MesenDebugger_getProfilerData(JNIEnv* env, jclass, jint cpuType)
+	{
+		if(!InitCache(env)) {
+			return nullptr;
+		}
+
+		// Profiler::GetProfilerData ignores the value passed in as a capacity and
+		// writes up to 100000 entries, so the buffer must be that large.
+		std::vector<ProfiledFunction> functions(100000);
+		uint32_t count = 0;
+		GetProfilerData((CpuType)cpuType, functions.data(), count);
+		if(count > (uint32_t)functions.size()) {
+			count = (uint32_t)functions.size();
+		}
+
+		jobjectArray result = env->NewObjectArray((jsize)count, g_cache.profiledFunction, nullptr);
+		for(uint32_t i = 0; i < count; i++) {
+			jobject fn = NewProfiledFunction(env, functions[i]);
+			env->SetObjectArrayElement(result, (jsize)i, fn);
+			env->DeleteLocalRef(fn);
+		}
+		return result;
+	}
+
+	JNIEXPORT jint JNICALL Java_mesen_MesenDebugger_getProfilerCpuUsage(JNIEnv*, jclass, jint cpuType)
+	{
+		return (jint)GetProfilerCpuUsage((CpuType)cpuType);
+	}
+
+	JNIEXPORT void JNICALL Java_mesen_MesenDebugger_resetProfiler(JNIEnv*, jclass, jint cpuType)
+	{
+		ResetProfiler((CpuType)cpuType);
+	}
+
+	JNIEXPORT void JNICALL Java_mesen_MesenDebugger_setInputOverrides(JNIEnv* env, jclass, jint index, jobject stateObj)
+	{
+		if(!InitCache(env) || !stateObj) {
+			return;
+		}
+
+		DebugControllerState state = {};
+		state.A = env->GetBooleanField(stateObj, g_cache.dcsA) == JNI_TRUE;
+		state.B = env->GetBooleanField(stateObj, g_cache.dcsB) == JNI_TRUE;
+		state.X = env->GetBooleanField(stateObj, g_cache.dcsX) == JNI_TRUE;
+		state.Y = env->GetBooleanField(stateObj, g_cache.dcsY) == JNI_TRUE;
+		state.L = env->GetBooleanField(stateObj, g_cache.dcsL) == JNI_TRUE;
+		state.R = env->GetBooleanField(stateObj, g_cache.dcsR) == JNI_TRUE;
+		state.U = env->GetBooleanField(stateObj, g_cache.dcsU) == JNI_TRUE;
+		state.D = env->GetBooleanField(stateObj, g_cache.dcsD) == JNI_TRUE;
+		state.Up = env->GetBooleanField(stateObj, g_cache.dcsUp) == JNI_TRUE;
+		state.Down = env->GetBooleanField(stateObj, g_cache.dcsDown) == JNI_TRUE;
+		state.Left = env->GetBooleanField(stateObj, g_cache.dcsLeft) == JNI_TRUE;
+		state.Right = env->GetBooleanField(stateObj, g_cache.dcsRight) == JNI_TRUE;
+		state.Select = env->GetBooleanField(stateObj, g_cache.dcsSelect) == JNI_TRUE;
+		state.Start = env->GetBooleanField(stateObj, g_cache.dcsStart) == JNI_TRUE;
+
+		SetInputOverrides((uint32_t)index, state);
+	}
+
+	JNIEXPORT jbyteArray JNICALL Java_mesen_MesenDebugger_getAvailableInputOverrides(JNIEnv* env, jclass)
+	{
+		// Debugger::GetAvailableInputOverrides always fills 8 entries.
+		std::vector<uint8_t> available(8, 0);
+		GetAvailableInputOverrides(available.data());
+
+		jbyteArray result = env->NewByteArray(8);
+		env->SetByteArrayRegion(result, 0, 8, (const jbyte*)available.data());
+		return result;
+	}
+
+	JNIEXPORT void JNICALL Java_mesen_MesenDebugger_setDebugConfig(JNIEnv* env, jclass, jobject configObj)
+	{
+		if(!InitCache(env) || !configObj) {
+			return;
+		}
+
+		DebugConfig config = {};
+		ReadDebugConfig(env, configObj, config);
+		SetDebugConfig(config);
+	}
 	// -----------------------------------------------------------------------
 	// Event viewer
 	//

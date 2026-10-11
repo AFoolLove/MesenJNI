@@ -22,6 +22,9 @@
 #include "Core/Debugger/DisassemblySearch.h"  // DisassemblySearchOptions
 #include "Core/Debugger/PpuTools.h"           // DebugTilemapInfo, DebugSpriteInfo, ...
 #include "Core/Debugger/BaseEventManager.h"   // DebugEventInfo, BaseEventViewerConfig
+#include "Core/Debugger/ITraceLogger.h"       // TraceRow, TraceLoggerOptions
+#include "Core/Debugger/Profiler.h"           // ProfiledFunction
+#include "Core/Shared/SettingTypes.h"         // DebugConfig
 
 class Breakpoint;
 struct AddressCounters;
@@ -193,6 +196,30 @@ MESEN_EXTERN
 	uint32_t MESEN_CALL TakeEventSnapshot(CpuType cpuType, bool forAutoRefresh);
 	void MESEN_CALL SetViewerUpdateTiming(uint32_t viewerId, uint16_t scanline, uint16_t cycle, CpuType cpuType);
 	void MESEN_CALL RemoveViewerId(uint32_t viewerId, CpuType cpuType);
+
+	// --- DebugApiWrapper (execution trace) ---
+	void MESEN_CALL SetTraceOptions(CpuType cpuType, TraceLoggerOptions options);
+	uint32_t MESEN_CALL GetExecutionTrace(TraceRow output[], uint32_t startOffset, uint32_t lineCount);
+	void MESEN_CALL ClearExecutionTrace();
+	void MESEN_CALL StartLogTraceToFile(const char* filename);
+	void MESEN_CALL StopLogTraceToFile();
+
+	// --- DebugApiWrapper (CDL files) ---
+	void MESEN_CALL GetCdlData(uint32_t offset, uint32_t length, MemoryType memoryType, uint8_t* cdlData);
+	void MESEN_CALL SetCdlData(MemoryType memoryType, uint8_t* cdlData, uint32_t length);
+	void MESEN_CALL MarkBytesAs(MemoryType memoryType, uint32_t start, uint32_t end, uint8_t flags);
+	void MESEN_CALL SaveCdlFile(MemoryType memoryType, char* cdlFile);
+	void MESEN_CALL LoadCdlFile(MemoryType memoryType, char* cdlFile);
+
+	// --- DebugApiWrapper (profiler / input overrides) ---
+	void MESEN_CALL GetProfilerData(CpuType cpuType, ProfiledFunction* profilerData, uint32_t& functionCount);
+	void MESEN_CALL ResetProfiler(CpuType cpuType);
+	int32_t MESEN_CALL GetProfilerCpuUsage(CpuType cpuType);
+	void MESEN_CALL SetInputOverrides(uint32_t index, DebugControllerState state);
+	void MESEN_CALL GetAvailableInputOverrides(uint8_t* availableIndexes);
+
+	// --- ConfigApiWrapper ---
+	void MESEN_CALL SetDebugConfig(DebugConfig config);
 
 	// --- DebugApiWrapper (labels / undo / address conversion) ---
 	void MESEN_CALL SetLabel(uint32_t address, MemoryType memType, char* label, char* comment);

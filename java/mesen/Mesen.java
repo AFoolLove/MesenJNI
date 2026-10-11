@@ -191,6 +191,13 @@ public final class Mesen
     public static final int EVENT_FLAG_SMS_VDP_PALETTE_WRITE = 1 << 4;
     public static final int EVENT_FLAG_READ_WRITE_OP = 1 << 5;
 
+    // --- CdlFlags (Core/Debugger/DebugTypes.h) -----------------------------
+    public static final int CDL_NONE = 0x00;
+    public static final int CDL_CODE = 0x01;
+    public static final int CDL_DATA = 0x02;
+    public static final int CDL_JUMP_TARGET = 0x04;
+    public static final int CDL_SUB_ENTRY_POINT = 0x08;
+
     // --- ConsoleType (Core/Shared/SettingTypes.h) --------------------------
     public static final int CONSOLE_SNES = 0;
     public static final int CONSOLE_GAMEBOY = 1;
