@@ -347,6 +347,23 @@ public final class MesenDebugger
      * 该机种没在跑时返回全 0 的状态（`clockRate == 0` 可用来判断）。</p>
      */
     public static native NesConsoleState getNesConsoleState();
+    /**
+     * 取某机种整机状态的字节数。
+     *
+     * <p>{@code consoleType} 用 {@code Mesen.CONSOLE_*}（注意不是 CPU_*）。</p>
+     */
+    public static native int getConsoleStateSize(int consoleType);
+
+    /**
+     * 取某机种整机状态的原始字节（按 core 结构体的内存布局）。
+     *
+     * <p>这是覆盖全部 7 个机种的通用入口。NES 另有 {@link #getNesConsoleState()}
+     * 这种带类型的版本；其余机种的状态很大（SNES 还含 6 个协处理器状态、
+     * GBA/WS 各 9~13 个子结构），所以只提供原始字节，Java 侧按需解析。</p>
+     *
+     * <p>该机种没在跑时返回对应长度的全 0 缓冲。</p>
+     */
+    public static native byte[] getConsoleStateBytes(int consoleType);
     // ---- 执行跟踪 ---------------------------------------------------------
 
     /** 设置跟踪选项（结构体自带 Enabled 开关）。 */

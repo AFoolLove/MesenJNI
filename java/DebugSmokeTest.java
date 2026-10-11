@@ -513,6 +513,40 @@ public class DebugSmokeTest
             System.out.println("      APU 三角: " + consoleState.apu.Triangle);
         }
 
+        // ---- 各机种整机状态（字节级）----
+        System.out.println("== 整机状态字节数 ==");
+        int[] consoleTypes = { Mesen.CONSOLE_SNES, Mesen.CONSOLE_GAMEBOY, Mesen.CONSOLE_NES,
+            Mesen.CONSOLE_PC_ENGINE, Mesen.CONSOLE_SMS, Mesen.CONSOLE_GBA, Mesen.CONSOLE_WS };
+        String[] consoleNames = { "SNES", "GameBoy", "NES", "PCE", "SMS", "GBA", "WS" };
+        boolean allSized = true;
+        for(int i = 0; i < consoleTypes.length; i++) {
+            int size = MesenDebugger.getConsoleStateSize(consoleTypes[i]);
+            byte[] bytes = MesenDebugger.getConsoleStateBytes(consoleTypes[i]);
+            System.out.println("      " + consoleNames[i] + ": " + size + " bytes");
+            if(size <= 0 || bytes == null || bytes.length != size) {
+                allSized = false;
+            }
+        }
+        check(allSized, "7 个机种都能取到整机状态缓冲");
+
+        byte[] nesStateBytes = MesenDebugger.getConsoleStateBytes(Mesen.CONSOLE_NES);
+        int nonZeroBytes = 0;
+        for(byte b : nesStateBytes) {
+            if(b != 0) nonZeroBytes++;
+        }
+        check(nonZeroBytes > 0, "NES 状态含真实数据 -> " + nonZeroBytes + " / "
+            + nesStateBytes.length + " 字节非 0");
+
+        // 未加载的机种应返回对应长度的全 0，而不是崩溃
+        byte[] snesStateBytes = MesenDebugger.getConsoleStateBytes(Mesen.CONSOLE_SNES);
+        boolean snesAllZero = true;
+        for(byte b : snesStateBytes) {
+            if(b != 0) {
+                snesAllZero = false;
+                break;
+            }
+        }
+        check(snesAllZero, "未加载的 SNES 返回全 0（" + snesStateBytes.length + " 字节）");
         // ---- 汇编 / ROM 导出 ----
         System.out.println("== 汇编 / ROM 导出 ==");
         short[] assembled = MesenDebugger.assembleCode(Mesen.CPU_NES, "LDA #$10\nSTA $20", 0x8000);

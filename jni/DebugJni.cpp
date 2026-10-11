@@ -28,6 +28,7 @@
 #include "Core/GBA/Debugger/GbaEventManager.h"
 #include "Core/PCE/Debugger/PceEventManager.h"
 #include "Core/SMS/Debugger/SmsEventManager.h"
+#include "Core/SNES/SnesState.h"   // SnesState (whole-console state)
 #include "Core/WS/Debugger/WsEventManager.h"
 
 #include <jni.h>
@@ -35,6 +36,9 @@
 #include <cstring>
 #include <string>
 #include <vector>
+
+// InteropDLL global (same DLL): needed to check which console is running.
+extern unique_ptr<Emulator> _emu;
 
 namespace
 {
@@ -3177,6 +3181,9 @@ extern "C"
 		return obj;
 	}
 
+	// Defined with the raw console-state helpers further down.
+	bool IsRunningConsole(ConsoleType type);
+
 	JNIEXPORT jobject JNICALL Java_mesen_MesenDebugger_getNesConsoleState(JNIEnv* env, jclass)
 	{
 		if(!InitCache(env)) {
@@ -3184,7 +3191,9 @@ extern "C"
 		}
 
 		NesState state = {};
-		GetConsoleState(*reinterpret_cast<BaseState*>(&state), ConsoleType::Nes);
+		if(IsRunningConsole(ConsoleType::Nes)) {
+			GetConsoleState(*reinterpret_cast<BaseState*>(&state), ConsoleType::Nes);
+		}
 
 		jclass cls = env->FindClass("mesen/debugger/NesConsoleState");
 		jobject obj = env->NewObject(cls, env->GetMethodID(cls, "<init>", "()V"));
@@ -3208,4 +3217,83 @@ extern "C"
 		env->SetIntField(obj, env->GetFieldID(cls, "clockRate", "I"), (jint)state.ClockRate);
 		env->DeleteLocalRef(cls);
 		return obj;
-	}}
+	}	// -----------------------------------------------------------------------
+	// Whole-console state for every console (raw bytes)
+	//
+	// Only NES gets a typed Java class: the other states are far larger (SNES
+	// carries six coprocessor states, GBA/WS have 9-13 sub-structs each), and
+	// there are no ROMs for them in this workspace to verify typed marshalling.
+	// The raw snapshot below is one code path that covers all of them.
+	// -----------------------------------------------------------------------
+
+	size_t GetConsoleStateByteSize(ConsoleType type)
+	{
+		switch(type) {
+			case ConsoleType::Snes: return sizeof(SnesState);
+			case ConsoleType::Gameboy: return sizeof(GbState);
+			case ConsoleType::Nes: return sizeof(NesState);
+			case ConsoleType::PcEngine: return sizeof(PceState);
+			case ConsoleType::Sms: return sizeof(SmsState);
+			case ConsoleType::Gba: return sizeof(GbaState);
+			case ConsoleType::Ws: return sizeof(WsState);
+			default: return 0;
+		}
+	}
+
+	// The largest state we might be handed. Console implementations ignore the
+	// consoleType argument and write their own struct unconditionally
+	// (NesConsole::GetConsoleState is a plain NesState assignment), so a buffer
+	// sized for the *requested* console can be overflowed by a bigger running
+	// one - that produced heap corruption before this was fixed.
+	size_t GetMaxConsoleStateByteSize()
+	{
+		const size_t sizes[] = {
+			sizeof(SnesState), sizeof(GbState), sizeof(NesState), sizeof(PceState),
+			sizeof(SmsState), sizeof(GbaState), sizeof(WsState)
+		};
+
+		size_t maxSize = 0;
+		for(size_t size : sizes) {
+			if(size > maxSize) {
+				maxSize = size;
+			}
+		}
+		return maxSize;
+	}
+
+	// True when the requested console is the one actually running; the core
+	// only guarantees a correct result in that case.
+	bool IsRunningConsole(ConsoleType type)
+	{
+		if(!_emu) {
+			return false;
+		}
+
+		IConsole* console = _emu->GetConsole().get();
+		return console != nullptr && console->GetConsoleType() == type;
+	}
+
+	JNIEXPORT jint JNICALL Java_mesen_MesenDebugger_getConsoleStateSize(JNIEnv*, jclass, jint consoleType)
+	{
+		return (jint)GetConsoleStateByteSize((ConsoleType)consoleType);
+	}
+
+	JNIEXPORT jbyteArray JNICALL Java_mesen_MesenDebugger_getConsoleStateBytes(JNIEnv* env, jclass, jint consoleType)
+	{
+		ConsoleType type = (ConsoleType)consoleType;
+		size_t size = GetConsoleStateByteSize(type);
+		if(size == 0) {
+			return env->NewByteArray(0);
+		}
+
+		// uint64_t storage keeps the buffer 8-byte aligned for the core's memcpy.
+		std::vector<uint64_t> storage((GetMaxConsoleStateByteSize() + sizeof(uint64_t) - 1) / sizeof(uint64_t), 0);
+		if(IsRunningConsole(type)) {
+			GetConsoleState(*reinterpret_cast<BaseState*>(storage.data()), type);
+		}
+
+		jbyteArray result = env->NewByteArray((jsize)size);
+		env->SetByteArrayRegion(result, 0, (jsize)size, (const jbyte*)storage.data());
+		return result;
+	}
+}
