@@ -256,4 +256,52 @@ public final class MesenCore
 
     /** 读取着色器文件定义的参数（文件不存在或解析失败时返回空数组）。 */
     public static native ShaderParamDefinition[] getShaderParams(String shaderFile);
+
+    // --- 历史查看器（倒带时间轴回放）----------------------------------------
+
+    /**
+     * 是否有可回放的历史。
+     *
+     * <p>取决于 {@code PreferencesConfig.RewindBufferSize}——设成 0 就没有历史。</p>
+     */
+    public static native boolean historyViewerEnabled();
+
+    /**
+     * 初始化历史查看器。
+     *
+     * <p><b>注意</b>：core 会为此<b>再建一个 Emulator 实例</b>，并在 Windows 上创建
+     * 原生音频设备（非 Windows 用 SDL）。headless 场景下传 0 句柄、并确保
+     * {@code initializeEmu} 的 {@code softwareRenderer} 为 true，走软件渲染。</p>
+     *
+     * @param windowHandle 主窗口句柄（0 = 无）
+     * @param viewerHandle 查看器窗口句柄（0 = 无）
+     */
+    public static native void historyViewerInitialize(long windowHandle, long viewerHandle);
+
+    /** 释放历史查看器（会销毁它自己的那个 Emulator）。 */
+    public static native void historyViewerRelease();
+
+    /** 取当前状态（未初始化时返回全 0）。 */
+    public static native HistoryViewerState historyViewerGetState();
+
+    /** 应用选项（暂停/音量/渲染尺寸）。 */
+    public static native void historyViewerSetOptions(HistoryViewerOptions options);
+
+    /** 在指定位置导出一个存档。 */
+    public static native boolean historyViewerCreateSaveState(String outputFile, int position);
+
+    /** 把 [startPosition, endPosition] 区段导出成操作回放（.mmo）。 */
+    public static native boolean historyViewerSaveMovie(String movieFile, int startPosition, int endPosition);
+
+    /** 从指定位置恢复实际游戏（历史查看器结束）。 */
+    public static native void historyViewerResumeGameplay(int resumePosition);
+
+    /** 跳转到指定位置。 */
+    public static native void historyViewerSetPosition(int seekPosition);
+
+    /** 注册历史查看器的通知监听（对应 core 的 HistoryViewerRegisterNotificationCallback）。 */
+    public static native void historyViewerRegisterNotificationListener(INotificationListener listener);
+
+    /** 注销历史查看器的通知监听。 */
+    public static native void historyViewerUnregisterNotificationListener();
 }

@@ -27,6 +27,8 @@ using std::unique_ptr;
 extern unique_ptr<Emulator> _emu;
 extern unique_ptr<IKeyManager> _keyManager;
 extern unique_ptr<IMouseManager> _mouseManager;
+// InteropDLL global; the history viewer runs its own Emulator instance.
+extern unique_ptr<Emulator> _historyPlayer;
 
 // Keep Java-registered adapters alive (the core only holds raw/weak pointers)
 static shared_ptr<JavaNotificationListener> _javaNotificationListener;
@@ -1274,5 +1276,146 @@ JNIEXPORT jobjectArray JNICALL Java_mesen_MesenCore_getShaderParams(JNIEnv* env,
 
 	env->DeleteLocalRef(cls);
 	return result;
+}
+// ---------------------------------------------------------------------------
+// History viewer (rewind timeline)
+// ---------------------------------------------------------------------------
+
+static shared_ptr<JavaNotificationListener> _javaHistoryNotificationListener;
+
+jobject NewHistoryViewerState(JNIEnv* env, const HistoryViewerState& state)
+{
+	jclass cls = env->FindClass("mesen/HistoryViewerState");
+	jmethodID ctor = env->GetMethodID(cls, "<init>", "()V");
+	jobject obj = env->NewObject(cls, ctor);
+
+	env->SetIntField(obj, env->GetFieldID(cls, "position", "I"), (jint)state.Position);
+	env->SetIntField(obj, env->GetFieldID(cls, "length", "I"), (jint)state.Length);
+	env->SetIntField(obj, env->GetFieldID(cls, "volume", "I"), (jint)state.Volume);
+	env->SetDoubleField(obj, env->GetFieldID(cls, "fps", "D"), (jdouble)state.Fps);
+	env->SetBooleanField(obj, env->GetFieldID(cls, "isPaused", "Z"), state.IsPaused ? JNI_TRUE : JNI_FALSE);
+
+	// Segments is a fixed 1000-entry array in the core; only SegmentCount matter.
+	uint32_t segmentCount = state.SegmentCount < 1000 ? state.SegmentCount : 1000;
+	env->SetIntField(obj, env->GetFieldID(cls, "segmentCount", "I"), (jint)segmentCount);
+
+	std::vector<jint> segments(1000, 0);
+	for(uint32_t i = 0; i < segmentCount; i++) {
+		segments[i] = (jint)state.Segments[i];
+	}
+	jintArray segmentArray = env->NewIntArray(1000);
+	env->SetIntArrayRegion(segmentArray, 0, 1000, segments.data());
+	env->SetObjectField(obj, env->GetFieldID(cls, "segments", "[I"), segmentArray);
+	env->DeleteLocalRef(segmentArray);
+
+	env->DeleteLocalRef(cls);
+	return obj;
+}
+
+JNIEXPORT jboolean JNICALL Java_mesen_MesenCore_historyViewerEnabled(JNIEnv*, jclass)
+{
+	return HistoryViewerEnabled() ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_historyViewerInitialize(JNIEnv*, jclass, jlong windowHandle, jlong viewerHandle)
+{
+	// Initializing twice would leak the previous Emulator, and Release() below
+	// dereferences _historyPlayer, so tear down anything still alive first.
+	if(_historyPlayer) {
+		_javaHistoryNotificationListener.reset();
+		HistoryViewerRelease();
+	}
+
+	HistoryViewerInitialize((void*)(intptr_t)windowHandle, (void*)(intptr_t)viewerHandle);
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_historyViewerRelease(JNIEnv*, jclass)
+{
+	_javaHistoryNotificationListener.reset();
+
+	// HistoryViewerRelease() dereferences _historyPlayer without a null check.
+	if(_historyPlayer) {
+		HistoryViewerRelease();
+	}
+}
+
+JNIEXPORT jobject JNICALL Java_mesen_MesenCore_historyViewerGetState(JNIEnv* env, jclass)
+{
+	return NewHistoryViewerState(env, HistoryViewerGetState());
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_historyViewerSetOptions(JNIEnv* env, jclass, jobject obj)
+{
+	if(!obj) {
+		return;
+	}
+
+	jclass cls = env->FindClass("mesen/HistoryViewerOptions");
+	HistoryViewerOptions options = {};
+	options.IsPaused = env->GetBooleanField(obj, env->GetFieldID(cls, "isPaused", "Z")) == JNI_TRUE;
+	options.Volume = (uint32_t)env->GetIntField(obj, env->GetFieldID(cls, "volume", "I"));
+	options.Width = (uint32_t)env->GetIntField(obj, env->GetFieldID(cls, "width", "I"));
+	options.Height = (uint32_t)env->GetIntField(obj, env->GetFieldID(cls, "height", "I"));
+	HistoryViewerSetOptions(options);
+	env->DeleteLocalRef(cls);
+}
+
+JNIEXPORT jboolean JNICALL Java_mesen_MesenCore_historyViewerCreateSaveState(JNIEnv* env, jclass, jstring outputFile, jint position)
+{
+	if(!outputFile) {
+		return JNI_FALSE;
+	}
+
+	const char* chars = env->GetStringUTFChars(outputFile, nullptr);
+	if(!chars) {
+		return JNI_FALSE;
+	}
+
+	bool result = HistoryViewerCreateSaveState(chars, (uint32_t)position);
+	env->ReleaseStringUTFChars(outputFile, chars);
+	return result ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL Java_mesen_MesenCore_historyViewerSaveMovie(JNIEnv* env, jclass, jstring movieFile, jint startPosition, jint endPosition)
+{
+	if(!movieFile) {
+		return JNI_FALSE;
+	}
+
+	const char* chars = env->GetStringUTFChars(movieFile, nullptr);
+	if(!chars) {
+		return JNI_FALSE;
+	}
+
+	bool result = HistoryViewerSaveMovie(chars, (uint32_t)startPosition, (uint32_t)endPosition);
+	env->ReleaseStringUTFChars(movieFile, chars);
+	return result ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_historyViewerResumeGameplay(JNIEnv*, jclass, jint resumePosition)
+{
+	HistoryViewerResumeGameplay((uint32_t)resumePosition);
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_historyViewerSetPosition(JNIEnv*, jclass, jint seekPosition)
+{
+	HistoryViewerSetPosition((uint32_t)seekPosition);
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_historyViewerRegisterNotificationListener(JNIEnv* env, jclass, jobject listener)
+{
+	if(!listener || !_historyPlayer) {
+		return;
+	}
+
+	_javaHistoryNotificationListener = shared_ptr<JavaNotificationListener>(new JavaNotificationListener(env, listener));
+	_historyPlayer->GetNotificationManager()->RegisterNotificationListener(_javaHistoryNotificationListener);
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_historyViewerUnregisterNotificationListener(JNIEnv*, jclass)
+{
+	// NotificationManager keeps weak_ptrs and has no unregister call, so dropping
+	// our reference is what unregisters us.
+	_javaHistoryNotificationListener.reset();
 }
 } // extern "C"

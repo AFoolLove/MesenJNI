@@ -32,6 +32,7 @@
 #include "Core/Shared/Interfaces/ITapeRecorder.h"     // TapeRecorderAction
 #include "Core/Shared/Audio/AudioPlayerTypes.h"       // AudioPlayerActionParams
 #include "Utilities/Video/LibrashaderUtilities.h"     // ShaderParamDefinition
+#include "Core/Shared/HistoryViewer.h"                // HistoryViewerState/Options
 
 class Breakpoint;
 struct AddressCounters;
@@ -269,6 +270,17 @@ MESEN_EXTERN
 	void MESEN_CALL SetShaderConfig(InteropShaderConfig config);
 	bool MESEN_CALL CheckShaderSupport();
 	uint32_t MESEN_CALL GetShaderParams(const char* shaderFile, ShaderParamDefinition* params);
+
+	// --- HistoryApiWrapper (rewind timeline viewer) ---
+	bool MESEN_CALL HistoryViewerEnabled();
+	void MESEN_CALL HistoryViewerInitialize(void* windowHandle, void* viewerHandle);
+	void MESEN_CALL HistoryViewerRelease();
+	HistoryViewerState MESEN_CALL HistoryViewerGetState();
+	void MESEN_CALL HistoryViewerSetOptions(HistoryViewerOptions options);
+	bool MESEN_CALL HistoryViewerCreateSaveState(const char* outputFile, uint32_t position);
+	bool MESEN_CALL HistoryViewerSaveMovie(const char* movieFile, uint32_t startPosition, uint32_t endPosition);
+	void MESEN_CALL HistoryViewerResumeGameplay(uint32_t resumePosition);
+	void MESEN_CALL HistoryViewerSetPosition(uint32_t seekPosition);
 
 	// --- DebugApiWrapper (labels / undo / address conversion) ---
 	void MESEN_CALL SetLabel(uint32_t address, MemoryType memType, char* label, char* comment);
