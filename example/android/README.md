@@ -42,6 +42,30 @@ emu.setButton(Mesen.BUTTON_START, true);   // 按下
 emu.setButton(Mesen.BUTTON_START, false);  // 松开
 ```
 
+### ROM 直接从字节加载（不用先落盘）
+
+Android 上 Rom 常常是从 `InputStream` / `AssetManager` / 网络来的，可以先落盘再传路径，也可以直接传字节：
+
+```java
+byte[] romData;
+try(InputStream in = getAssets().open("MetalMax.nes")) {
+    romData = in.readAllBytes();
+}
+
+// romName 只用来判断机种和加载器，不会去磁盘读文件，
+// 所以必须带真实扩展名（.nes / .sfc / .gb / .gba ...）
+MesenCore.loadRomFromBytes(romData, "MetalMax.nes", null);
+MesenCore.resume();
+```
+
+三个要点：
+
+- **扩展名必须对**——core 是按扩展名挑加载器的，叫 `"rom"` 会认不出来；
+- core 会**拷贝**这份数据，方法返回后可以直接丢掉数组（省内存的话可以立刻置空）；
+- 传 `null` 或空数组返回 `false`，不会崩。
+
+`MesenPlayer`（桌面示例）里的用法一样，只是换成 `Files.readAllBytes(...)`。
+
 ## 4. 关键 API
 
 ```java
