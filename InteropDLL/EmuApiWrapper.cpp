@@ -126,6 +126,12 @@ extern "C"
 
 	DllExport void __stdcall InitDll()
 	{
+		// Release() destroys _emu, so re-initializing after a release has to
+		// recreate it (otherwise this dereferences a null pointer).
+		if(!_emu) {
+			_emu.reset(new Emulator());
+		}
+
 		_emu->Initialize();
 		KeyManager::SetSettings(_emu->GetSettings());
 	}
