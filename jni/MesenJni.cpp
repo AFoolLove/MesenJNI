@@ -732,4 +732,123 @@ JNIEXPORT jint JNICALL Java_mesen_MesenAudio_readAudioSamples(JNIEnv* env, jclas
 	return (jint)count;
 }
 
+// ---------------------------------------------------------------------------
+// Recording: AVI / WAV / movie files
+// ---------------------------------------------------------------------------
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_aviRecord(JNIEnv* env, jclass, jstring filename,
+	jint codec, jint compressionLevel, jboolean recordSystemHud, jboolean recordInputHud)
+{
+	if(!filename) {
+		return;
+	}
+
+	const char* chars = env->GetStringUTFChars(filename, nullptr);
+	if(chars) {
+		RecordAviOptions options = {};
+		options.Codec = (VideoCodec)codec;
+		options.CompressionLevel = (uint32_t)compressionLevel;
+		options.RecordSystemHud = recordSystemHud == JNI_TRUE;
+		options.RecordInputHud = recordInputHud == JNI_TRUE;
+		AviRecord(const_cast<char*>(chars), options);
+		env->ReleaseStringUTFChars(filename, chars);
+	}
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_aviStop(JNIEnv*, jclass)
+{
+	AviStop();
+}
+
+JNIEXPORT jboolean JNICALL Java_mesen_MesenCore_aviIsRecording(JNIEnv*, jclass)
+{
+	return AviIsRecording() ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_waveRecord(JNIEnv* env, jclass, jstring filename)
+{
+	if(!filename) {
+		return;
+	}
+
+	const char* chars = env->GetStringUTFChars(filename, nullptr);
+	if(chars) {
+		WaveRecord(const_cast<char*>(chars));
+		env->ReleaseStringUTFChars(filename, chars);
+	}
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_waveStop(JNIEnv*, jclass)
+{
+	WaveStop();
+}
+
+JNIEXPORT jboolean JNICALL Java_mesen_MesenCore_waveIsRecording(JNIEnv*, jclass)
+{
+	return WaveIsRecording() ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_movieRecord(JNIEnv* env, jclass, jstring filename,
+	jstring author, jstring description, jint recordFrom)
+{
+	if(!filename) {
+		return;
+	}
+
+	const char* fileChars = env->GetStringUTFChars(filename, nullptr);
+	if(!fileChars) {
+		return;
+	}
+
+	RecordMovieOptions options = {};
+	strncpy(options.Filename, fileChars, sizeof(options.Filename) - 1);
+	env->ReleaseStringUTFChars(filename, fileChars);
+
+	if(author) {
+		const char* chars = env->GetStringUTFChars(author, nullptr);
+		if(chars) {
+			strncpy(options.Author, chars, sizeof(options.Author) - 1);
+			env->ReleaseStringUTFChars(author, chars);
+		}
+	}
+
+	if(description) {
+		const char* chars = env->GetStringUTFChars(description, nullptr);
+		if(chars) {
+			strncpy(options.Description, chars, sizeof(options.Description) - 1);
+			env->ReleaseStringUTFChars(description, chars);
+		}
+	}
+
+	options.RecordFrom = (RecordMovieFrom)recordFrom;
+	MovieRecord(options);
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_moviePlay(JNIEnv* env, jclass, jstring filename)
+{
+	if(!filename) {
+		return;
+	}
+
+	const char* chars = env->GetStringUTFChars(filename, nullptr);
+	if(chars) {
+		MoviePlay(const_cast<char*>(chars));
+		env->ReleaseStringUTFChars(filename, chars);
+	}
+}
+
+JNIEXPORT void JNICALL Java_mesen_MesenCore_movieStop(JNIEnv*, jclass)
+{
+	MovieStop();
+}
+
+JNIEXPORT jboolean JNICALL Java_mesen_MesenCore_moviePlaying(JNIEnv*, jclass)
+{
+	return MoviePlaying() ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL Java_mesen_MesenCore_movieRecording(JNIEnv*, jclass)
+{
+	return MovieRecording() ? JNI_TRUE : JNI_FALSE;
+}
 } // extern "C"

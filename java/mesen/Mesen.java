@@ -198,6 +198,30 @@ public final class Mesen
     public static final int CDL_JUMP_TARGET = 0x04;
     public static final int CDL_SUB_ENTRY_POINT = 0x08;
 
+    // --- VideoCodec (Utilities/Video/AviWriter.h) --------------------------
+    public static final int VIDEO_CODEC_NONE = 0;
+    public static final int VIDEO_CODEC_ZMBV = 1;
+    public static final int VIDEO_CODEC_CSCD = 2;
+    public static final int VIDEO_CODEC_GIF = 3;
+
+    // --- RecordMovieFrom (Core/Shared/Movies/MovieTypes.h) -----------------
+    public static final int MOVIE_FROM_START_WITHOUT_SAVE_DATA = 0;
+    public static final int MOVIE_FROM_START_WITH_SAVE_DATA = 1;
+    public static final int MOVIE_FROM_CURRENT_STATE = 2;
+
+    // --- CheatType (Core/Shared/CheatManager.h) ----------------------------
+    public static final int CHEAT_NES_GAME_GENIE = 0;
+    public static final int CHEAT_NES_PRO_ACTION_ROCKY = 1;
+    public static final int CHEAT_NES_CUSTOM = 2;
+    public static final int CHEAT_GB_GAME_GENIE = 3;
+    public static final int CHEAT_GB_GAME_SHARK = 4;
+    public static final int CHEAT_SNES_GAME_GENIE = 5;
+    public static final int CHEAT_SNES_PRO_ACTION_REPLAY = 6;
+    public static final int CHEAT_PCE_RAW = 7;
+    public static final int CHEAT_PCE_ADDRESS = 8;
+    public static final int CHEAT_SMS_PRO_ACTION_REPLAY = 9;
+    public static final int CHEAT_SMS_GAME_GENIE = 10;
+
     // --- ConsoleType (Core/Shared/SettingTypes.h) --------------------------
     public static final int CONSOLE_SNES = 0;
     public static final int CONSOLE_GAMEBOY = 1;

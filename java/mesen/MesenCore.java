@@ -117,4 +117,52 @@ public final class MesenCore
     public static native String getLog();
     public static native void writeLogEntry(String message);
     public static native void displayMessage(String title, String message, String param);
+
+    // --- 录像：视频 / 音频 / 操作回放 ---------------------------------------
+
+    /**
+     * 开始录 AVI。
+     *
+     * @param codec           {@code Mesen.VIDEO_CODEC_*}（注意 {@code VIDEO_CODEC_GIF} 时
+     *                        文件名要用 .gif）
+     * @param compressionLevel 压缩级别（0 = 默认）
+     * @param recordSystemHud 是否把系统 HUD 也录进去
+     * @param recordInputHud  是否把按键显示也录进去
+     */
+    public static native void aviRecord(String filename, int codec, int compressionLevel,
+        boolean recordSystemHud, boolean recordInputHud);
+
+    /** 停止录 AVI。 */
+    public static native void aviStop();
+
+    /** 是否正在录 AVI。 */
+    public static native boolean aviIsRecording();
+
+    /** 开始录 WAV。 */
+    public static native void waveRecord(String filename);
+
+    /** 停止录 WAV。 */
+    public static native void waveStop();
+
+    /** 是否正在录 WAV。 */
+    public static native boolean waveIsRecording();
+
+    /**
+     * 开始录制操作回放（.mmo）。
+     *
+     * @param recordFrom {@code Mesen.MOVIE_FROM_*}
+     */
+    public static native void movieRecord(String filename, String author, String description, int recordFrom);
+
+    /** 播放操作回放。 */
+    public static native void moviePlay(String filename);
+
+    /** 停止回放/录制。 */
+    public static native void movieStop();
+
+    /** 是否正在播放回放。 */
+    public static native boolean moviePlaying();
+
+    /** 是否正在录制回放。 */
+    public static native boolean movieRecording();
 }

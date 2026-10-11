@@ -25,6 +25,8 @@
 #include "Core/Debugger/ITraceLogger.h"       // TraceRow, TraceLoggerOptions
 #include "Core/Debugger/Profiler.h"           // ProfiledFunction
 #include "Core/Shared/SettingTypes.h"         // DebugConfig
+#include "Core/Shared/Video/VideoRenderer.h"  // RecordAviOptions, VideoCodec
+#include "Core/Shared/Movies/MovieTypes.h"    // RecordMovieOptions
 
 class Breakpoint;
 struct AddressCounters;
@@ -220,6 +222,19 @@ MESEN_EXTERN
 
 	// --- ConfigApiWrapper ---
 	void MESEN_CALL SetDebugConfig(DebugConfig config);
+
+	// --- RecordApiWrapper (video / audio / movie capture) ---
+	void MESEN_CALL AviRecord(char* filename, RecordAviOptions options);
+	void MESEN_CALL AviStop();
+	bool MESEN_CALL AviIsRecording();
+	void MESEN_CALL WaveRecord(char* filename);
+	void MESEN_CALL WaveStop();
+	bool MESEN_CALL WaveIsRecording();
+	void MESEN_CALL MoviePlay(char* filename);
+	void MESEN_CALL MovieStop();
+	bool MESEN_CALL MoviePlaying();
+	bool MESEN_CALL MovieRecording();
+	void MESEN_CALL MovieRecord(RecordMovieOptions options);
 
 	// --- DebugApiWrapper (labels / undo / address conversion) ---
 	void MESEN_CALL SetLabel(uint32_t address, MemoryType memType, char* label, char* comment);
