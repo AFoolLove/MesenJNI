@@ -4,6 +4,24 @@ Mesen is a multi-system emulator for Windows, Linux, and macOS. It supports NES,
 
 This is a community-managed fork, created to maintain and expand this emulator into the future.
 
+## Java / JNI bindings
+
+This fork builds the headless core as a **single shared library with JNI bindings**,
+so a Java or Android host can drive the emulator directly — one `.dll`/`.so`, no
+second native library and no .NET UI.
+
+* [JAVA_API.md](JAVA_API.md) — API overview, build instructions (including Android),
+  the test suite, known core quirks and per-console verification status
+* [example/java/](example/java/) — runnable desktop player (Swing)
+* [example/android/](example/android/) — minimal Android integration
+
+```java
+MesenCore.initDll();
+MesenCore.initializeEmu(homeFolder, true, false, false, false);
+MesenCore.loadRom("/path/to/game.nes", null);
+MesenCore.resume();
+```
+
 ## Releases
 
 The latest stable version is available from the [releases page on GitHub](https://github.com/nesdev-org/MesenCE/releases).

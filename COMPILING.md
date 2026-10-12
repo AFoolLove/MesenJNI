@@ -3,11 +3,15 @@
 This project builds the native emulator core as a shared library (`MesenCore`).
 The .NET/Avalonia UI is intentionally not part of this project.
 
+The same build also produces the JNI bindings, so the library can be driven from
+Java or Android; see [JAVA_API.md](JAVA_API.md).
+
 Requirements:
 
 * CMake 3.15 or newer
 * A C++17 compiler (MSVC 2022, Clang, or GCC)
 * Linux/macOS additionally require SDL2
+* Android additionally requires the NDK and a JDK
 
 ### Windows (x64)
 
@@ -41,3 +45,40 @@ cmake --build build
 ```
 
 The output library is `bin/osx-<arch>/Release/MesenCore.dylib`.
+
+### Android (headless)
+
+Requires the Android NDK and a JDK:
+
+```
+cmake -S . -B build-android \
+  -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake \
+  -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-24 \
+  -DCMAKE_BUILD_TYPE=Release -DJAVA_HOME=/path/to/jdk
+cmake --build build-android
+```
+
+The output library is `bin/android-arm64-v8a/Release/libMesenCore.so`.
+`ANDROID_ABI` also accepts `armeabi-v7a`, `x86` and `x86_64`.
+
+There is no native window, audio or input layer on Android: rendering, audio and
+input all come from Java through the callback interfaces. Verified against NDK
+28.2.13676358.
+
+### Running the Java tests
+
+The Java sources live in `java/` and the tests are plain `main()` classes:
+
+```
+javac -encoding UTF-8 -cp "lib/gson-2.9.0.jar" -d build/classes \
+      java/mesen/*.java java/mesen/interfaces/*.java java/mesen/debugger/*.java \
+      java/*.java example/java/*.java
+
+java -Djava.library.path=bin/win-x64/Release \
+     -cp "build/classes;lib/gson-2.9.0.jar" DebugSmokeTest
+```
+
+Test ROMs go in `roms/` and the emulator's home folder is `./home`; both are
+ignored by git, and tests that need a missing ROM skip rather than fail. See
+[JAVA_API.md](JAVA_API.md) for the full list.
+
