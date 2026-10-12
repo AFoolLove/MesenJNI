@@ -189,6 +189,21 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     # MesenApi.h declares the C API with C linkage, but several config getters
     # return C++ structs by value; clang warns (-Wreturn-type-c-linkage).
     target_compile_options(MesenCore PRIVATE -Wno-return-type-c-linkage)
+
+    if(ANDROID)
+        # Bundled Lua's os.tmpname() falls back to tmpnam() because LUA_USE_POSIX
+        # is not defined, and bionic marks tmpnam deprecated, so every Android
+        # build prints a warning from Lua/loslib.c.
+        # Taking Lua's POSIX branch instead is not an option: it calls
+        # mkstemp("/tmp/lua_XXXXXX") and /tmp does not exist on Android, which
+        # would turn a working (if inherently racy) os.tmpname() into a failing
+        # one. The os library is gated behind the debugger's
+        # ScriptAllowIoOsAccess setting anyway, so silence the deprecation for
+        # the bundled Lua sources only.
+        # (Linux/macOS clang builds warn the same way; extend this if it matters.)
+        set_source_files_properties(${MESEN_LUA_SOURCES} PROPERTIES
+            COMPILE_OPTIONS "-Wno-deprecated-declarations")
+    endif()
 endif()
 
 # ---------------------------------------------------------------------------
