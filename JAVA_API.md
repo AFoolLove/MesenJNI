@@ -133,14 +133,14 @@ java -Djava.library.path=bin/win-x64/Release \
 
 ## 4. API 总览
 
-8 个带 native 方法的类，共 **210 个方法**；另有 44 个 `mesen.debugger` 数据类、
+8 个带 native 方法的类，共 **211 个方法**；另有 44 个 `mesen.debugger` 数据类、
 25 个顶层数据类、**530 个常量**（都在 `Mesen.java`）。
 
 | 类 | 方法数 | 用途 |
 |---|---|---|
 | `MesenCore` | 88 | 生命周期、ROM、存档、录像、作弊、网表、快捷点、着色器、历史查看器、录制测试 |
 | `MesenDebugger` | 79 | 断点、反汇编、内存、CDL、表达式、PPU 工具、事件查看器、整机状态、执行跟踪、性能分析 |
-| `MesenConfig` | 21 | 视频/音频/输入/机种配置 |
+| `MesenConfig` | 22 | 视频/音频/输入/机种配置 |
 | `MesenInput` | 9 | 输入设备 |
 | `MesenMemory` | 5 | 内存读写 |
 | `MesenScript` | 3 | Lua 脚本 |
