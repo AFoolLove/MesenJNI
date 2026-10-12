@@ -212,6 +212,20 @@ JNIEXPORT void JNICALL Java_mesen_MesenCore_initializeEmu(JNIEnv* env, jclass, j
 	InitializeEmu(home.c_str(), nullptr, nullptr, softwareRenderer, noAudio, noVideo, noInput);
 }
 
+JNIEXPORT void JNICALL Java_mesen_MesenCore_initializeEmuWithHandles(JNIEnv* env, jclass,
+	jstring homeFolder, jlong windowHandle, jlong viewerHandle,
+	jboolean softwareRenderer, jboolean noAudio, jboolean noVideo, jboolean noInput)
+{
+	string home = JStringToUtf8(env, homeFolder);
+
+	// Real handles make the core build its native renderer/audio device instead of
+	// the headless ones, which is what the .NET UI does. This exists so a problem
+	// can be checked against that configuration; the headless one (handles = 0) is
+	// what Java and Android normally use.
+	InitializeEmu(home.c_str(), (void*)(intptr_t)windowHandle, (void*)(intptr_t)viewerHandle,
+		softwareRenderer, noAudio, noVideo, noInput);
+}
+
 JNIEXPORT void JNICALL Java_mesen_MesenCore_release(JNIEnv*, jclass)
 {
 	Release();

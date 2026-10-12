@@ -88,6 +88,21 @@ public final class MesenCore
      */
     public static native void initializeEmu(String homeFolder, boolean softwareRenderer, boolean noAudio, boolean noVideo, boolean noInput);
 
+    /**
+     * 同 {@link #initializeEmu(String, boolean, boolean, boolean, boolean)}，但可以传真实窗口句柄。
+     *
+     * <p>传真实句柄会让 core 创建<b>原生</b>渲染器 / 音频设备；传 0 就是 headless
+     * （Java/Android 的常规用法，也是上面那个 5 参数版本的行为）。</p>
+     *
+     * <p>这个重载主要是为了排查「某个问题是不是只在 headless 配置下出现」——
+     * 上游 .NET 界面用的就是真实句柄。</p>
+     *
+     * @param windowHandle 主窗口句柄（0 = 无）
+     * @param viewerHandle 副窗口句柄（如历史查看器的渲染窗口；0 = 无）
+     */
+    public static native void initializeEmuWithHandles(String homeFolder, long windowHandle, long viewerHandle,
+        boolean softwareRenderer, boolean noAudio, boolean noVideo, boolean noInput);
+
     public static native void release();
     public static native boolean isRunning();
     public static native void stop();

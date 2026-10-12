@@ -222,33 +222,35 @@ public class ApiCoverageTest
         }
 
         // ---------------------------------------------------------------
-        section("历史查看器：ResumeGameplay 与通知监听");
-        // ResumeGameplay 在主模拟器「没在运行」时会去 LoadRom（此时仍持着主锁），
-        // 之后再 Release 会死锁，所以这里让主模拟器保持运行。
-        MesenCore.resume();
-        for(int i = 0; i < 40 && !MesenCore.historyViewerEnabled(); i++) {
-            Thread.sleep(100);
-        }
-        System.out.println("      historyViewerEnabled() = " + MesenCore.historyViewerEnabled()
-            + "（没有历史时 ResumeGameplay 会越界访问空 deque，所以先等出来）");
+        section("历史查看器：通知监听与 ResumeGameplay");
+        // 历史查看器只走一遍：initialize → 注册监听 → 取状态 → resume → 注销。
+        // 不做「release 后再 initialize」的反复，也不再调 release（原因见下）。
         MesenCore.historyViewerInitialize(0, 0);
         mesen.NotificationListener historyListener = new mesen.NotificationListener();
         MesenCore.historyViewerRegisterNotificationListener(historyListener);
         check(true, "historyViewerRegisterNotificationListener() 无异常");
 
+        // 让主模拟器跑一会儿，攒出倒带历史（空历史时 ResumeGameplay 会越界访问空 deque）
+        MesenCore.resume();
+        for(int i = 0; i < 40 && !MesenCore.historyViewerEnabled(); i++) {
+            Thread.sleep(100);
+        }
+        System.out.println("      historyViewerEnabled() = " + MesenCore.historyViewerEnabled());
+
         mesen.HistoryViewerState historyState = MesenCore.historyViewerGetState();
         int resumeTarget = historyState == null ? 0 : Math.max(0, historyState.length / 2);
+        check(historyState != null && historyState.length > 0,
+            "historyViewerGetState() -> length=" + (historyState == null ? "null" : historyState.length));
         MesenCore.historyViewerResumeGameplay(resumeTarget);
         check(true, "historyViewerResumeGameplay(" + resumeTarget + ") 无异常");
 
         MesenCore.historyViewerUnregisterNotificationListener();
         check(true, "historyViewerUnregisterNotificationListener() 无异常");
 
-        // 已知问题：ResumeGameplay 之后再调 historyViewerRelease() 会死锁
-        // （卡在 _historyPlayer->Release()，两个线程都 0 CPU）。HistorySmokeTest
-        // 里「只 initialize/release、不 resume」是正常的，所以触发条件是 resume。
-        // 这里不掩盖它：不做 release，直接退出进程，并在日志里标明。
-        System.out.println("      [KNOWN] ResumeGameplay 之后 release 会死锁，跳过 release");
+        // ⚠️ 未修复的 core 缺陷：ResumeGameplay 之后再调 historyViewerRelease() 有很大概率卡死
+        // （实测 4/5）。这里不调 release —— 不是掩盖，是不让整条回归被一个已知缺陷挂住。
+        // JAVA_API.md 记录了复现方式、表现和已排除的两条假设。
+        System.out.println("      [KNOWN-OPEN] resume 之后不调 release：core 缺陷，约 4/5 概率卡死");
 
         MesenCore.stop();
         MesenCore.release();

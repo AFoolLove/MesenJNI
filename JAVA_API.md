@@ -120,6 +120,7 @@ java -Djava.library.path=bin/win-x64/Release \
 | `CoreRateTest` | 实测核心帧率（应稳定 60fps） |
 | `FrameVerifyTest` | 验证帧内容非零。**无参数 = 轮询模式**（`frames=0` 是正常的：那两个计数器只在回调模式用）；**`cb` = 回调模式**，实测 `frames=180 nonZeroFrames=180` |
 | `InputVerifyTest` | 验证按键注入能传到游戏 |
+| `HistoryLockProbe` | 守着历史查看器「resume → release」这个曾经死锁的场景。参数 1 为 `headless`（默认）或 `native`（传真实 HWND，上游 .NET 的配置；需要 `--add-opens java.desktop/sun.awt.windows=ALL-UNNAMED`） |
 
 **测试素材**（都是 gitignore 的，缺了会跳过、不算失败）：
 
@@ -133,12 +134,12 @@ java -Djava.library.path=bin/win-x64/Release \
 
 ## 4. API 总览
 
-8 个带 native 方法的类，共 **211 个方法**；另有 44 个 `mesen.debugger` 数据类、
+8 个带 native 方法的类，共 **212 个方法**；另有 44 个 `mesen.debugger` 数据类、
 25 个顶层数据类、**530 个常量**（都在 `Mesen.java`）。
 
 | 类 | 方法数 | 用途 |
 |---|---|---|
-| `MesenCore` | 88 | 生命周期、ROM、存档、录像、作弊、网表、快捷点、着色器、历史查看器、录制测试 |
+| `MesenCore` | 89 | 生命周期、ROM、存档、录像、作弊、网表、快捷点、着色器、历史查看器、录制测试 |
 | `MesenDebugger` | 79 | 断点、反汇编、内存、CDL、表达式、PPU 工具、事件查看器、整机状态、执行跟踪、性能分析 |
 | `MesenConfig` | 22 | 视频/音频/输入/机种配置 |
 | `MesenInput` | 9 | 输入设备 |
@@ -166,6 +167,15 @@ java -Djava.library.path=bin/win-x64/Release \
 
 每个接口都有现成的默认实现（`NotificationListener`、`AudioDevice`、`KeyManager`、
 `MouseManager`、`RenderingDevice`），只想用其中几个方法时继承它们即可。
+
+**③ 默认 headless，但也能传真实窗口句柄。**
+
+`initializeEmu(home, softwareRenderer, noAudio, noVideo, noInput)` 是 headless 的
+（窗口句柄为 0 → 软件渲染器 + 无原生窗口/音频），Java 与 Android 的常规用法。
+
+需要原生渲染器/音频时用 `initializeEmuWithHandles(home, windowHandle, viewerHandle, ...)`
+传真实 HWND —— 上游 .NET 界面就是这么做的。这个重载主要用来排查
+「某个问题是不是只在 headless 配置下出现」（见 `HistoryLockProbe` 的 `native` 模式）。
 
 **③ 数据类用 public 扁平字段**，没有 getter/setter；JNI 按字段名/签名直接读写，
 所以**改字段名会静默失败**（JNI 侧是按名字找的）。
@@ -231,14 +241,30 @@ java -Djava.library.path=bin/win-x64/Release \
 * 它会**再建一个 Emulator 实例**。`release()` 前重复 `initialize()` 会先销毁旧的。
 * **它需要音频设备**：core 里 `HistoryViewerInitialize` 无视 `noAudio`，在 Windows 上
   无条件创建原生音频设备 —— 用 `noAudio=true` 初始化核心时会崩。已改成尊重该标志。
-* ⚠️ **已知未修复问题**：调过 `historyViewerResumeGameplay()` 之后再调
-  `historyViewerRelease()` 会**死锁**（卡在 `_historyPlayer->Release()`，两个线程都 0 CPU）。
-  只 `initialize`/`release`（不 resume）是正常的，所以触发条件是 resume ——
-  对照 `HistorySmokeTest`（不 resume，通过）和 `ApiCoverageTest`（resume，因此跳过 release）。
-  复现：加载 ROM → 跑一会儿让 `historyViewerEnabled()` 为 true → `historyViewerInitialize(0,0)`
-  → `historyViewerResumeGameplay(任意位置)` → `historyViewerRelease()`。
-  已排除的原因：不是「空历史越界」（有历史时同样死锁）、不是 `ResumeGameplay` 持主锁调
-  `LoadRom` 导致（那处已挪出锁外，问题依旧）。尚未定位。
+* ⚠️ **未修复的 core 缺陷**：调过 `historyViewerResumeGameplay()` 之后再调
+  `historyViewerRelease()`，**约 4/5 概率卡死**（实测 5 次：通过 1、卡死 4）。
+
+  表现：卡在 `_historyPlayer->Release()`。**不是 0 CPU 的死锁，而是在自旋**
+  （观察到单进程烧掉 134 秒 CPU），对应 `Emulator::Run()` 里那个
+  `while(!_runLock.TryAcquire(50))` 忙等。既然线程还在自旋，说明
+  `Emulator::Stop()` 还没执行到 `_stopFlag = true`（`_stopFlag = true` 在
+  `_emuThread->join()` **之前**，一旦置位线程就会退出），所以嫌疑落在它前面的
+  `BlockDebuggerRequests()` 或 `BeforeGameUnload` 通知上。**尚未定位。**
+
+  只需 `initialize`/`release`（不 resume）是**正常的**，所以触发点是 resume。
+  上游 .NET 也是这个顺序（右键菜单 resume → 关窗时 release，
+  见 `HistoryViewerViewModel.cs:105` 和 `HistoryViewerWindow.axaml.cs:132`），
+  所以这大概率不是绑定层或 headless 特有的问题。
+
+  **两条被否定的假设（别再走这两条路）**：
+
+  1. ~~空历史导致 `_history[size-1]` 越界~~ —— 有历史时（`historyViewerEnabled()=true`）同样卡死。
+  2. ~~`ResumeGameplay` 持主锁调 `LoadRom` 自死锁~~ —— **`AcquireLock` 是可重入的**
+     （`EmulatorLock` 先查 `_runLock.IsLockedByCurrentThread()`），持锁再调不会自死锁。
+     曾经据此改过一版（把 `LoadRom` 挪出锁外），既没解决问题、又引入了竞态，**已撤销**。
+
+  `ApiCoverageTest` 因此把 release 单独测（不 resume），resume 放最后不 release；
+  `HistoryLockProbe` 专门复现这个场景，并支持 `native` 模式做 headless / 原生对比。
 
 ### 其他
 
