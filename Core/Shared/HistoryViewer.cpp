@@ -156,24 +156,17 @@ void HistoryViewer::ResumeGameplay(uint32_t resumePosition)
 {
 	resumePosition /= RewindManager::BufferSize;
 
-	// Load the ROM *outside* the emulator lock: LoadRom takes that same lock
-	// internally, so calling it while holding it deadlocked. This is the normal
-	// path, because the viewer's ROM path and the main emulator's rarely match as
-	// strings - which made historyViewerResumeGameplay followed by release hang.
-	{
-		auto lock = _mainEmu->AcquireLock();
-		RomInfo mainRom = _mainEmu->GetRomInfo();
-		RomInfo viewerRom = _emu->GetRomInfo();
+	auto lock = _mainEmu->AcquireLock();
+	RomInfo mainRom = _mainEmu->GetRomInfo();
+	RomInfo viewerRom = _emu->GetRomInfo();
 
-		if(!_mainEmu->IsRunning() || (string)mainRom.RomFile != (string)viewerRom.RomFile || (string)mainRom.PatchFile != (string)viewerRom.PatchFile) {
-			//Load game on the main window if they aren't the same
-			if(!_mainEmu->LoadRom(_emu->GetRomInfo().RomFile, _emu->GetRomInfo().PatchFile)) {
-				return;
-			}
+	if(!_mainEmu->IsRunning() || (string)mainRom.RomFile != (string)viewerRom.RomFile || (string)mainRom.PatchFile != (string)viewerRom.PatchFile) {
+		//Load game on the main window if they aren't the same
+		if(!_mainEmu->LoadRom(_emu->GetRomInfo().RomFile, _emu->GetRomInfo().PatchFile)) {
+			return;
 		}
 	}
 
-	auto lock = _mainEmu->AcquireLock();
 	if(resumePosition < _history.size()) {
 		_history[resumePosition].LoadState(_mainEmu, _history, resumePosition);
 	} else {
