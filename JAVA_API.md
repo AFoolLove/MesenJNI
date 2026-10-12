@@ -263,8 +263,18 @@ java -Djava.library.path=bin/win-x64/Release \
      （`EmulatorLock` 先查 `_runLock.IsLockedByCurrentThread()`），持锁再调不会自死锁。
      曾经据此改过一版（把 `LoadRom` 挪出锁外），既没解决问题、又引入了竞态，**已撤销**。
 
-  `ApiCoverageTest` 因此把 release 单独测（不 resume），resume 放最后不 release；
-  `HistoryLockProbe` 专门复现这个场景，并支持 `native` 模式做 headless / 原生对比。
+  `ApiCoverageTest` 因此不再调 resume 之后的 release（会把整条回归挂住）；
+  `HistoryLockProbe` 专门复现这个场景。
+
+  **想判断它是不是 headless 特有？目前的答案是「还没能判断」**：
+
+  * `initializeEmuWithHandles()` 重载已经有了，可以传真实窗口句柄。
+  * 但 Java 侧**拿不到 HWND**：`Component.getPeer()` 在新 JDK 上已被移除
+    （实测 `NoSuchMethodException`），反射 `sun.awt.windows.WComponentPeer` 这条路走不通。
+    要用 `native` 模式，得让 C++ 侧自己建一个宿主窗口并返回句柄（尚未做）。
+  * 只把 `noAudio` 打开（不传句柄）**不行**：历史查看器会创建原生音频设备并
+    **直接崩溃**（`EXCEPTION_ACCESS_VIOLATION`）—— 这正是上面那条「它需要音频设备」
+    的缺陷本身，与这个卡死无关。所以音频这个变量也隔离不了。
 
 ### 其他
 
