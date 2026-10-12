@@ -111,14 +111,22 @@ java -Djava.library.path=bin/win-x64/Release \
 | `NetplaySmokeTest` | 网表对战（真开本地服务器） |
 | `RomBytesSmokeTest` | 从内存字节加载 ROM |
 | `ConsoleSmokeTest` | **多机种表驱动**：每个机种跑同一套通用接口 |
+| `ApiCoverageTest` | 补齐「已绑但没测过」的方法，重点是**写路径**的「写进去再读出来」往返 |
 
-另有 3 个诊断工具（非回归）：`CoreRateTest`（实测帧率）、`FrameVerifyTest`、`InputVerifyTest`。
+另有 3 个诊断工具（非回归，手动跑）：
+
+| 工具 | 用法 |
+|---|---|
+| `CoreRateTest` | 实测核心帧率（应稳定 60fps） |
+| `FrameVerifyTest` | 验证帧内容非零。**无参数 = 轮询模式**（`frames=0` 是正常的：那两个计数器只在回调模式用）；**`cb` = 回调模式**，实测 `frames=180 nonZeroFrames=180` |
+| `InputVerifyTest` | 验证按键注入能传到游戏 |
 
 **测试素材**（都是 gitignore 的，缺了会跳过、不算失败）：
 
 * ROM 放 `roms/`（`.nes` / `.smc` / `.gba` / `.gb` / `.pce` / `.sms` / `.ws` …）
-* GBA 需要 BIOS：`home/Firmware/gba_bios.bin`（16384 字节）
-  —— 路径**不能改**，因为 `FolderUtilities::SetFolderOverrides` 没有导出到 C API
+* GBA 需要 BIOS（16384 字节）。默认放 `home/Firmware/gba_bios.bin`，
+  也可以用 `MesenConfig.setFolderOverrides(null, null, null, "<目录>")` 指到别处
+  （`ConsoleSmokeTest` 就指向了 `roms/bios`）—— 必须在 `loadRom` 之前设
 * home 目录是 `./home`
 
 ---
@@ -195,6 +203,11 @@ java -Djava.library.path=bin/win-x64/Release \
   要先在 `DebugConfig` 里打开 `BreakOnUninitRead`。
 * **CDL 不在 CPU RAM 上**：要查 `MEM_NES_PRG_ROM` 这类内存类型。
   另外 **PRG ROM 的头几 KB 常常是填充区**（全 0），扫全片才能看到标记。
+* **写内存要选「有实际缓冲」的内存类型**：`MesenDebugger.setMemoryState()` 与
+  `setTilePixel()` 内部都是在 `_emu->GetMemory(type).Memory` 上直接 `memcpy`，
+  而 `MEM_NES`、`MEM_NES_PPU` 这类是**映射地址空间、没有缓冲** —— 传进去会**静默跳过**
+  （不报错、也不生效，很难查）。NES 上请用 `MEM_NES_INTERNAL_RAM`、`MEM_NES_CHR_ROM`
+  这类真实缓冲。只写单个字节的 `MesenMemory.setMemoryValue()` 没这个问题（走 CPU 写处理）。
 * **`getProfilerData` 的容量**：`Profiler::GetProfilerData` 忽略传入的容量，
   固定最多写 100000 条 —— JNI 已按 100000 分配。`GetAvailableInputOverrides` 固定填 8 项。
 
@@ -218,6 +231,14 @@ java -Djava.library.path=bin/win-x64/Release \
 * 它会**再建一个 Emulator 实例**。`release()` 前重复 `initialize()` 会先销毁旧的。
 * **它需要音频设备**：core 里 `HistoryViewerInitialize` 无视 `noAudio`，在 Windows 上
   无条件创建原生音频设备 —— 用 `noAudio=true` 初始化核心时会崩。已改成尊重该标志。
+* ⚠️ **已知未修复问题**：调过 `historyViewerResumeGameplay()` 之后再调
+  `historyViewerRelease()` 会**死锁**（卡在 `_historyPlayer->Release()`，两个线程都 0 CPU）。
+  只 `initialize`/`release`（不 resume）是正常的，所以触发条件是 resume ——
+  对照 `HistorySmokeTest`（不 resume，通过）和 `ApiCoverageTest`（resume，因此跳过 release）。
+  复现：加载 ROM → 跑一会儿让 `historyViewerEnabled()` 为 true → `historyViewerInitialize(0,0)`
+  → `historyViewerResumeGameplay(任意位置)` → `historyViewerRelease()`。
+  已排除的原因：不是「空历史越界」（有历史时同样死锁）、不是 `ResumeGameplay` 持主锁调
+  `LoadRom` 导致（那处已挪出锁外，问题依旧）。尚未定位。
 
 ### 其他
 
