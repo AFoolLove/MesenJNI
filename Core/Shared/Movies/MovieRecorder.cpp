@@ -164,6 +164,11 @@ bool MovieRecorder::Stop()
 		}
 
 		bool result = _writer->Save();
+		// Stop() must be idempotent: the destructor calls it as a safety net, so
+		// without this a recorder that was stopped explicitly (as CreateMovie
+		// does) runs the whole write a second time against an archive that is
+		// already finalized - every entry is rejected and Save() is called twice.
+		_writer.reset();
 		if(result) {
 			MessageManager::DisplayMessage("Movies", "MovieSaved", FolderUtilities::GetFilename(_filename, true));
 		}

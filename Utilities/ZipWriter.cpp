@@ -30,14 +30,18 @@ bool ZipWriter::Save()
 void ZipWriter::AddFile(string filepath, string zipFilename)
 {
 	if(!mz_zip_writer_add_file(&_zipArchive, zipFilename.c_str(), filepath.c_str(), "", 0, MZ_BEST_COMPRESSION)) {
-		std::cout << "mz_zip_writer_add_file() failed!" << std::endl;
+		// Name the entry (and the source for file entries): without it this message
+		// gives no way to tell which of a zip's several entries was rejected.
+		std::cout << "mz_zip_writer_add_file() failed!: entry \"" << zipFilename
+				  << "\" from \"" << filepath << "\" in \"" << _zipFilename << "\"" << std::endl;
 	}
 }
 
 void ZipWriter::AddFile(vector<uint8_t>& fileData, string zipFilename)
 {
 	if(!mz_zip_writer_add_mem(&_zipArchive, zipFilename.c_str(), fileData.data(), fileData.size(), MZ_BEST_COMPRESSION)) {
-		std::cout << "mz_zip_writer_add_file() failed!" << std::endl;
+		std::cout << "mz_zip_writer_add_file() failed!: entry \"" << zipFilename
+				  << "\" (" << fileData.size() << " bytes) in \"" << _zipFilename << "\"" << std::endl;
 	}
 }
 
