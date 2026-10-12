@@ -242,7 +242,8 @@ java -Djava.library.path=bin/win-x64/Release \
 * **它需要音频设备**：core 里 `HistoryViewerInitialize` 无视 `noAudio`，在 Windows 上
   无条件创建原生音频设备 —— 用 `noAudio=true` 初始化核心时会崩。已改成尊重该标志。
 * ⚠️ **未修复的 core 缺陷**：调过 `historyViewerResumeGameplay()` 之后再调
-  `historyViewerRelease()`，**约 4/5 概率卡死**（实测 5 次：通过 1、卡死 4）。
+  `historyViewerRelease()`，**约一半概率卡死**（多轮实测：4/5、3/6、3/5）。
+  **在未改动的上游 core 上同样复现**，与 JNI 绑定无关。
 
   表现：卡在 `_historyPlayer->Release()`。**不是 0 CPU 的死锁，而是在自旋**
   （观察到单进程烧掉 134 秒 CPU），对应 `Emulator::Run()` 里那个
@@ -253,18 +254,26 @@ java -Djava.library.path=bin/win-x64/Release \
 
   只需 `initialize`/`release`（不 resume）是**正常的**，所以触发点是 resume。
   上游 .NET 也是这个顺序（右键菜单 resume → 关窗时 release，
-  见 `HistoryViewerViewModel.cs:105` 和 `HistoryViewerWindow.axaml.cs:132`），
-  所以这大概率不是绑定层或 headless 特有的问题。
+  见 `HistoryViewerViewModel.cs:105` 和 `HistoryViewerWindow.axaml.cs:132`）。
+
+  **⚠️ 它是时序敏感的 Heisenbug：加日志会让它消失。**
+  在 `Emulator::Release()`/`Stop()` 每个阶段打一行 `[emutrace]`（`std::endl` 刷新）后，
+  **12 次全过**；换成「热路径只写原子变量 + 看门狗线程每 4 秒打印」这种几乎零开销的版本，
+  **6 次也全过**；把日志完全去掉，立刻恢复成 3/6 卡死。
+  所以**逐阶段打日志这条路定位不了它**（看门狗线程本身就在改变调度），
+  需要一个不引入额外线程的手段（例如在卡死进程上挂调试器看各线程栈）。
 
   **两条被否定的假设（别再走这两条路）**：
 
   1. ~~空历史导致 `_history[size-1]` 越界~~ —— 有历史时（`historyViewerEnabled()=true`）同样卡死。
   2. ~~`ResumeGameplay` 持主锁调 `LoadRom` 自死锁~~ —— **`AcquireLock` 是可重入的**
      （`EmulatorLock` 先查 `_runLock.IsLockedByCurrentThread()`），持锁再调不会自死锁。
-     曾经据此改过一版（把 `LoadRom` 挪出锁外），既没解决问题、又引入了竞态，**已撤销**。
+     曾经据此改过一版（把 `LoadRom` 挪出锁外）：它既没改变卡死概率
+     （带它 4/5、不带它 3/6），又引入了竞态，**已撤销**。
 
-  `ApiCoverageTest` 因此不再调 resume 之后的 release（会把整条回归挂住）；
-  `HistoryLockProbe` 专门复现这个场景。
+  `ApiCoverageTest` 会**真的去调** resume 之后的 release，但放在一个带 8 秒超时的守护线程里
+  —— 卡住就打印 `[KNOWN-OPEN]` 并继续，这样既不掩盖缺陷、也不让整条回归被拖死
+  （实测 5 次：3 次命中缺陷、2 次正常，全部 PASS）。`HistoryLockProbe` 可单独复现。
 
   **想判断它是不是 headless 特有？目前的答案是「还没能判断」**：
 
