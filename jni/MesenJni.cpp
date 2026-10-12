@@ -294,6 +294,18 @@ JNIEXPORT void JNICALL Java_mesen_MesenCore_addKnownGameFolder(JNIEnv* env, jcla
 	string f = JStringToUtf8(env, folder);
 	AddKnownGameFolder(f.empty() ? nullptr : f.data());
 }
+JNIEXPORT void JNICALL Java_mesen_MesenConfig_setFolderOverrides(JNIEnv* env, jclass,
+	jstring saveFolder, jstring saveStateFolder, jstring screenshotFolder, jstring firmwareFolder)
+{
+	// SetFolderOverrides assigns to std::string members, so it copies and these
+	// temporaries do not need to outlive the call.
+	string save = JStringToUtf8(env, saveFolder);
+	string saveState = JStringToUtf8(env, saveStateFolder);
+	string screenshot = JStringToUtf8(env, screenshotFolder);
+	string firmware = JStringToUtf8(env, firmwareFolder);
+
+	SetFolderOverrides(save.data(), saveState.data(), screenshot.data(), firmware.data());
+}
 
 JNIEXPORT jobject JNICALL Java_mesen_MesenCore_getRomInfo(JNIEnv* env, jclass)
 {

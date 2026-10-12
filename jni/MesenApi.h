@@ -71,6 +71,7 @@ MESEN_EXTERN
 	bool MESEN_CALL LoadRom(char* filename, char* patchFile);
 	bool MESEN_CALL LoadRomFromBytes(uint8_t* data, uint32_t size, char* filename, char* patchFile);
 	void MESEN_CALL AddKnownGameFolder(char* folder);
+	void MESEN_CALL SetFolderOverrides(char* saveFolder, char* saveStateFolder, char* screenshotFolder, char* firmwareFolder);
 	void MESEN_CALL GetRomInfo(InteropRomInfo& info);
 	TimingInfo MESEN_CALL GetTimingInfo(CpuType cpuType);
 	void MESEN_CALL TakeScreenshot();

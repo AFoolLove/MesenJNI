@@ -1,4 +1,5 @@
 import mesen.Mesen;
+import mesen.MesenConfig;
 import mesen.MesenCore;
 import mesen.MesenDebugger;
 import mesen.MesenVideo;
@@ -156,17 +157,25 @@ public class ConsoleSmokeTest
             + (palette == null ? "null" : palette.colorCount + " 色（背景 " + palette.bgColorCount
                 + " / 精灵 " + palette.spriteColorCount + "）"));
 
+        // VRAM 内容取决于游戏跑到哪一步，所以轮询等它出现，别按固定时刻判定
         TileViewOptions tileOptions = new TileViewOptions();
         tileOptions.memoryType = testCase.tileMemoryType;
         tileOptions.format = testCase.tileFormat;
         tileOptions.width = 16;
         tileOptions.height = 16;
+
         TileView tileView = MesenDebugger.getTileView(testCase.cpuType, tileOptions);
-        if(tileView != null) {
-            int litPixels = 0;
+        int litPixels = 0;
+        for(int attempt = 0; attempt < 50 && tileView != null && litPixels == 0; attempt++) {
             for(int pixel : tileView.pixels) {
                 if((pixel & 0xFFFFFF) != 0) litPixels++;
             }
+            if(litPixels == 0) {
+                Thread.sleep(100);
+                tileView = MesenDebugger.getTileView(testCase.cpuType, tileOptions);
+            }
+        }
+        if(tileView != null) {
             check(litPixels > 0, "getTileView -> " + tileView.width + "x" + tileView.height
                 + "，有内容 " + litPixels + " / " + tileView.pixels.length);
         } else {
@@ -188,6 +197,11 @@ public class ConsoleSmokeTest
     public static void main(String[] args) throws Exception
     {
         MesenCore.initDll();
+
+        // 把固件目录指到 roms/bios/，这样 GBA 的 gba_bios.bin 不用复制到
+        // <home>/Firmware/。必须在加载 ROM 之前设。
+        MesenConfig.setFolderOverrides(null, null, null, new java.io.File("roms/bios").getAbsolutePath());
+
         MesenCore.initializeEmu("./home", true, true, false, true);
 
         for(ConsoleCase testCase : CASES) {

@@ -211,6 +211,19 @@ extern "C"
 		FolderUtilities::AddKnownGameFolder(folder);
 	}
 
+	// FolderUtilities::SetFolderOverrides had no C entry point, so the firmware
+	// folder (GBA/GB boot ROMs, FDS BIOS, ...) could only ever be <home>/Firmware
+	// and a host had no way to point at where it actually keeps its BIOS files.
+	// An empty string keeps that folder's default.
+	DllExport void __stdcall SetFolderOverrides(char* saveFolder, char* saveStateFolder, char* screenshotFolder, char* firmwareFolder)
+	{
+		FolderUtilities::SetFolderOverrides(
+			saveFolder ? saveFolder : "",
+			saveStateFolder ? saveStateFolder : "",
+			screenshotFolder ? screenshotFolder : "",
+			firmwareFolder ? firmwareFolder : "");
+	}
+
 	DllExport void __stdcall GetRomInfo(InteropRomInfo& info)
 	{
 		RomInfo romInfo = _emu->GetRomInfo();

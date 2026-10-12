@@ -66,4 +66,20 @@ public final class MesenConfig
     public static native double getAspectRatio();
     public static native FrameInfo getBaseScreenSize();
     public static native TimingInfo getTimingInfo(int cpuType);
+
+    /**
+     * 覆盖几个目录的位置（传 {@code null} 或空串表示保持默认）。
+     *
+     * <p>默认位置都在 home 目录下：{@code Saves/}、{@code SaveStates/}、
+     * {@code Screenshots/}、{@code Firmware/}。</p>
+     *
+     * <p><b>firmwareFolder 最有用</b>：GBA/GB 的 BIOS、FDS 的 BIOS 都从这里找。
+     * 例如 GBA 需要 {@code gba_bios.bin}，不设这个的话只能放
+     * {@code <home>/Firmware/gba_bios.bin}。</p>
+     *
+     * <p>core 内部是赋值给 {@code std::string}，会<b>拷贝</b>，所以传完就可以丢掉
+     * 字符串；也只有<b>加载 ROM 之前</b>设才有意义。</p>
+     */
+    public static native void setFolderOverrides(String saveFolder, String saveStateFolder,
+        String screenshotFolder, String firmwareFolder);
 }
