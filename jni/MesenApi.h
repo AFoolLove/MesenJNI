@@ -8,33 +8,33 @@
 
 #include <cstdint>
 
-#include "Core/Shared/RomInfo.h"       // RomFormat, DipSwitchInfo
-#include "Core/Shared/SettingTypes.h"  // ConsoleType, FrameInfo, EmulationFlags, ControllerType
-#include "Core/Shared/CpuType.h"       // CpuType
-#include "Core/Shared/TimingInfo.h"    // TimingInfo
-#include "Core/Shared/MemoryType.h"    // MemoryType
-#include "Core/Shared/Emulator.h"      // HashType
+#include "Core/Shared/RomInfo.h" // RomFormat, DipSwitchInfo
+#include "Core/Shared/SettingTypes.h" // ConsoleType, FrameInfo, EmulationFlags, ControllerType
+#include "Core/Shared/CpuType.h" // CpuType
+#include "Core/Shared/TimingInfo.h" // TimingInfo
+#include "Core/Shared/MemoryType.h" // MemoryType
+#include "Core/Shared/Emulator.h" // HashType
 
-#include "Core/Shared/BaseState.h"     // BaseState (register-state calls)
-#include "Core/Debugger/AddressInfo.h"        // AddressInfo
-#include "Core/Debugger/DebugTypes.h"         // CodeLineData, StackFrameInfo, CdlStatistics, CpuInstructionProgress, StepType
-#include "Core/Debugger/DebuggerFeatures.h"   // DebuggerFeatures
-#include "Core/Debugger/DisassemblySearch.h"  // DisassemblySearchOptions
-#include "Core/Debugger/PpuTools.h"           // DebugTilemapInfo, DebugSpriteInfo, ...
-#include "Core/Debugger/BaseEventManager.h"   // DebugEventInfo, BaseEventViewerConfig
-#include "Core/Debugger/ITraceLogger.h"       // TraceRow, TraceLoggerOptions
-#include "Core/Debugger/Profiler.h"           // ProfiledFunction
-#include "Core/Shared/SettingTypes.h"         // DebugConfig
-#include "Core/Shared/Video/VideoRenderer.h"  // RecordAviOptions, VideoCodec
-#include "Core/Shared/Movies/MovieTypes.h"    // RecordMovieOptions
-#include "Core/Shared/CheatManager.h"         // CheatCode, InternalCheatCode
-#include "Core/Shared/Interfaces/IRenderingDevice.h"  // FullscreenSettings
-#include "Core/Shared/Interfaces/ITapeRecorder.h"     // TapeRecorderAction
-#include "Core/Shared/Audio/AudioPlayerTypes.h"       // AudioPlayerActionParams
-#include "Utilities/Video/LibrashaderUtilities.h"     // ShaderParamDefinition
-#include "Core/Shared/HistoryViewer.h"                // HistoryViewerState/Options
-#include "Core/Shared/RecordedRomTest.h"              // RomTestResult
-#include "Core/Netplay/NetplayTypes.h"                 // NetplayControllerInfo/UsageInfo
+#include "Core/Shared/BaseState.h" // BaseState (register-state calls)
+#include "Core/Debugger/AddressInfo.h" // AddressInfo
+#include "Core/Debugger/DebugTypes.h" // CodeLineData, StackFrameInfo, CdlStatistics, CpuInstructionProgress, StepType
+#include "Core/Debugger/DebuggerFeatures.h" // DebuggerFeatures
+#include "Core/Debugger/DisassemblySearch.h" // DisassemblySearchOptions
+#include "Core/Debugger/PpuTools.h" // DebugTilemapInfo, DebugSpriteInfo, ...
+#include "Core/Debugger/BaseEventManager.h" // DebugEventInfo, BaseEventViewerConfig
+#include "Core/Debugger/ITraceLogger.h" // TraceRow, TraceLoggerOptions
+#include "Core/Debugger/Profiler.h" // ProfiledFunction
+#include "Core/Shared/SettingTypes.h" // DebugConfig
+#include "Core/Shared/Video/VideoRenderer.h" // RecordAviOptions, VideoCodec
+#include "Core/Shared/Movies/MovieTypes.h" // RecordMovieOptions
+#include "Core/Shared/CheatManager.h" // CheatCode, InternalCheatCode
+#include "Core/Shared/Interfaces/IRenderingDevice.h" // FullscreenSettings
+#include "Core/Shared/Interfaces/ITapeRecorder.h" // TapeRecorderAction
+#include "Core/Shared/Audio/AudioPlayerTypes.h" // AudioPlayerActionParams
+#include "Utilities/Video/LibrashaderUtilities.h" // ShaderParamDefinition
+#include "Core/Shared/HistoryViewer.h" // HistoryViewerState/Options
+#include "Core/Shared/RecordedRomTest.h" // RomTestResult
+#include "Core/Netplay/NetplayTypes.h" // NetplayControllerInfo/UsageInfo
 
 class Breakpoint;
 struct AddressCounters;
@@ -72,7 +72,7 @@ MESEN_EXTERN
 	bool MESEN_CALL LoadRomFromBytes(uint8_t* data, uint32_t size, char* filename, char* patchFile);
 	void MESEN_CALL AddKnownGameFolder(char* folder);
 	void MESEN_CALL SetFolderOverrides(char* saveFolder, char* saveStateFolder, char* screenshotFolder, char* firmwareFolder);
-	void MESEN_CALL GetRomInfo(InteropRomInfo& info);
+	void MESEN_CALL GetRomInfo(InteropRomInfo & info);
 	TimingInfo MESEN_CALL GetTimingInfo(CpuType cpuType);
 	void MESEN_CALL TakeScreenshot();
 	bool MESEN_CALL IsRunning();
@@ -108,7 +108,7 @@ MESEN_EXTERN
 	void MESEN_CALL Connect(char* host, uint16_t port, char* password, bool spectator);
 	void MESEN_CALL Disconnect();
 	bool MESEN_CALL IsConnected();
-	void MESEN_CALL NetPlayGetControllerList(NetplayControllerUsageInfo* list, int32_t& length);
+	void MESEN_CALL NetPlayGetControllerList(NetplayControllerUsageInfo * list, int32_t& length);
 	void MESEN_CALL NetPlaySelectController(NetplayControllerInfo controller);
 	NetplayControllerInfo MESEN_CALL NetPlayGetControllerPort();
 	// --- TestApiWrapper (recorded ROM tests / CI) ---
@@ -180,7 +180,7 @@ MESEN_EXTERN
 	void MESEN_CALL GetTokenList(CpuType cpuType, char* tokenList);
 
 	// --- DebugApiWrapper (callstack / pc / features) ---
-	void MESEN_CALL GetCallstack(CpuType cpuType, StackFrameInfo* callstackArray, uint32_t& callstackSize);
+	void MESEN_CALL GetCallstack(CpuType cpuType, StackFrameInfo * callstackArray, uint32_t& callstackSize);
 	uint32_t MESEN_CALL GetProgramCounter(CpuType cpuType, bool getInstPc);
 	void MESEN_CALL SetProgramCounter(CpuType cpuType, uint32_t addr);
 	DebuggerFeatures MESEN_CALL GetDebuggerFeatures(CpuType cpuType);
@@ -194,19 +194,19 @@ MESEN_EXTERN
 	// --- DebugApiWrapper (CPU / PPU register state) ---
 	// The caller must pass the concrete state type for the requested CPU
 	// (e.g. NesCpuState for CpuType::Nes); the core memcpy's into/out of it.
-	void MESEN_CALL GetCpuState(BaseState& state, CpuType cpuType);
-	void MESEN_CALL SetCpuState(BaseState& state, CpuType cpuType);
-	void MESEN_CALL GetPpuState(BaseState& state, CpuType cpuType);
-	void MESEN_CALL SetPpuState(BaseState& state, CpuType cpuType);
+	void MESEN_CALL GetCpuState(BaseState & state, CpuType cpuType);
+	void MESEN_CALL SetCpuState(BaseState & state, CpuType cpuType);
+	void MESEN_CALL GetPpuState(BaseState & state, CpuType cpuType);
+	void MESEN_CALL SetPpuState(BaseState & state, CpuType cpuType);
 
 	// --- DebugApiWrapper (PPU tools) ---
 	void MESEN_CALL GetTileView(CpuType cpuType, GetTileViewOptions options, uint8_t* source, uint32_t srcSize, uint32_t* colors, uint32_t* buffer);
-	void MESEN_CALL GetPpuToolsState(CpuType cpuType, BaseState& state);
-	DebugTilemapInfo MESEN_CALL GetTilemap(CpuType cpuType, GetTilemapOptions options, BaseState& state, BaseState& ppuToolsState, uint8_t* vram, uint32_t* palette, uint32_t* outputBuffer);
-	FrameInfo MESEN_CALL GetTilemapSize(CpuType cpuType, GetTilemapOptions options, BaseState& state);
+	void MESEN_CALL GetPpuToolsState(CpuType cpuType, BaseState & state);
+	DebugTilemapInfo MESEN_CALL GetTilemap(CpuType cpuType, GetTilemapOptions options, BaseState & state, BaseState & ppuToolsState, uint8_t* vram, uint32_t* palette, uint32_t* outputBuffer);
+	FrameInfo MESEN_CALL GetTilemapSize(CpuType cpuType, GetTilemapOptions options, BaseState & state);
 	DebugTilemapTileInfo MESEN_CALL GetTilemapTileInfo(uint32_t x, uint32_t y, CpuType cpuType, GetTilemapOptions options, uint8_t* vram, BaseState& state, BaseState& ppuToolsState);
-	DebugSpritePreviewInfo MESEN_CALL GetSpritePreviewInfo(CpuType cpuType, GetSpritePreviewOptions options, BaseState& state, BaseState& ppuToolsState);
-	void MESEN_CALL GetSpriteList(CpuType cpuType, GetSpritePreviewOptions options, BaseState& state, BaseState& ppuToolsState, uint8_t* vram, uint8_t* oamRam, uint32_t* palette, DebugSpriteInfo sprites[], uint32_t* spritePreviews, uint32_t* screenPreview);
+	DebugSpritePreviewInfo MESEN_CALL GetSpritePreviewInfo(CpuType cpuType, GetSpritePreviewOptions options, BaseState & state, BaseState & ppuToolsState);
+	void MESEN_CALL GetSpriteList(CpuType cpuType, GetSpritePreviewOptions options, BaseState & state, BaseState & ppuToolsState, uint8_t* vram, uint8_t* oamRam, uint32_t* palette, DebugSpriteInfo sprites[], uint32_t* spritePreviews, uint32_t* screenPreview);
 	DebugPaletteInfo MESEN_CALL GetPaletteInfo(CpuType cpuType, GetPaletteInfoOptions options);
 	void MESEN_CALL SetPaletteColor(CpuType cpuType, int32_t colorIndex, uint32_t color);
 	int32_t MESEN_CALL GetTilePixel(AddressInfo tileAddress, TileFormat format, int32_t x, int32_t y);
@@ -218,8 +218,8 @@ MESEN_EXTERN
 	bool MESEN_CALL SaveRomToDisk(char* filename, bool saveIpsFile, CdlStripOption cdlStripOption);
 
 	// --- DebugApiWrapper (event viewer) ---
-	void MESEN_CALL SetEventViewerConfig(CpuType cpuType, BaseEventViewerConfig& config);
-	void MESEN_CALL GetDebugEvents(CpuType cpuType, DebugEventInfo* infoArray, uint32_t& maxEventCount);
+	void MESEN_CALL SetEventViewerConfig(CpuType cpuType, BaseEventViewerConfig & config);
+	void MESEN_CALL GetDebugEvents(CpuType cpuType, DebugEventInfo * infoArray, uint32_t& maxEventCount);
 	uint32_t MESEN_CALL GetDebugEventCount(CpuType cpuType);
 	FrameInfo MESEN_CALL GetEventViewerDisplaySize(CpuType cpuType);
 	void MESEN_CALL GetEventViewerOutput(CpuType cpuType, uint32_t* buffer, uint32_t bufferSize);
@@ -231,7 +231,7 @@ MESEN_EXTERN
 	// --- DebugApiWrapper (whole-console state) ---
 	// Note the parameter order and that this takes a ConsoleType, unlike
 	// GetPpuState/GetCpuState which take a CpuType.
-	void MESEN_CALL GetConsoleState(BaseState& state, ConsoleType consoleType);
+	void MESEN_CALL GetConsoleState(BaseState & state, ConsoleType consoleType);
 
 	// --- DebugApiWrapper (execution trace) ---
 	void MESEN_CALL SetTraceOptions(CpuType cpuType, TraceLoggerOptions options);
@@ -248,7 +248,7 @@ MESEN_EXTERN
 	void MESEN_CALL LoadCdlFile(MemoryType memoryType, char* cdlFile);
 
 	// --- DebugApiWrapper (profiler / input overrides) ---
-	void MESEN_CALL GetProfilerData(CpuType cpuType, ProfiledFunction* profilerData, uint32_t& functionCount);
+	void MESEN_CALL GetProfilerData(CpuType cpuType, ProfiledFunction * profilerData, uint32_t& functionCount);
 	void MESEN_CALL ResetProfiler(CpuType cpuType);
 	int32_t MESEN_CALL GetProfilerCpuUsage(CpuType cpuType);
 	void MESEN_CALL SetInputOverrides(uint32_t index, DebugControllerState state);
@@ -263,7 +263,7 @@ MESEN_EXTERN
 	void MESEN_CALL Connect(char* host, uint16_t port, char* password, bool spectator);
 	void MESEN_CALL Disconnect();
 	bool MESEN_CALL IsConnected();
-	void MESEN_CALL NetPlayGetControllerList(NetplayControllerUsageInfo* list, int32_t& length);
+	void MESEN_CALL NetPlayGetControllerList(NetplayControllerUsageInfo * list, int32_t& length);
 	void MESEN_CALL NetPlaySelectController(NetplayControllerInfo controller);
 	NetplayControllerInfo MESEN_CALL NetPlayGetControllerPort();
 	// --- TestApiWrapper (recorded ROM tests / CI) ---
@@ -292,7 +292,7 @@ MESEN_EXTERN
 	// --- EmuApiWrapper (cheats / save state / misc) ---
 	void MESEN_CALL ClearCheats();
 	void MESEN_CALL SetCheats(CheatCode codes[], uint32_t length);
-	bool MESEN_CALL GetConvertedCheat(CheatCode input, InternalCheatCode& output);
+	bool MESEN_CALL GetConvertedCheat(CheatCode input, InternalCheatCode & output);
 	void MESEN_CALL GetArchiveRomList(char* filename, char* outBuffer, uint32_t maxLength);
 	void MESEN_CALL SetFullscreenMode(FullscreenSettings settings);
 	void MESEN_CALL InputBarcode(uint64_t barcode, uint32_t digitCount);

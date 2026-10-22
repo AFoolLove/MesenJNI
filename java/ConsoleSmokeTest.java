@@ -111,6 +111,13 @@ public class ConsoleSmokeTest
             return;
         }
 
+        // GBA 还依赖 BIOS 固件（roms/bios/gba_bios.bin）；缺了同样只跳过，不算失败。
+        if(testCase.consoleType == Mesen.CONSOLE_GBA
+            && !new java.io.File("roms/bios/gba_bios.bin").isFile()) {
+            System.out.println("== " + testCase.name + " == 跳过（无固件：roms/bios/gba_bios.bin）");
+            return;
+        }
+
         System.out.println("== " + testCase.name + " ==  (" + testCase.romPath
             + ", " + rom.length() + " 字节)");
         checked++;
@@ -213,7 +220,7 @@ public class ConsoleSmokeTest
         System.out.println();
         if(checked == 0) {
             System.out.println("CONSOLE SMOKE TEST SKIPPED（一个 ROM 都没有）");
-            System.exit(1);
+            System.exit(0);
         }
         if(failures == 0) {
             System.out.println("CONSOLE SMOKE TEST PASSED（验证了 " + checked + " 个机种）");

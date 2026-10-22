@@ -28,7 +28,7 @@
 #include "Core/GBA/Debugger/GbaEventManager.h"
 #include "Core/PCE/Debugger/PceEventManager.h"
 #include "Core/SMS/Debugger/SmsEventManager.h"
-#include "Core/SNES/SnesState.h"   // SnesState (whole-console state)
+#include "Core/SNES/SnesState.h" // SnesState (whole-console state)
 #include "Core/WS/Debugger/WsEventManager.h"
 
 #include <jni.h>
@@ -245,7 +245,7 @@ namespace
 		jfieldID dcsA, dcsB, dcsX, dcsY, dcsL, dcsR, dcsU, dcsD,
 			dcsUp, dcsDown, dcsLeft, dcsRight, dcsSelect, dcsStart;
 
-		jclass debugConfig;		// DebugConfig (generated from Core/Shared/SettingTypes.h)
+		jclass debugConfig; // DebugConfig (generated from Core/Shared/SettingTypes.h)
 		jfieldID dcBreakOnUninitRead;
 		jfieldID dcShowJumpLabels;
 		jfieldID dcDrawPartialFrame;
@@ -1041,8 +1041,7 @@ extern "C"
 		}
 
 		std::vector<CodeLineData> buffer((size_t)rowCount);
-		uint32_t count = GetDisassemblyOutput((CpuType)cpuType, (uint32_t)address,
-			buffer.data(), (uint32_t)rowCount);
+		uint32_t count = GetDisassemblyOutput((CpuType)cpuType, (uint32_t)address, buffer.data(), (uint32_t)rowCount);
 		if(count > (uint32_t)rowCount) {
 			count = (uint32_t)rowCount;
 		}
@@ -1063,8 +1062,7 @@ extern "C"
 			return -1;
 		}
 		const char* chars = env->GetStringUTFChars(text, nullptr);
-		int32_t result = SearchDisassembly((CpuType)cpuType, chars, (int32_t)startPosition,
-			MakeSearchOptions(matchCase, matchWholeWord, searchBackwards));
+		int32_t result = SearchDisassembly((CpuType)cpuType, chars, (int32_t)startPosition, MakeSearchOptions(matchCase, matchWholeWord, searchBackwards));
 		env->ReleaseStringUTFChars(text, chars);
 		return (jint)result;
 	}
@@ -1084,9 +1082,7 @@ extern "C"
 
 		std::vector<CodeLineData> buffer(capacity);
 		const char* chars = env->GetStringUTFChars(text, nullptr);
-		uint32_t count = FindOccurrences((CpuType)cpuType, chars,
-			MakeSearchOptions(matchCase, matchWholeWord, searchBackwards),
-			buffer.data(), capacity);
+		uint32_t count = FindOccurrences((CpuType)cpuType, chars, MakeSearchOptions(matchCase, matchWholeWord, searchBackwards), buffer.data(), capacity);
 		env->ReleaseStringUTFChars(text, chars);
 
 		if(count > capacity) {
@@ -1368,8 +1364,7 @@ extern "C"
 			}
 		}
 
-		SetLabel((uint32_t)address, (MemoryType)memoryType,
-			const_cast<char*>(labelText.c_str()), const_cast<char*>(commentText.c_str()));
+		SetLabel((uint32_t)address, (MemoryType)memoryType, const_cast<char*>(labelText.c_str()), const_cast<char*>(commentText.c_str()));
 	}
 
 	JNIEXPORT void JNICALL Java_mesen_MesenDebugger_clearLabels(JNIEnv*, jclass)
@@ -1529,7 +1524,7 @@ extern "C"
 				case CpuType::Nes: return MemoryType::NesSpriteRam;
 				case CpuType::Pce: return MemoryType::PceSpriteRam;
 				case CpuType::Gba: return MemoryType::GbaSpriteRam;
-				default: return MemoryType::None;   // SMS / WonderSwan have none
+				default: return MemoryType::None; // SMS / WonderSwan have none
 			}
 		}
 
@@ -1773,8 +1768,7 @@ extern "C"
 		}
 
 		std::vector<uint32_t> buffer((size_t)size.Width * size.Height, 0);
-		DebugTilemapInfo info = GetTilemap((CpuType)cpuType, options, context.StateRef(), context.ToolsStateRef(),
-			context.vram.data(), context.palette.data(), buffer.data());
+		DebugTilemapInfo info = GetTilemap((CpuType)cpuType, options, context.StateRef(), context.ToolsStateRef(), context.vram.data(), context.palette.data(), buffer.data());
 
 		jobject result = env->NewObject(g_cache.tilemapResult, g_cache.tilemapResultCtor);
 		jobject infoObj = NewTilemapInfo(env, info);
@@ -1803,8 +1797,7 @@ extern "C"
 			return nullptr;
 		}
 
-		DebugTilemapTileInfo info = GetTilemapTileInfo((uint32_t)x, (uint32_t)y, (CpuType)cpuType,
-			options, context.vram.data(), context.StateRef(), context.ToolsStateRef());
+		DebugTilemapTileInfo info = GetTilemapTileInfo((uint32_t)x, (uint32_t)y, (CpuType)cpuType, options, context.vram.data(), context.StateRef(), context.ToolsStateRef());
 
 		jobject obj = env->NewObject(g_cache.tilemapTileInfo, g_cache.tilemapTileInfoCtor);
 		env->SetIntField(obj, g_cache.ttiRow, (jint)info.Row);
@@ -1854,8 +1847,7 @@ extern "C"
 			return nullptr;
 		}
 
-		DebugSpritePreviewInfo info = GetSpritePreviewInfo((CpuType)cpuType, options,
-			context.StateRef(), context.ToolsStateRef());
+		DebugSpritePreviewInfo info = GetSpritePreviewInfo((CpuType)cpuType, options, context.StateRef(), context.ToolsStateRef());
 		return NewSpritePreviewInfo(env, info);
 	}
 
@@ -1873,8 +1865,7 @@ extern "C"
 			return nullptr;
 		}
 
-		DebugSpritePreviewInfo info = GetSpritePreviewInfo((CpuType)cpuType, options,
-			context.StateRef(), context.ToolsStateRef());
+		DebugSpritePreviewInfo info = GetSpritePreviewInfo((CpuType)cpuType, options, context.StateRef(), context.ToolsStateRef());
 
 		uint32_t spriteCount = info.SpriteCount;
 		uint32_t previewSize = (uint32_t)info.Width * info.Height;
@@ -1884,12 +1875,9 @@ extern "C"
 		std::vector<uint32_t> screen(previewSize ? previewSize : 1, 0);
 
 		// SMS/WonderSwan have no sprite RAM; the core expects null there.
-		uint8_t* spriteRam = PpuContext::GetSpriteRamMemoryType((CpuType)cpuType) == MemoryType::None
-			? nullptr : context.spriteRam.data();
+		uint8_t* spriteRam = PpuContext::GetSpriteRamMemoryType((CpuType)cpuType) == MemoryType::None ? nullptr : context.spriteRam.data();
 
-		GetSpriteList((CpuType)cpuType, options, context.StateRef(), context.ToolsStateRef(),
-			context.vram.data(), spriteRam, context.palette.data(),
-			sprites.data(), previews.data(), screen.data());
+		GetSpriteList((CpuType)cpuType, options, context.StateRef(), context.ToolsStateRef(), context.vram.data(), spriteRam, context.palette.data(), sprites.data(), previews.data(), screen.data());
 
 		jobject result = env->NewObject(g_cache.spriteListResult, g_cache.spriteListResultCtor);
 
@@ -2002,8 +1990,7 @@ extern "C"
 
 		// Same buffer convention the .NET interop uses.
 		std::vector<int16_t> buffer(100000, 0);
-		uint32_t count = AssembleCode((CpuType)cpuType, const_cast<char*>(chars),
-			(uint32_t)startAddress, buffer.data());
+		uint32_t count = AssembleCode((CpuType)cpuType, const_cast<char*>(chars), (uint32_t)startAddress, buffer.data());
 		env->ReleaseStringUTFChars(code, chars);
 
 		if(count > buffer.size()) {
@@ -2046,8 +2033,7 @@ extern "C"
 			return JNI_FALSE;
 		}
 
-		bool result = SaveRomToDisk(const_cast<char*>(chars), saveAsIps == JNI_TRUE,
-			(CdlStripOption)cdlStripOption);
+		bool result = SaveRomToDisk(const_cast<char*>(chars), saveAsIps == JNI_TRUE, (CdlStripOption)cdlStripOption);
 		env->ReleaseStringUTFChars(filename, chars);
 		return result ? JNI_TRUE : JNI_FALSE;
 	}
@@ -2401,87 +2387,191 @@ extern "C"
 	};
 
 	const char* const NES_EVENT_CATEGORIES[] = {
-		"Irq", "Nmi", "MarkedBreakpoints",
-		"MapperRegisterWrites", "MapperRegisterReads",
-		"ApuRegisterWrites", "ApuRegisterReads",
-		"ControlRegisterWrites", "ControlRegisterReads",
-		"Ppu2000Write", "Ppu2001Write", "Ppu2003Write", "Ppu2004Write",
-		"Ppu2005Write", "Ppu2006Write", "Ppu2007Write",
-		"Ppu2002Read", "Ppu2004Read", "Ppu2007Read",
-		"DmcDmaReads", "OtherDmaReads", "SpriteZeroHit"
+		"Irq",
+		"Nmi",
+		"MarkedBreakpoints",
+		"MapperRegisterWrites",
+		"MapperRegisterReads",
+		"ApuRegisterWrites",
+		"ApuRegisterReads",
+		"ControlRegisterWrites",
+		"ControlRegisterReads",
+		"Ppu2000Write",
+		"Ppu2001Write",
+		"Ppu2003Write",
+		"Ppu2004Write",
+		"Ppu2005Write",
+		"Ppu2006Write",
+		"Ppu2007Write",
+		"Ppu2002Read",
+		"Ppu2004Read",
+		"Ppu2007Read",
+		"DmcDmaReads",
+		"OtherDmaReads",
+		"SpriteZeroHit"
 	};
 
 	const char* const SNES_EVENT_CATEGORIES[] = {
-		"Irq", "Nmi", "MarkedBreakpoints",
-		"PpuRegisterReads", "PpuRegisterCgramWrites", "PpuRegisterVramWrites",
-		"PpuRegisterOamWrites", "PpuRegisterMode7Writes", "PpuRegisterBgOptionWrites",
-		"PpuRegisterBgScrollWrites", "PpuRegisterWindowWrites", "PpuRegisterOtherWrites",
-		"ApuRegisterReads", "ApuRegisterWrites",
-		"CpuRegisterReads", "CpuRegisterWrites",
-		"WorkRamRegisterReads", "WorkRamRegisterWrites"
+		"Irq",
+		"Nmi",
+		"MarkedBreakpoints",
+		"PpuRegisterReads",
+		"PpuRegisterCgramWrites",
+		"PpuRegisterVramWrites",
+		"PpuRegisterOamWrites",
+		"PpuRegisterMode7Writes",
+		"PpuRegisterBgOptionWrites",
+		"PpuRegisterBgScrollWrites",
+		"PpuRegisterWindowWrites",
+		"PpuRegisterOtherWrites",
+		"ApuRegisterReads",
+		"ApuRegisterWrites",
+		"CpuRegisterReads",
+		"CpuRegisterWrites",
+		"WorkRamRegisterReads",
+		"WorkRamRegisterWrites"
 	};
 
 	const char* const GB_EVENT_CATEGORIES[] = {
-		"Irq", "MarkedBreakpoints",
-		"PpuRegisterCgramWrites", "PpuRegisterVramWrites", "PpuRegisterOamWrites",
-		"PpuRegisterBgScrollWrites", "PpuRegisterWindowWrites", "PpuRegisterOtherWrites",
-		"PpuRegisterCgramReads", "PpuRegisterVramReads", "PpuRegisterOamReads",
-		"PpuRegisterBgScrollReads", "PpuRegisterWindowReads", "PpuRegisterOtherReads",
-		"ApuRegisterReads", "ApuRegisterWrites",
-		"SerialReads", "SerialWrites",
-		"TimerReads", "TimerWrites",
-		"InputReads", "InputWrites",
-		"OtherRegisterReads", "OtherRegisterWrites"
+		"Irq",
+		"MarkedBreakpoints",
+		"PpuRegisterCgramWrites",
+		"PpuRegisterVramWrites",
+		"PpuRegisterOamWrites",
+		"PpuRegisterBgScrollWrites",
+		"PpuRegisterWindowWrites",
+		"PpuRegisterOtherWrites",
+		"PpuRegisterCgramReads",
+		"PpuRegisterVramReads",
+		"PpuRegisterOamReads",
+		"PpuRegisterBgScrollReads",
+		"PpuRegisterWindowReads",
+		"PpuRegisterOtherReads",
+		"ApuRegisterReads",
+		"ApuRegisterWrites",
+		"SerialReads",
+		"SerialWrites",
+		"TimerReads",
+		"TimerWrites",
+		"InputReads",
+		"InputWrites",
+		"OtherRegisterReads",
+		"OtherRegisterWrites"
 	};
 
 	const char* const GBA_EVENT_CATEGORIES[] = {
-		"Irq", "MarkedBreakpoints",
-		"PaletteReads", "PaletteWrites", "VramReads", "VramWrites", "OamReads", "OamWrites",
-		"PpuRegisterBgScrollReads", "PpuRegisterBgScrollWrites",
-		"PpuRegisterWindowReads", "PpuRegisterWindowWrites",
-		"PpuRegisterOtherReads", "PpuRegisterOtherWrites",
-		"DmaRegisterReads", "DmaRegisterWrites",
-		"ApuRegisterReads", "ApuRegisterWrites",
-		"SerialReads", "SerialWrites",
-		"TimerReads", "TimerWrites",
-		"InputReads", "InputWrites",
-		"OtherRegisterReads", "OtherRegisterWrites"
+		"Irq",
+		"MarkedBreakpoints",
+		"PaletteReads",
+		"PaletteWrites",
+		"VramReads",
+		"VramWrites",
+		"OamReads",
+		"OamWrites",
+		"PpuRegisterBgScrollReads",
+		"PpuRegisterBgScrollWrites",
+		"PpuRegisterWindowReads",
+		"PpuRegisterWindowWrites",
+		"PpuRegisterOtherReads",
+		"PpuRegisterOtherWrites",
+		"DmaRegisterReads",
+		"DmaRegisterWrites",
+		"ApuRegisterReads",
+		"ApuRegisterWrites",
+		"SerialReads",
+		"SerialWrites",
+		"TimerReads",
+		"TimerWrites",
+		"InputReads",
+		"InputWrites",
+		"OtherRegisterReads",
+		"OtherRegisterWrites"
 	};
 
 	const char* const PCE_EVENT_CATEGORIES[] = {
-		"Irq", "MarkedBreakpoints",
-		"VdcStatusReads", "VdcVramWrites", "VdcVramReads",
-		"VdcRegSelectWrites", "VdcControlWrites", "VdcRcrWrites", "VdcHvConfigWrites",
-		"VdcMemoryWidthWrites", "VdcScrollWrites", "VdcDmaWrites",
-		"VceWrites", "VceReads",
-		"PsgWrites", "PsgReads",
-		"TimerWrites", "TimerReads",
-		"IoWrites", "IoReads",
-		"IrqControlWrites", "IrqControlReads",
-		"CdRomWrites", "CdRomReads",
-		"AdpcmWrites", "AdpcmReads",
-		"ArcadeCardWrites", "ArcadeCardReads",
-		"VpcWrites", "VpcReads"
+		"Irq",
+		"MarkedBreakpoints",
+		"VdcStatusReads",
+		"VdcVramWrites",
+		"VdcVramReads",
+		"VdcRegSelectWrites",
+		"VdcControlWrites",
+		"VdcRcrWrites",
+		"VdcHvConfigWrites",
+		"VdcMemoryWidthWrites",
+		"VdcScrollWrites",
+		"VdcDmaWrites",
+		"VceWrites",
+		"VceReads",
+		"PsgWrites",
+		"PsgReads",
+		"TimerWrites",
+		"TimerReads",
+		"IoWrites",
+		"IoReads",
+		"IrqControlWrites",
+		"IrqControlReads",
+		"CdRomWrites",
+		"CdRomReads",
+		"AdpcmWrites",
+		"AdpcmReads",
+		"ArcadeCardWrites",
+		"ArcadeCardReads",
+		"VpcWrites",
+		"VpcReads"
 	};
 
 	const char* const SMS_EVENT_CATEGORIES[] = {
-		"Irq", "Nmi", "MarkedBreakpoints",
-		"VdpPaletteWrite", "VdpVramWrite",
-		"VdpVCounterRead", "VdpHCounterRead", "VdpVramRead",
-		"VdpControlPortRead", "VdpControlPortWrite",
-		"PsgWrite", "IoWrite", "IoRead", "MemoryControlWrite",
-		"GameGearPortWrite", "GameGearPortRead"
+		"Irq",
+		"Nmi",
+		"MarkedBreakpoints",
+		"VdpPaletteWrite",
+		"VdpVramWrite",
+		"VdpVCounterRead",
+		"VdpHCounterRead",
+		"VdpVramRead",
+		"VdpControlPortRead",
+		"VdpControlPortWrite",
+		"PsgWrite",
+		"IoWrite",
+		"IoRead",
+		"MemoryControlWrite",
+		"GameGearPortWrite",
+		"GameGearPortRead"
 	};
 
 	const char* const WS_EVENT_CATEGORIES[] = {
-		"PpuPaletteRead", "PpuPaletteWrite", "PpuVramRead", "PpuVramWrite",
-		"PpuVCounterRead", "PpuScrollRead", "PpuScrollWrite",
-		"PpuWindowRead", "PpuWindowWrite", "PpuOtherRead", "PpuOtherWrite",
-		"AudioRead", "AudioWrite", "SerialRead", "SerialWrite",
-		"DmaRead", "DmaWrite", "InputRead", "InputWrite",
-		"IrqRead", "IrqWrite", "TimerRead", "TimerWrite",
-		"EepromRead", "EepromWrite", "CartRead", "CartWrite",
-		"OtherRead", "OtherWrite", "Irq", "MarkedBreakpoints"
+		"PpuPaletteRead",
+		"PpuPaletteWrite",
+		"PpuVramRead",
+		"PpuVramWrite",
+		"PpuVCounterRead",
+		"PpuScrollRead",
+		"PpuScrollWrite",
+		"PpuWindowRead",
+		"PpuWindowWrite",
+		"PpuOtherRead",
+		"PpuOtherWrite",
+		"AudioRead",
+		"AudioWrite",
+		"SerialRead",
+		"SerialWrite",
+		"DmaRead",
+		"DmaWrite",
+		"InputRead",
+		"InputWrite",
+		"IrqRead",
+		"IrqWrite",
+		"TimerRead",
+		"TimerWrite",
+		"EepromRead",
+		"EepromWrite",
+		"CartRead",
+		"CartWrite",
+		"OtherRead",
+		"OtherWrite",
+		"Irq",
+		"MarkedBreakpoints"
 	};
 
 	EventCategoryTable GetEventCategoryTable(CpuType type)
@@ -3106,8 +3196,6 @@ extern "C"
 		env->DeleteLocalRef(array);
 	}
 
-
-
 	jobject NewNesCartridgeState(JNIEnv* env, const CartridgeState& s)
 	{
 		jclass cls = env->FindClass("mesen/debugger/NesCartridgeState");
@@ -3217,7 +3305,7 @@ extern "C"
 		env->SetIntField(obj, env->GetFieldID(cls, "clockRate", "I"), (jint)state.ClockRate);
 		env->DeleteLocalRef(cls);
 		return obj;
-	}	// -----------------------------------------------------------------------
+	} // -----------------------------------------------------------------------
 	// Whole-console state for every console (raw bytes)
 	//
 	// Only NES gets a typed Java class: the other states are far larger (SNES
@@ -3248,8 +3336,7 @@ extern "C"
 	size_t GetMaxConsoleStateByteSize()
 	{
 		const size_t sizes[] = {
-			sizeof(SnesState), sizeof(GbState), sizeof(NesState), sizeof(PceState),
-			sizeof(SmsState), sizeof(GbaState), sizeof(WsState)
+			sizeof(SnesState), sizeof(GbState), sizeof(NesState), sizeof(PceState), sizeof(SmsState), sizeof(GbaState), sizeof(WsState)
 		};
 
 		size_t maxSize = 0;

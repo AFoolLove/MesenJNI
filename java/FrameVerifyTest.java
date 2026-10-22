@@ -9,6 +9,11 @@ public class FrameVerifyTest
 {
     public static void main(String[] args) throws Exception
     {
+        if(!new java.io.File("roms/MetalMax.nes").isFile()) {
+            System.out.println("FRAME VERIFY TEST SKIPPED (缺少 roms/MetalMax.nes)");
+            System.exit(0);
+            return;
+        }
         boolean useCallback = args.length > 0 && args[0].equals("cb");
         AtomicInteger frames = new AtomicInteger();
         AtomicInteger nonZeroFrames = new AtomicInteger();

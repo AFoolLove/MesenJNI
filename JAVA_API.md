@@ -81,18 +81,29 @@ cmake --build build-android
 
 ## 3. 运行测试
 
-测试都在 `java/` 下，是普通 `main()` 程序（不需要 JUnit）：
+测试都在 `java/` 下，是普通 `main()` 程序（不需要 JUnit）。构建用 Gradle，
+**JDK 17+**；Gson 从 Maven Central 拿（`com.google.code.gson:gson:2.10`，仓库里不提供 jar）：
 
 ```bash
-javac -encoding UTF-8 -cp "lib/gson-2.9.0.jar" -d build/classes \
+gradle compileJava
+gradle smokeTest -PtestClass=DebugSmokeTest
+```
+
+`smokeTest` 支持 `-PnativeLibDir=<目录>`（库不在 `bin/win-x64/Release` 时用，
+比如别的平台或配置）。
+
+不用 Gradle 也可以手编（任意 Gson jar（2.8.8 与 2.10 都验证过））：
+
+```bash
+javac -encoding UTF-8 -cp "<path>/gson-2.10.jar" -d build/classes \
       java/mesen/*.java java/mesen/interfaces/*.java java/mesen/debugger/*.java \
       java/*.java example/java/*.java
 
 java -Djava.library.path=bin/win-x64/Release \
-     -cp "build/classes;lib/gson-2.9.0.jar" DebugSmokeTest
+     -cp "build/classes;<path>/gson-2.10.jar" DebugSmokeTest
 ```
 
-**回归套件**（17 个）：
+**回归套件**（18 个）：
 
 | 测试 | 覆盖 |
 |---|---|

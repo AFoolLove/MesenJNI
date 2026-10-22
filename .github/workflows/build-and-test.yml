@@ -1,0 +1,68 @@
+name: Build and test
+
+on:
+  push:
+    branches:
+      - 'master'
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  windows:
+    name: Windows x64 (core + JNI + tests)
+    runs-on: windows-2022
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Configure CMake
+        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+
+      - name: Build core + JNI bindings
+        run: cmake --build build --config Release
+
+      - name: Compile Java
+        run: gradle --no-daemon compileJava
+
+      # The tests are plain main() classes, so each one is run through the
+      # smokeTest Gradle task. Tests that need a ROM file skip themselves when it
+      # is absent (the repository does not ship ROMs), so the suite passes on a
+      # fresh checkout.
+      - name: Run tests
+        shell: pwsh
+        run: |
+          $tests = @(
+            'SmokeTest', 'CallbackSmokeTest', 'ConfigSmokeTest', 'ConfigFileSmokeTest',
+            'AudioSmokeTest', 'ToneSmokeTest', 'LuaSmokeTest', 'ImplSmokeTest',
+            'DebugSmokeTest', 'ReinitTest', 'RecordSmokeTest', 'MiscSmokeTest',
+            'HistorySmokeTest', 'TestApiSmokeTest', 'NetplaySmokeTest',
+            'RomBytesSmokeTest', 'ConsoleSmokeTest', 'ApiCoverageTest',
+            'CoreRateTest', 'FrameVerifyTest', 'InputVerifyTest'
+          )
+
+          $failed = @()
+          foreach($t in $tests) {
+            Write-Host "::group::$t"
+            gradle --no-daemon -q smokeTest -PtestClass=$t
+            if($LASTEXITCODE -ne 0) {
+              $failed += $t
+            }
+            Write-Host "::endgroup::"
+          }
+
+          if($failed.Count -gt 0) {
+            Write-Host "::error::Failed tests: $($failed -join ', ')"
+            exit 1
+          }
+          Write-Host "All $($tests.Count) tests passed or skipped."

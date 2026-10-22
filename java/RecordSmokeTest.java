@@ -20,6 +20,11 @@ public class RecordSmokeTest
 
     public static void main(String[] args) throws Exception
     {
+        if(!new java.io.File("roms/MetalMax.nes").isFile()) {
+            System.out.println("RECORD SMOKE TEST SKIPPED (缺少 roms/MetalMax.nes)");
+            System.exit(0);
+            return;
+        }
         MesenCore.initDll();
         MesenCore.initializeEmu("./home", true, true, false, true);
 

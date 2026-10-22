@@ -26,7 +26,12 @@ app/src/main/jniLibs/arm64-v8a/libMesenCore.so
 
 `mesen` 包本身（`MesenCore`、`Mesen`、`MesenConfig`、`KeyManager`、`NotificationListener`、`mesen.interfaces.*` 等）编译进工程即可。
 
-**Gson 不是必需的**（只有 `MesenSettings` 用；不用 JSON 配置就不需要加依赖）。
+**Gson 只在用到 `MesenSettings`（JSON 配置持久化）时才需要**，加一行依赖即可（不要
+把 jar 放进工程）：
+
+```kotlin
+implementation("com.google.code.gson:gson:2.10")
+```
 
 ## 3. 最小用法
 

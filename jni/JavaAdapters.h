@@ -61,8 +61,10 @@ class JavaNotificationListener : public JniCallback, public INotificationListene
 {
 private:
 	jmethodID _process;
+
 public:
-	JavaNotificationListener(JNIEnv* env, jobject o) : JniCallback(env, o)
+	JavaNotificationListener(JNIEnv* env, jobject o)
+		: JniCallback(env, o)
 	{
 		_process = env->GetMethodID(cls, "processNotification", "(I)V");
 	}
@@ -80,10 +82,12 @@ class JavaAudioDevice : public JniCallback, public IAudioDevice
 {
 private:
 	jmethodID _play, _stop, _pause, _endFrame, _devices, _setDevice;
-	jshortArray _audioBuffer = nullptr;  // 缓冲池：复用，避免每次分配
+	jshortArray _audioBuffer = nullptr; // 缓冲池：复用，避免每次分配
 	jsize _audioBufferSize = 0;
+
 public:
-	JavaAudioDevice(JNIEnv* env, jobject o) : JniCallback(env, o)
+	JavaAudioDevice(JNIEnv* env, jobject o)
+		: JniCallback(env, o)
 	{
 		_play = env->GetMethodID(cls, "playBuffer", "([SIIZ)V");
 		_stop = env->GetMethodID(cls, "stop", "()V");
@@ -105,12 +109,16 @@ public:
 	void PlayBuffer(int16_t* soundBuffer, uint32_t bufferSize, uint32_t sampleRate, bool isStereo) override
 	{
 		JNIEnv* env = getEnv();
-		if(!env || !_play) return;
+		if(!env || !_play) {
+			return;
+		}
 		jint count = (jint)(bufferSize * (isStereo ? 2 : 1));
 
 		// 缓冲池：不够大时才扩容，否则复用
 		if(_audioBuffer == nullptr || _audioBufferSize < count) {
-			if(_audioBuffer) env->DeleteGlobalRef(_audioBuffer);
+			if(_audioBuffer) {
+				env->DeleteGlobalRef(_audioBuffer);
+			}
 			jsize newSize = count > 0x10000 ? count : 0x10000;
 			jshortArray local = env->NewShortArray(newSize);
 			_audioBuffer = (jshortArray)env->NewGlobalRef(local);
@@ -125,30 +133,42 @@ public:
 	void Stop() override
 	{
 		JNIEnv* env = getEnv();
-		if(env && _stop) env->CallVoidMethod(obj, _stop);
+		if(env && _stop) {
+			env->CallVoidMethod(obj, _stop);
+		}
 	}
 
 	void Pause() override
 	{
 		JNIEnv* env = getEnv();
-		if(env && _pause) env->CallVoidMethod(obj, _pause);
+		if(env && _pause) {
+			env->CallVoidMethod(obj, _pause);
+		}
 	}
 
 	void ProcessEndOfFrame() override
 	{
 		JNIEnv* env = getEnv();
-		if(env && _endFrame) env->CallVoidMethod(obj, _endFrame);
+		if(env && _endFrame) {
+			env->CallVoidMethod(obj, _endFrame);
+		}
 	}
 
 	string GetAvailableDevices() override
 	{
 		JNIEnv* env = getEnv();
-		if(!env || !_devices) return "";
+		if(!env || !_devices) {
+			return "";
+		}
 		jstring s = (jstring)env->CallObjectMethod(obj, _devices);
-		if(!s) return "";
+		if(!s) {
+			return "";
+		}
 		const char* c = env->GetStringUTFChars(s, nullptr);
 		string r = c ? c : "";
-		if(c) env->ReleaseStringUTFChars(s, c);
+		if(c) {
+			env->ReleaseStringUTFChars(s, c);
+		}
 		env->DeleteLocalRef(s);
 		return r;
 	}
@@ -156,7 +176,9 @@ public:
 	void SetAudioDevice(string deviceName) override
 	{
 		JNIEnv* env = getEnv();
-		if(!env || !_setDevice) return;
+		if(!env || !_setDevice) {
+			return;
+		}
 		jstring s = env->NewStringUTF(deviceName.c_str());
 		env->CallVoidMethod(obj, _setDevice, s);
 		env->DeleteLocalRef(s);
@@ -170,8 +192,10 @@ class JavaKeyManager : public JniCallback, public IKeyManager
 private:
 	jmethodID _refresh, _update, _mouseBtn, _keyPressed, _pressedKeys;
 	jmethodID _keyName, _keyCode, _setKey, _reset, _disabled;
+
 public:
-	JavaKeyManager(JNIEnv* env, jobject o) : JniCallback(env, o)
+	JavaKeyManager(JNIEnv* env, jobject o)
+		: JniCallback(env, o)
 	{
 		_refresh = env->GetMethodID(cls, "refreshState", "()V");
 		_update = env->GetMethodID(cls, "updateDevices", "()V");
@@ -188,26 +212,34 @@ public:
 	void RefreshState() override
 	{
 		JNIEnv* env = getEnv();
-		if(env && _refresh) env->CallVoidMethod(obj, _refresh);
+		if(env && _refresh) {
+			env->CallVoidMethod(obj, _refresh);
+		}
 	}
 
 	void UpdateDevices() override
 	{
 		JNIEnv* env = getEnv();
-		if(env && _update) env->CallVoidMethod(obj, _update);
+		if(env && _update) {
+			env->CallVoidMethod(obj, _update);
+		}
 	}
 
 	bool IsMouseButtonPressed(MouseButton button) override
 	{
 		JNIEnv* env = getEnv();
-		if(!env || !_mouseBtn) return false;
+		if(!env || !_mouseBtn) {
+			return false;
+		}
 		return env->CallBooleanMethod(obj, _mouseBtn, (jint)button) == JNI_TRUE;
 	}
 
 	bool IsKeyPressed(uint16_t keyCode) override
 	{
 		JNIEnv* env = getEnv();
-		if(!env || !_keyPressed) return false;
+		if(!env || !_keyPressed) {
+			return false;
+		}
 		return env->CallBooleanMethod(obj, _keyPressed, (jint)keyCode) == JNI_TRUE;
 	}
 
@@ -215,13 +247,19 @@ public:
 	{
 		vector<uint16_t> result;
 		JNIEnv* env = getEnv();
-		if(!env || !_pressedKeys) return result;
+		if(!env || !_pressedKeys) {
+			return result;
+		}
 		jintArray arr = (jintArray)env->CallObjectMethod(obj, _pressedKeys);
-		if(!arr) return result;
+		if(!arr) {
+			return result;
+		}
 		jsize len = env->GetArrayLength(arr);
 		jint* data = env->GetIntArrayElements(arr, nullptr);
 		if(data) {
-			for(jsize i = 0; i < len; i++) result.push_back((uint16_t)data[i]);
+			for(jsize i = 0; i < len; i++) {
+				result.push_back((uint16_t)data[i]);
+			}
 			env->ReleaseIntArrayElements(arr, data, JNI_ABORT);
 		}
 		env->DeleteLocalRef(arr);
@@ -231,12 +269,18 @@ public:
 	string GetKeyName(uint16_t keyCode) override
 	{
 		JNIEnv* env = getEnv();
-		if(!env || !_keyName) return "";
+		if(!env || !_keyName) {
+			return "";
+		}
 		jstring s = (jstring)env->CallObjectMethod(obj, _keyName, (jint)keyCode);
-		if(!s) return "";
+		if(!s) {
+			return "";
+		}
 		const char* c = env->GetStringUTFChars(s, nullptr);
 		string r = c ? c : "";
-		if(c) env->ReleaseStringUTFChars(s, c);
+		if(c) {
+			env->ReleaseStringUTFChars(s, c);
+		}
 		env->DeleteLocalRef(s);
 		return r;
 	}
@@ -244,7 +288,9 @@ public:
 	uint16_t GetKeyCode(string keyName) override
 	{
 		JNIEnv* env = getEnv();
-		if(!env || !_keyCode) return 0;
+		if(!env || !_keyCode) {
+			return 0;
+		}
 		jstring s = env->NewStringUTF(keyName.c_str());
 		jint r = env->CallIntMethod(obj, _keyCode, s);
 		env->DeleteLocalRef(s);
@@ -254,20 +300,26 @@ public:
 	bool SetKeyState(uint16_t scanCode, bool state) override
 	{
 		JNIEnv* env = getEnv();
-		if(!env || !_setKey) return false;
+		if(!env || !_setKey) {
+			return false;
+		}
 		return env->CallBooleanMethod(obj, _setKey, (jint)scanCode, (jboolean)state) == JNI_TRUE;
 	}
 
 	void ResetKeyState() override
 	{
 		JNIEnv* env = getEnv();
-		if(env && _reset) env->CallVoidMethod(obj, _reset);
+		if(env && _reset) {
+			env->CallVoidMethod(obj, _reset);
+		}
 	}
 
 	void SetDisabled(bool disabled) override
 	{
 		JNIEnv* env = getEnv();
-		if(env && _disabled) env->CallVoidMethod(obj, _disabled, (jboolean)disabled);
+		if(env && _disabled) {
+			env->CallVoidMethod(obj, _disabled, (jboolean)disabled);
+		}
 	}
 };
 
@@ -275,8 +327,10 @@ class JavaMouseManager : public JniCallback, public IMouseManager
 {
 private:
 	jmethodID _state, _capture, _release, _setPos, _cursor, _pixelScale;
+
 public:
-	JavaMouseManager(JNIEnv* env, jobject o) : JniCallback(env, o)
+	JavaMouseManager(JNIEnv* env, jobject o)
+		: JniCallback(env, o)
 	{
 		_state = env->GetMethodID(cls, "getSystemMouseState", "()[I");
 		_capture = env->GetMethodID(cls, "captureMouse", "(IIII)Z");
@@ -290,9 +344,13 @@ public:
 	{
 		SystemMouseState s = {};
 		JNIEnv* env = getEnv();
-		if(!env || !_state) return s;
+		if(!env || !_state) {
+			return s;
+		}
 		jintArray arr = (jintArray)env->CallObjectMethod(obj, _state);
-		if(!arr) return s;
+		if(!arr) {
+			return s;
+		}
 		jint data[7] = {};
 		env->GetIntArrayRegion(arr, 0, 7, data);
 		env->DeleteLocalRef(arr);
@@ -309,32 +367,42 @@ public:
 	bool CaptureMouse(int32_t x, int32_t y, int32_t width, int32_t height, void* rendererHandle) override
 	{
 		JNIEnv* env = getEnv();
-		if(!env || !_capture) return false;
+		if(!env || !_capture) {
+			return false;
+		}
 		return env->CallBooleanMethod(obj, _capture, x, y, width, height) == JNI_TRUE;
 	}
 
 	void ReleaseMouse() override
 	{
 		JNIEnv* env = getEnv();
-		if(env && _release) env->CallVoidMethod(obj, _release);
+		if(env && _release) {
+			env->CallVoidMethod(obj, _release);
+		}
 	}
 
 	void SetSystemMousePosition(int32_t x, int32_t y) override
 	{
 		JNIEnv* env = getEnv();
-		if(env && _setPos) env->CallVoidMethod(obj, _setPos, x, y);
+		if(env && _setPos) {
+			env->CallVoidMethod(obj, _setPos, x, y);
+		}
 	}
 
 	void SetCursorImage(CursorImage cursor) override
 	{
 		JNIEnv* env = getEnv();
-		if(env && _cursor) env->CallVoidMethod(obj, _cursor, (jint)cursor);
+		if(env && _cursor) {
+			env->CallVoidMethod(obj, _cursor, (jint)cursor);
+		}
 	}
 
 	double GetPixelScale() override
 	{
 		JNIEnv* env = getEnv();
-		if(!env || !_pixelScale) return 1.0;
+		if(!env || !_pixelScale) {
+			return 1.0;
+		}
 		return env->CallDoubleMethod(obj, _pixelScale);
 	}
 };
@@ -343,10 +411,12 @@ class JavaRenderingDevice : public JniCallback, public IRenderingDevice
 {
 private:
 	jmethodID _update, _clear, _render, _reset, _fullscreen;
-	jintArray _frameBuffer = nullptr;  // 缓冲池：复用帧缓冲
+	jintArray _frameBuffer = nullptr; // 缓冲池：复用帧缓冲
 	jsize _frameBufferSize = 0;
+
 public:
-	JavaRenderingDevice(JNIEnv* env, jobject o) : JniCallback(env, o)
+	JavaRenderingDevice(JNIEnv* env, jobject o)
+		: JniCallback(env, o)
 	{
 		_update = env->GetMethodID(cls, "updateFrame", "(II[II)V");
 		_clear = env->GetMethodID(cls, "clearFrame", "()V");
@@ -367,12 +437,16 @@ public:
 	void UpdateFrame(RenderedFrame& frame) override
 	{
 		JNIEnv* env = getEnv();
-		if(!env || !_update) return;
+		if(!env || !_update) {
+			return;
+		}
 		jsize size = (jsize)(frame.Width * frame.Height);
 
 		// 分辨率不变时复用同一个数组，只在尺寸变化时重建
 		if(_frameBuffer == nullptr || _frameBufferSize != size) {
-			if(_frameBuffer) env->DeleteGlobalRef(_frameBuffer);
+			if(_frameBuffer) {
+				env->DeleteGlobalRef(_frameBuffer);
+			}
 			jintArray local = env->NewIntArray(size);
 			_frameBuffer = (jintArray)env->NewGlobalRef(local);
 			env->DeleteLocalRef(local);
@@ -386,13 +460,17 @@ public:
 	void ClearFrame() override
 	{
 		JNIEnv* env = getEnv();
-		if(env && _clear) env->CallVoidMethod(obj, _clear);
+		if(env && _clear) {
+			env->CallVoidMethod(obj, _clear);
+		}
 	}
 
 	void Render(RenderSurfaceInfo& emuHud, RenderSurfaceInfo& scriptHud) override
 	{
 		JNIEnv* env = getEnv();
-		if(!env || !_render) return;
+		if(!env || !_render) {
+			return;
+		}
 
 		jintArray emuArr = env->NewIntArray((jsize)(emuHud.Width * emuHud.Height));
 		if(emuHud.Buffer) {
@@ -403,9 +481,7 @@ public:
 			env->SetIntArrayRegion(scriptArr, 0, (jsize)(scriptHud.Width * scriptHud.Height), (const jint*)scriptHud.Buffer);
 		}
 
-		env->CallVoidMethod(obj, _render,
-			emuArr, (jint)emuHud.Width, (jint)emuHud.Height, (jboolean)emuHud.IsDirty,
-			scriptArr, (jint)scriptHud.Width, (jint)scriptHud.Height, (jboolean)scriptHud.IsDirty);
+		env->CallVoidMethod(obj, _render, emuArr, (jint)emuHud.Width, (jint)emuHud.Height, (jboolean)emuHud.IsDirty, scriptArr, (jint)scriptHud.Width, (jint)scriptHud.Height, (jboolean)scriptHud.IsDirty);
 		env->DeleteLocalRef(emuArr);
 		env->DeleteLocalRef(scriptArr);
 	}
@@ -413,12 +489,16 @@ public:
 	void Reset() override
 	{
 		JNIEnv* env = getEnv();
-		if(env && _reset) env->CallVoidMethod(obj, _reset);
+		if(env && _reset) {
+			env->CallVoidMethod(obj, _reset);
+		}
 	}
 
 	void SetFullscreenMode(FullscreenSettings settings) override
 	{
 		JNIEnv* env = getEnv();
-		if(env && _fullscreen) env->CallVoidMethod(obj, _fullscreen, (jint)settings.Mode, (jint)settings.Width, (jint)settings.Height);
+		if(env && _fullscreen) {
+			env->CallVoidMethod(obj, _fullscreen, (jint)settings.Mode, (jint)settings.Width, (jint)settings.Height);
+		}
 	}
 };

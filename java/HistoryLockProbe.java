@@ -49,6 +49,12 @@ public class HistoryLockProbe
 
     public static void main(String[] args) throws Exception
     {
+        if(!new java.io.File("roms/MetalMax.nes").isFile()) {
+            System.out.println("HISTORY LOCK PROBE SKIPPED (缺少 roms/MetalMax.nes)");
+            System.exit(0);
+            return;
+        }
+
         String mode = args.length > 0 ? args[0] : "headless";
         boolean native_ = mode.equals("native");
 

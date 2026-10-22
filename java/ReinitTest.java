@@ -5,6 +5,11 @@ public class ReinitTest
 {
     public static void main(String[] args)
     {
+        if(!new java.io.File("roms/MetalMax.nes").isFile()) {
+            System.out.println("REINIT TEST SKIPPED (缺少 roms/MetalMax.nes)");
+            System.exit(0);
+            return;
+        }
         MesenCore.initDll();
         System.out.println("1) initDll OK");
         MesenCore.initializeEmu("./home", true, true, true, true);

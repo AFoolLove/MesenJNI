@@ -67,18 +67,30 @@ input all come from Java through the callback interfaces. Verified against NDK
 
 ### Running the Java tests
 
-The Java sources live in `java/` and the tests are plain `main()` classes:
+The Java sources live in `java/` and the tests are plain `main()` classes. The
+build is Gradle (JDK 17 or newer; Gson comes from Maven Central, there is no
+committed jar):
 
 ```
-javac -encoding UTF-8 -cp "lib/gson-2.9.0.jar" -d build/classes \
+gradle compileJava
+gradle smokeTest -PtestClass=DebugSmokeTest
+```
+
+`smokeTest` takes `-PnativeLibDir=<dir>` when the library is not in
+`bin/win-x64/Release` (another platform or configuration).
+
+Compiling by hand also works, using any Gson jar (2.8.8 and 2.10 both work):
+
+```
+javac -encoding UTF-8 -cp "<path>/gson-2.10.jar" -d build/classes \
       java/mesen/*.java java/mesen/interfaces/*.java java/mesen/debugger/*.java \
       java/*.java example/java/*.java
 
 java -Djava.library.path=bin/win-x64/Release \
-     -cp "build/classes;lib/gson-2.9.0.jar" DebugSmokeTest
+     -cp "build/classes;<path>/gson-2.10.jar" DebugSmokeTest
 ```
 
 Test ROMs go in `roms/` and the emulator's home folder is `./home`; both are
-ignored by git, and tests that need a missing ROM skip rather than fail. See
-[JAVA_API.md](JAVA_API.md) for the full list.
+ignored by git, and tests that need a missing ROM skip (exit 0) rather than fail.
+See [JAVA_API.md](JAVA_API.md) for the full list.
 

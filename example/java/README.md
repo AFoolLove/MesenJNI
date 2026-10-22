@@ -7,23 +7,29 @@
 
 ## 编译 / 运行
 
-在工程根目录（`MesenJNI/`）执行：
+在工程根目录（`MesenJNI/`）执行。构建用 Gradle（**JDK 17+**，Gson 从 Maven Central 拿，
+仓库里不提供 jar）：
 
 ```powershell
 # 编译（含核心绑定 + 示例）
-javac -encoding UTF-8 -cp "lib/gson-2.9.0.jar" -d build/classes `
-      java/mesen/*.java java/mesen/interfaces/*.java example/java/*.java
+gradle compileJava
 
 # 有窗口的播放器（不带 ROM 参数会弹文件选择框）
-java -Djava.library.path=bin/win-x64/Release `
-     -cp "build/classes;lib/gson-2.9.0.jar" MesenPlayer roms/game.nes
-
-# 无头：跑 600 帧后导出 PNG
-java -Djava.library.path=bin/win-x64/Release `
-     -cp "build/classes;lib/gson-2.9.0.jar" HeadlessDemo roms/game.nes 600 frame.png
+gradle smokeTest -PtestClass=MesenPlayer --args="roms/game.nes"
 ```
 
-> Linux / macOS 把 `;` 换成 `:`，`bin/win-x64/Release` 换成对应产物目录。
+> `smokeTest` 是通用的「跑某个 main() 类」任务，示例和测试都走它；
+> 库不在 `bin/win-x64/Release` 时加 `-PnativeLibDir=<目录>`。
+
+不用 Gradle 也可以手编（任意 Gson jar（2.8.8 与 2.10 都验证过）），Linux / macOS 把 `;` 换成 `:`：
+
+```powershell
+javac -encoding UTF-8 -cp "<path>/gson-2.10.jar" -d build/classes `
+      java/mesen/*.java java/mesen/interfaces/*.java example/java/*.java
+
+java -Djava.library.path=bin/win-x64/Release `
+     -cp "build/classes;<path>/gson-2.10.jar" HeadlessDemo roms/game.nes 600 frame.png
+```
 
 ## MesenPlayer 操作
 
