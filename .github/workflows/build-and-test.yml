@@ -33,7 +33,7 @@ jobs:
         run: cmake --build build --config Release
 
       - name: Compile Java
-        run: gradle --no-daemon compileJava
+        run: gradle compileJava
 
       # The tests are plain main() classes, so each one is run through the
       # smokeTest Gradle task. Tests that need a ROM file skip themselves when it
@@ -54,7 +54,7 @@ jobs:
           $failed = @()
           foreach($t in $tests) {
             Write-Host "::group::$t"
-            gradle --no-daemon -q smokeTest -PtestClass=$t
+            gradle -q smokeTest -PtestClass=$t
             if($LASTEXITCODE -ne 0) {
               $failed += $t
             }
