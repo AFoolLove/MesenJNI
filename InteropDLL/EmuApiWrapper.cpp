@@ -33,7 +33,7 @@
 	#include "MacOS/MacOSKeyManager.h"
 	#include "MacOS/MacOSMouseManager.h"
 #elif defined(__ANDROID__)
-	// Android headless: no native window/input/audio platform layer.
+// Android headless: no native window/input/audio platform layer.
 #else
 	#include "Linux/LinuxOglRenderer.h"
 	#include "Sdl/SdlSoundManager.h"

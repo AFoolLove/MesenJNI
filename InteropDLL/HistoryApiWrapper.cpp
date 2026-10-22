@@ -14,7 +14,7 @@
 #elif __APPLE__
 	#include "Sdl/SdlSoundManager.h"
 #elif defined(__ANDROID__)
-	// Android headless: no native window/audio platform layer.
+// Android headless: no native window/audio platform layer.
 #else
 	#include "Linux/LinuxOglRenderer.h"
 	#include "Sdl/SdlSoundManager.h"
@@ -79,11 +79,11 @@ extern "C"
 		// callback, and creating a native device here crashed (null read).
 		if(!_noAudio) {
 #ifdef _WIN32
-		_historySoundManager.reset(SoundManager::Create(_historyPlayer.get(), (HWND)windowHandle));
+			_historySoundManager.reset(SoundManager::Create(_historyPlayer.get(), (HWND)windowHandle));
 #elif defined(__ANDROID__)
-		// Android: no native sound manager for the history viewer.
+			// Android: no native sound manager for the history viewer.
 #else
-		_historySoundManager.reset(SdlSoundManager::Create(_historyPlayer.get()));
+			_historySoundManager.reset(SdlSoundManager::Create(_historyPlayer.get()));
 #endif
 		}
 	}

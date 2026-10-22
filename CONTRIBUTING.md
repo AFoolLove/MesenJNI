@@ -20,6 +20,11 @@ clang-format -i <file>                                          # one file
 find ./ -iname '*.h' -o -iname '*.cpp' | xargs clang-format -i   # everything
 ```
 
+CI runs **clang-format 20** (see `.github/workflows/clang-format-check.yml`), and
+only files you touch need to be clean. Use that same version: 19 and 20 disagree
+on a few hundred files in the tree, so formatting with 19 will reformat unrelated
+code and make the diff noisy.
+
 Naming conventions:
 
 * `ExampleFunction`

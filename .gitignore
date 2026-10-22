@@ -8,7 +8,7 @@
 .vs/*
 
 # Build results
-
+.idea
 [Dd]ebug/
 [Rr]elease/
 x64/
@@ -203,7 +203,7 @@ roms/
 
 # Scratch / temp files (do not track)
 temp/
-# Gradle
+
+# Gradle (build/ is already ignored above)
 .gradle/
-build/
 !gradle/wrapper/gradle-wrapper.jar
