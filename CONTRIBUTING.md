@@ -1,33 +1,56 @@
-# Licensing
+# Contributing
 
-Although MesenCE is currently GPL, we are interested in removing GPL code over time and potentially relicensing the emulator under a more permissive license, such as MIT, at some point in the future. Thus, if you submit code to MesenCE, you agree that:
-- **Your code is licensed under the MIT License.** You may explicitly provide it under additional optional licenses if you wish.
-- Your submission does not contain code that is incompatible with the MIT License. (For example, your submission may not be based on GPL code or include a GPL library.)
+This repository is a fork of [MesenCE](https://github.com/nesdev-org/MesenCE)
+that keeps the emulation core and adds Java/JNI bindings. Bug reports and pull
+requests for the bindings, the Java API, the tests and the documentation are
+welcome. For the emulation core itself, consider whether the fix belongs upstream.
 
-# AI / LLM code
+## Licensing
 
-**AI-generated code is prohibited.** While you may consult with LLMs, all submitted code must be written and understood by you, the contributor, to ensure accuracy and copyright integrity.
+MesenCE is distributed under the GPL v3 (see [LICENSE](LICENSE)). Upstream asks
+contributors to license their submissions under the MIT license as well, so the
+core could be relicensed more permissively later; the same applies here.
 
-# Style
+## Style
 
-MesenCE requires a consistent style across the codebase. Most of this style is currently enforced with clang-format (for C++) and dotnet format (for C#), and these must be run on any code submitted to MesenCE. In Visual Studio, these can be configured to run automatically when saving. On other platforms, you can use these commands:
+C++ is formatted with `clang-format` and CI enforces it:
 
-- clang-format: `find ./ -iname '*.h' -o -iname '*.cpp' | xargs clang-format -i`
-- dotnet format: `dotnet format`
+```
+clang-format -i <file>                                          # one file
+find ./ -iname '*.h' -o -iname '*.cpp' | xargs clang-format -i   # everything
+```
 
-In addition, we require the following naming conventions:
+Naming conventions:
 
-- ExampleFunction
-- exampleVariable
-- _exampleMemberVariable
+* `ExampleFunction`
+* `exampleVariable`
+* `_exampleMemberVariable`
 
-When in doubt, follow the formatting you see elsewhere in the project.
+Java follows the surrounding code: four spaces, braces on their own line, and a
+Javadoc comment above each `public static native` declaration that is not
+self-explanatory.
 
-# Guidance
+## Tests
 
-- Performance: Changes may be rejected if they cause a drop in maximum FPS (press F9 to run at an unlocked framerate and F10 to view the FPS). Where possible, ensure that your changes avoid doing things like adding if statements to hot paths.
-- Warnings: The MesenCE MSVC builds treat warnings as errors. These must be resolved before code can be accepted.
-- Commit messages: Including context and test ROMs with your pull requests allows us to more easily and quickly evaluate the code. If we don't understand a change, it is less likely to be accepted.
-- Usefulness: Changes and features may not be accepted if we determine they're not useful enough or they are out of scope. MesenCE is not intended to cover every niche use case.
+The tests are plain `main()` classes under `java/`; see
+[COMPILING.md](COMPILING.md) for how to build and run them. Please run the suite
+before opening a pull request:
 
-**Pull requests may be rejected for a variety of reasons, even if they are functional. Please consult with the team before making any significant changes.**
+```
+gradle compileJava
+gradle smokeTest -PtestClass=DebugSmokeTest      # any test, by name
+```
+
+Tests that need a ROM skip themselves when `roms/` is empty, so a checkout with no
+ROMs still runs the suite. If your change affects a console, say which ROM you
+tested with.
+
+## C++
+
+* MSVC builds treat warnings as errors; resolve them before submitting.
+* Avoid adding branches to hot paths (per-frame emulation code). Where practical,
+  measure with `CoreRateTest` before and after.
+
+## Commit messages
+
+Explain why, not just what, and mention the test you used to verify the change.
