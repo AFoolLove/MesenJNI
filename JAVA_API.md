@@ -81,18 +81,9 @@ cmake --build build-android
 
 ## 3. 运行测试
 
-测试都在 `java/` 下，是普通 `main()` 程序（不需要 JUnit）。构建用 Gradle，
-**JDK 17+**；Gson 从 Maven Central 拿（`com.google.code.gson:gson:2.10`，仓库里不提供 jar）：
-
-```bash
-gradle compileJava
-gradle smokeTest -PtestClass=DebugSmokeTest
-```
-
-`smokeTest` 支持 `-PnativeLibDir=<目录>`（库不在 `bin/win-x64/Release` 时用，
-比如别的平台或配置）。
-
-不用 Gradle 也可以手编（任意 Gson jar（2.8.8 与 2.10 都验证过））：
+测试都在 `java/` 下，是普通 `main()` 程序（不需要 JUnit）。需要 **JDK 17+** 和
+Gson（只有 `mesen.MesenSettings` 用）。仓库里**不提供 jar**：用
+`com.google.code.gson:gson:2.10`，通过你自己的 Gradle 工程解析，或者直接下载。
 
 ```bash
 javac -encoding UTF-8 -cp "<path>/gson-2.10.jar" -d build/classes \
@@ -101,6 +92,11 @@ javac -encoding UTF-8 -cp "<path>/gson-2.10.jar" -d build/classes \
 
 java -Djava.library.path=bin/win-x64/Release \
      -cp "build/classes;<path>/gson-2.10.jar" DebugSmokeTest
+```
+
+若把 Java 侧放进独立的 Gradle 工程：依赖写
+`implementation("com.google.code.gson:gson:2.10")`，源目录是 `java/` 加
+`example/java`，**JDK 17**。
 ```
 
 **回归套件**（18 个）：

@@ -23,22 +23,31 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-
       - name: Configure CMake
         run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
 
       - name: Build core + JNI bindings
         run: cmake --build build --config Release
 
-      - name: Compile Java
-        run: gradle compileJava
+      # Gson is only needed by mesen.MesenSettings; it comes from Maven Central
+      # rather than a committed jar. Drop it under build/ so it stays untracked.
+      - name: Fetch Gson
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path build/deps | Out-Null
+          Invoke-WebRequest -Uri 'https://repo1.maven.org/maven2/com/google/code/gson/gson/2.10/gson-2.10.jar' `
+            -OutFile 'build/deps/gson-2.10.jar'
 
-      # The tests are plain main() classes, so each one is run through the
-      # smokeTest Gradle task. Tests that need a ROM file skip themselves when it
-      # is absent (the repository does not ship ROMs), so the suite passes on a
-      # fresh checkout.
+      - name: Compile Java
+        shell: pwsh
+        run: |
+          javac -encoding UTF-8 -cp 'build/deps/gson-2.10.jar' -d build/classes `
+            java/mesen/*.java java/mesen/interfaces/*.java java/mesen/debugger/*.java `
+            java/*.java example/java/*.java
+
+      # The tests are plain main() classes. Tests that need a ROM skip themselves
+      # when it is absent (the repository does not ship ROMs), so the suite passes
+      # on a fresh checkout.
       - name: Run tests
         shell: pwsh
         run: |
@@ -51,10 +60,13 @@ jobs:
             'CoreRateTest', 'FrameVerifyTest', 'InputVerifyTest'
           )
 
+          $classpath = "build/classes;build/deps/gson-2.10.jar"
+          $libPath = "-Djava.library.path=bin/win-x64/Release"
           $failed = @()
+
           foreach($t in $tests) {
             Write-Host "::group::$t"
-            gradle -q smokeTest -PtestClass=$t
+            java $libPath -cp $classpath $t
             if($LASTEXITCODE -ne 0) {
               $failed += $t
             }

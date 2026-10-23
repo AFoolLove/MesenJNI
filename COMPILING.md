@@ -67,19 +67,10 @@ input all come from Java through the callback interfaces. Verified against NDK
 
 ### Running the Java tests
 
-The Java sources live in `java/` and the tests are plain `main()` classes. The
-build is Gradle (JDK 17 or newer; Gson comes from Maven Central, there is no
-committed jar):
-
-```
-gradle compileJava
-gradle smokeTest -PtestClass=DebugSmokeTest
-```
-
-`smokeTest` takes `-PnativeLibDir=<dir>` when the library is not in
-`bin/win-x64/Release` (another platform or configuration).
-
-Compiling by hand also works, using any Gson jar (2.8.8 and 2.10 both work):
+The Java sources live in `java/` and the tests are plain `main()` classes. They
+need JDK 17 or newer and Gson (only `mesen.MesenSettings` uses it). No jar is
+committed: take `com.google.code.gson:gson:2.10` from Maven Central, either
+through a Gradle project or by downloading it:
 
 ```
 javac -encoding UTF-8 -cp "<path>/gson-2.10.jar" -d build/classes \
@@ -89,6 +80,10 @@ javac -encoding UTF-8 -cp "<path>/gson-2.10.jar" -d build/classes \
 java -Djava.library.path=bin/win-x64/Release \
      -cp "build/classes;<path>/gson-2.10.jar" DebugSmokeTest
 ```
+
+If you put the Java side in your own Gradle project, the dependency is
+`implementation("com.google.code.gson:gson:2.10")` and the source directories are
+`java/` plus `example/java`.
 
 Test ROMs go in `roms/` and the emulator's home folder is `./home`; both are
 ignored by git, and tests that need a missing ROM skip (exit 0) rather than fail.

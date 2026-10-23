@@ -7,29 +7,26 @@
 
 ## 编译 / 运行
 
-在工程根目录（`MesenJNI/`）执行。构建用 Gradle（**JDK 17+**，Gson 从 Maven Central 拿，
-仓库里不提供 jar）：
+在工程根目录（`MesenJNI/`）执行。需要 **JDK 17+** 和 Gson（只有 `MesenSettings` 用；
+仓库里不提供 jar，用 `com.google.code.gson:gson:2.10`）。Linux / macOS 把 `;` 换成 `:`：
 
 ```powershell
 # 编译（含核心绑定 + 示例）
-gradle compileJava
+javac -encoding UTF-8 -cp "<path>/gson-2.10.jar" -d build/classes `
+      java/mesen/*.java java/mesen/interfaces/*.java java/mesen/debugger/*.java `
+      java/*.java example/java/*.java
 
 # 有窗口的播放器（不带 ROM 参数会弹文件选择框）
-gradle smokeTest -PtestClass=MesenPlayer --args="roms/game.nes"
-```
+java -Djava.library.path=bin/win-x64/Release `
+     -cp "build/classes;<path>/gson-2.10.jar" MesenPlayer roms/game.nes
 
-> `smokeTest` 是通用的「跑某个 main() 类」任务，示例和测试都走它；
-> 库不在 `bin/win-x64/Release` 时加 `-PnativeLibDir=<目录>`。
-
-不用 Gradle 也可以手编（任意 Gson jar（2.8.8 与 2.10 都验证过）），Linux / macOS 把 `;` 换成 `:`：
-
-```powershell
-javac -encoding UTF-8 -cp "<path>/gson-2.10.jar" -d build/classes `
-      java/mesen/*.java java/mesen/interfaces/*.java example/java/*.java
-
+# 无头：跑 600 帧后导出 PNG
 java -Djava.library.path=bin/win-x64/Release `
      -cp "build/classes;<path>/gson-2.10.jar" HeadlessDemo roms/game.nes 600 frame.png
 ```
+
+> 把 Java 侧放进自己的 Gradle 工程时，依赖写
+> `implementation("com.google.code.gson:gson:2.10")`，源目录是 `java/` + `example/java`。
 
 ## MesenPlayer 操作
 

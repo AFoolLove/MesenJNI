@@ -203,7 +203,3 @@ roms/
 
 # Scratch / temp files (do not track)
 temp/
-
-# Gradle (build/ is already ignored above)
-.gradle/
-!gradle/wrapper/gradle-wrapper.jar

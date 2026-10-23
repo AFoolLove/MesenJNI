@@ -39,11 +39,14 @@ self-explanatory.
 
 The tests are plain `main()` classes under `java/`; see
 [COMPILING.md](COMPILING.md) for how to build and run them. Please run the suite
-before opening a pull request:
+before opening a pull request (the Java side compiles with JDK 17 and Gson 2.10
+from Maven Central; no jar is committed):
 
 ```
-gradle compileJava
-gradle smokeTest -PtestClass=DebugSmokeTest      # any test, by name
+javac -encoding UTF-8 -cp "<path>/gson-2.10.jar" -d build/classes \
+      java/mesen/*.java java/mesen/interfaces/*.java java/mesen/debugger/*.java \
+      java/*.java example/java/*.java
+java -Djava.library.path=bin/win-x64/Release -cp "build/classes;<path>/gson-2.10.jar" DebugSmokeTest
 ```
 
 Tests that need a ROM skip themselves when `roms/` is empty, so a checkout with no
