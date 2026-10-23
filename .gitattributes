@@ -3,6 +3,13 @@
 ###############################################################################
 * text=auto
 
+# Gradle wrapper: the shell script must keep LF or it fails with a bad
+# interpreter on Linux/macOS, and the jar must never be line-ending converted.
+gradlew      text eol=lf
+gradlew.bat  text eol=crlf
+*.sh         text eol=lf
+*.jar        binary
+
 ###############################################################################
 # Set default behavior for command prompt diff.
 #
