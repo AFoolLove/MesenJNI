@@ -67,15 +67,17 @@ input all come from Java through the callback interfaces. Verified against NDK
 
 ### Running the Java tests
 
-The Java sources live in `java/` and the tests are plain `main()` classes. They
-need JDK 17 or newer and Gson (only `mesen.MesenSettings` uses it). No jar is
+The Java side is a Gradle project in `Java/`: the API and its JNI bindings live in
+`Java/src/main/java`, the tests in `Java/src/test/java` and are plain `main()`
+classes rather than JUnit tests. They need JDK 17 or newer and Gson (only
+`mesen.MesenSettings` uses it). No jar is
 committed: take `com.google.code.gson:gson:2.10` from Maven Central, either
 through a Gradle project or by downloading it:
 
 ```
 javac -encoding UTF-8 -cp "<path>/gson-2.10.jar" -d build/classes \
-      java/mesen/*.java java/mesen/interfaces/*.java java/mesen/debugger/*.java \
-      java/*.java example/java/*.java
+      Java/src/main/java/mesen/*.java Java/src/main/java/mesen/interfaces/*.java Java/src/main/java/mesen/debugger/*.java \
+      Java/src/test/java/*.java example/java-swing/src/main/java/*.java
 
 java -Djava.library.path=bin/win-x64/Release \
      -cp "build/classes;<path>/gson-2.10.jar" DebugSmokeTest
@@ -83,7 +85,7 @@ java -Djava.library.path=bin/win-x64/Release \
 
 If you put the Java side in your own Gradle project, the dependency is
 `implementation("com.google.code.gson:gson:2.10")` and the source directories are
-`java/` plus `example/java`.
+`Java/src/main/java` plus `example/java-swing`.
 
 Test ROMs go in `roms/` and the emulator's home folder is `./home`; both are
 ignored by git, and tests that need a missing ROM skip (exit 0) rather than fail.

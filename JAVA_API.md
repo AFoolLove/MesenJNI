@@ -38,7 +38,7 @@ MesenCore.loadRomFromBytes(romData, "game.nes", null);
 
 完整的可运行示例：
 
-* [`example/java/`](example/java/) —— 桌面 Swing 播放器（含事件查看器）
+* [`example/java-swing/`](example/java-swing/) —— 桌面 Swing 播放器（含事件查看器）
 * [`example/android/`](example/android/) —— Android 最小可用集成
 
 ---
@@ -81,22 +81,23 @@ cmake --build build-android
 
 ## 3. 运行测试
 
-测试都在 `java/` 下，是普通 `main()` 程序（不需要 JUnit）。需要 **JDK 17+** 和
+Java 侧是 `Java/` 下的 Gradle 工程：接口与 JNI 绑定在 `Java/src/main/java`，
+测试在 `Java/src/test/java`，是普通 `main()` 程序（不需要 JUnit）。需要 **JDK 17+** 和
 Gson（只有 `mesen.MesenSettings` 用）。仓库里**不提供 jar**：用
 `com.google.code.gson:gson:2.10`，通过你自己的 Gradle 工程解析，或者直接下载。
 
 ```bash
 javac -encoding UTF-8 -cp "<path>/gson-2.10.jar" -d build/classes \
-      java/mesen/*.java java/mesen/interfaces/*.java java/mesen/debugger/*.java \
-      java/*.java example/java/*.java
+      Java/src/main/java/mesen/*.java Java/src/main/java/mesen/interfaces/*.java Java/src/main/java/mesen/debugger/*.java \
+      Java/src/test/java/*.java example/java-swing/src/main/java/*.java
 
 java -Djava.library.path=bin/win-x64/Release \
      -cp "build/classes;<path>/gson-2.10.jar" DebugSmokeTest
 ```
 
 若把 Java 侧放进独立的 Gradle 工程：依赖写
-`implementation("com.google.code.gson:gson:2.10")`，源目录是 `java/` 加
-`example/java`，**JDK 17**。
+`implementation("com.google.code.gson:gson:2.10")`，源目录是 `Java/src/main/java` 加
+`example/java-swing`，**JDK 17**。
 ```
 
 **回归套件**（18 个）：
@@ -342,20 +343,21 @@ java -Djava.library.path=bin/win-x64/Release \
 ## 7. 目录结构
 
 ```
-jni/                  JNI 绑定层
-  MesenApi.h            C API 声明（JNI 侧用的子集）
-  MesenJni.cpp          MesenCore / MesenConfig / ... 的绑定
-  DebugJni.cpp          MesenDebugger 的绑定
-  JavaAdapters.h        回调接口的 C++ 适配器
-java/
-  mesen/*.java          8 个 API 类 + 顶层数据类 + Mesen.java 常量
-  mesen/interfaces/     5 个回调接口
-  mesen/debugger/       44 个调试数据类
-  *Test.java            测试
+jni/                            JNI 绑定层
+  MesenApi.h                      C API 声明（JNI 侧用的子集）
+  MesenJni.cpp                    MesenCore / MesenConfig / ... 的绑定
+  DebugJni.cpp                    MesenDebugger 的绑定
+  JavaAdapters.h                  回调接口的 C++ 适配器
+Java/                           Java 端接口（Gradle 工程）
+  build.gradle                    依赖 gson 2.10，JDK 17
+  src/main/java/mesen/*.java      8 个 API 类 + 顶层数据类 + Mesen.java 常量
+  src/main/java/mesen/interfaces/ 5 个回调接口
+  src/main/java/mesen/debugger/   44 个调试数据类
+  src/test/java/                  22 个测试（普通 main()）
 example/
-  java/                 桌面 Swing 示例
-  android/              Android 示例
-InteropDLL/             C API 实现（上游）
-Core/                   模拟器核心（上游）
-Utilities/              工具（含 ZipWriter、VirtualFile）
+  java-swing/                     桌面 Swing 示例（Gradle 工程）
+  android/                        Android 示例
+InteropDLL/                       C API 实现（上游）
+Core/                             模拟器核心（上游）
+Utilities/                        工具（含 ZipWriter、VirtualFile）
 ```

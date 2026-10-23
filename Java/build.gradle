@@ -1,0 +1,38 @@
+plugins {
+	id 'java'
+}
+
+group = 'me.afoolslove'
+version = '1.0-SNAPSHOT'
+
+java {
+	sourceCompatibility = JavaVersion.VERSION_17
+	targetCompatibility = JavaVersion.VERSION_17
+}
+
+tasks.withType(JavaCompile).configureEach {
+	options.encoding = 'UTF-8'
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	// mesen.MesenSettings / mesen.NesSettings use Gson for JSON persistence.
+	implementation 'com.google.code.gson:gson:2.10'
+}
+
+test {
+	useJUnitPlatform()
+}
+
+// src/main/java holds the JNI-backed API. src/test/java holds the smoke tests,
+// which are plain main() classes rather than JUnit tests, so `gradle test` finds
+// nothing there; run one with, for example:
+//
+//   java -Djava.library.path=../bin/win-x64/Release \
+//        -cp build/classes/java/main:build/classes/java/test:<gson> SmokeTest
+//
+// Run them with the repository root as the working directory: they open ROMs by
+// relative path (roms/MetalMax.nes) and skip themselves when the file is absent.

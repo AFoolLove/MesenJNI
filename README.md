@@ -12,7 +12,7 @@ second native library and no .NET UI.
 
 * [JAVA_API.md](JAVA_API.md) — API overview, build instructions (including Android),
   the test suite, known core quirks and per-console verification status
-* [example/java/](example/java/) — runnable desktop player (Swing)
+* [example/java-swing/](example/java-swing/) — runnable desktop player (Swing)
 * [example/android/](example/android/) — minimal Android integration
 
 ```java

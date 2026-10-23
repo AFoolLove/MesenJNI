@@ -13,8 +13,8 @@
 ```powershell
 # 编译（含核心绑定 + 示例）
 javac -encoding UTF-8 -cp "<path>/gson-2.10.jar" -d build/classes `
-      java/mesen/*.java java/mesen/interfaces/*.java java/mesen/debugger/*.java `
-      java/*.java example/java/*.java
+      Java/src/main/java/mesen/*.java Java/src/main/java/mesen/interfaces/*.java Java/src/main/java/mesen/debugger/*.java `
+      Java/src/test/java/*.java example/java-swing/src/main/java/*.java
 
 # 有窗口的播放器（不带 ROM 参数会弹文件选择框）
 java -Djava.library.path=bin/win-x64/Release `
@@ -26,7 +26,7 @@ java -Djava.library.path=bin/win-x64/Release `
 ```
 
 > 把 Java 侧放进自己的 Gradle 工程时，依赖写
-> `implementation("com.google.code.gson:gson:2.10")`，源目录是 `java/` + `example/java`。
+> `implementation("com.google.code.gson:gson:2.10")`，源目录是 `Java/src/main/java` + `example/java-swing`。
 
 ## MesenPlayer 操作
 
@@ -102,6 +102,6 @@ keys.setKeyState(KeyEvent.VK_X, true);   // ③ 按下
 
 ## 相关文件
 
-- 回调接口定义：`java/mesen/interfaces/`
-- 核心绑定：`java/mesen/MesenCore.java`、`MesenConfig.java`、`MesenVideo.java`、`MesenAudio.java`、`MesenMemory.java`、`MesenInput.java`、`MesenScript.java`
+- 回调接口定义：`Java/src/main/java/mesen/interfaces/`
+- 核心绑定：`Java/src/main/java/mesen/MesenCore.java`、`MesenConfig.java`、`MesenVideo.java`、`MesenAudio.java`、`MesenMemory.java`、`MesenInput.java`、`MesenScript.java`
 - Android 版本：`../android/`

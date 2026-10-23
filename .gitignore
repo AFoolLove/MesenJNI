@@ -203,3 +203,6 @@ roms/
 
 # Scratch / temp files (do not track)
 temp/
+
+# Gradle build caches (Java/ and example/java-swing/ are Gradle projects)
+.gradle/

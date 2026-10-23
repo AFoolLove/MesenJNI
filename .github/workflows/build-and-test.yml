@@ -38,12 +38,18 @@ jobs:
           Invoke-WebRequest -Uri 'https://repo1.maven.org/maven2/com/google/code/gson/gson/2.10/gson-2.10.jar' `
             -OutFile 'build/deps/gson-2.10.jar'
 
+      # The Java side is a Gradle project in Java/; CI compiles it with javac into
+      # one flat output directory to avoid depending on the wrapper, and includes
+      # the Swing samples so they are checked for compilation too.
       - name: Compile Java
         shell: pwsh
         run: |
           javac -encoding UTF-8 -cp 'build/deps/gson-2.10.jar' -d build/classes `
-            java/mesen/*.java java/mesen/interfaces/*.java java/mesen/debugger/*.java `
-            java/*.java example/java/*.java
+            Java/src/main/java/mesen/*.java `
+            Java/src/main/java/mesen/interfaces/*.java `
+            Java/src/main/java/mesen/debugger/*.java `
+            Java/src/test/java/*.java `
+            example/java-swing/src/main/java/*.java
 
       # The tests are plain main() classes. Tests that need a ROM skip themselves
       # when it is absent (the repository does not ship ROMs), so the suite passes

@@ -44,8 +44,8 @@ from Maven Central; no jar is committed):
 
 ```
 javac -encoding UTF-8 -cp "<path>/gson-2.10.jar" -d build/classes \
-      java/mesen/*.java java/mesen/interfaces/*.java java/mesen/debugger/*.java \
-      java/*.java example/java/*.java
+      Java/src/main/java/mesen/*.java Java/src/main/java/mesen/interfaces/*.java Java/src/main/java/mesen/debugger/*.java \
+      Java/src/test/java/*.java example/java-swing/src/main/java/*.java
 java -Djava.library.path=bin/win-x64/Release -cp "build/classes;<path>/gson-2.10.jar" DebugSmokeTest
 ```
 
