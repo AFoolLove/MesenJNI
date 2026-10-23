@@ -23,9 +23,14 @@ dependencies {
 	implementation 'com.google.code.gson:gson:2.10'
 }
 
+test {
+	// Disabled so `gradle test` does not complain about a missing test framework:
+	// src/test/java holds plain main() classes, not JUnit tests.
+	enabled = false
+}
+
 // src/main/java holds the JNI-backed API. src/test/java holds the smoke tests,
-// which are plain main() classes rather than JUnit tests, so there is no
-// useJUnitPlatform() here and `gradle test` has nothing to run. Run one with, for
+// which are plain main() classes rather than JUnit tests. Run one with, for
 // example:
 //
 //   java -Djava.library.path=../bin/win-x64/Release \

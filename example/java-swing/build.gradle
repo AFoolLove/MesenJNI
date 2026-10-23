@@ -24,3 +24,8 @@ dependencies {
 	// a composite build (includeBuild) would avoid the ordering requirement.
 	implementation files('../../Java/build/libs/Java-1.0-SNAPSHOT.jar')
 }
+
+test {
+	// The samples are runnable main() classes, not JUnit tests.
+	enabled = false
+}
