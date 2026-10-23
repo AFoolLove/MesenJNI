@@ -23,13 +23,10 @@ dependencies {
 	implementation 'com.google.code.gson:gson:2.10'
 }
 
-test {
-	useJUnitPlatform()
-}
-
 // src/main/java holds the JNI-backed API. src/test/java holds the smoke tests,
-// which are plain main() classes rather than JUnit tests, so `gradle test` finds
-// nothing there; run one with, for example:
+// which are plain main() classes rather than JUnit tests, so there is no
+// useJUnitPlatform() here and `gradle test` has nothing to run. Run one with, for
+// example:
 //
 //   java -Djava.library.path=../bin/win-x64/Release \
 //        -cp build/classes/java/main:build/classes/java/test:<gson> SmokeTest
